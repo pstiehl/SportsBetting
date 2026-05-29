@@ -220,12 +220,18 @@ def reweight() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     ensure_dirs()
     init_db()
-    new = update_weights_fn()
-    if not new:
-        log.info("No eligible sources for reweighting (need ≥ 20 events).")
-    else:
-        for k, v in sorted(new.items(), key=lambda kv: -kv[1]):
-            log.info("  %-22s  %6.1f%%", k, v * 100)
+    payload = update_weights_fn()
+    if not payload:
+        log.info("No eligible sources for reweighting (need ≥ 50 events).")
+        return
+    log.info("Weight mode: %s", payload.get("mode", "?"))
+    log.info("Global pool:")
+    for k, v in sorted((payload.get("global") or {}).items(), key=lambda kv: -kv[1]):
+        log.info("  %-40s  %6.1f%%", k, v * 100)
+    for sport, pool in (payload.get("by_sport") or {}).items():
+        log.info("Per-sport pool (%s):", sport.upper())
+        for k, v in sorted(pool.items(), key=lambda kv: -kv[1]):
+            log.info("  %-40s  %6.1f%%", k, v * 100)
 
 
 @app.command()

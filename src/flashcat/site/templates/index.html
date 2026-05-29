@@ -18,6 +18,9 @@
 
 <div class="recommended-plays">
   <h3>Recommended Plays Today</h3>
+  {% if research_mode %}
+  <div class="callout research"><strong>Backtested ROI is currently {{ backtest_roi_str }} &mdash; model is in research mode. No live recommendations shown.</strong> The probability blend is still computed and displayed on each event card for transparency, but no stake suggestions are provided until the blended backtest clears 0% ROI on out-of-sample data.</div>
+  {% else %}
   <p class="lede" style="margin-top:-4px">Bankroll {{ bankroll_str }} &middot; {{ stake_mode_label }} &middot; edge threshold {{ edge_threshold_pp }}&thinsp;pp</p>
   {% if top_recs %}
   <table class="recs">
@@ -51,6 +54,7 @@
   {% else %}
   <div class="callout"><strong>No edge plays today &mdash; model sitting out.</strong> Either no event cleared the {{ edge_threshold_pp }}&thinsp;pp edge threshold, or live odds haven't published yet.</div>
   {% endif %}
+  {% endif %}
 </div>
 
 <div class="event-grid">
@@ -66,6 +70,9 @@
       <span class="side">PICK: {{ ev.pick_label }}</span>
       <span class="prob">{{ ev.pick_price_str }}</span>
     </div>
+    {% if research_mode %}
+    <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+    {% else %}
     <div class="rec-rows">
       <div class="rec-row">
         <span class="label">Model edge</span>
@@ -80,6 +87,7 @@
         <span class="val {% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</span>
       </div>
     </div>
+    {% endif %}
     <div class="probs">
       <span class="label">Blended home prob</span><span class="val">{{ "{:.1%}".format(ev.blended_home_prob) }}</span>
       <span class="label">Market implied (devig)</span><span class="val">{{ ev.market_home_str }}</span>

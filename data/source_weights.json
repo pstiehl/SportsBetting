@@ -1,12 +1,48 @@
 {
-  "atp:market-close": 0.12976871182585614,
-  "atp:market-consensus": 0.12976871182585614,
-  "atp:tennis-rank-bt": 0.11737275812872351,
-  "bovada": 0.125,
-  "fanduel": 0.125,
-  "nfl:market-close": 0.12440109137211199,
-  "nfl:market-consensus": 0.12440109137211199,
-  "wta:market-close": 0.12850972939276822,
-  "wta:market-consensus": 0.12850972939276822,
-  "wta:tennis-rank-bt": 0.11726817668980387
+  "by_sport": {
+    "atp": {
+      "market-close": 0.3302253904134719,
+      "market-consensus": 0.3302253904134719,
+      "tennis-rank-bt": 0.3395492191730563
+    },
+    "mlb": {
+      "fivethirtyeight-mlb-elo": 0.49779831739440633,
+      "fivethirtyeight-mlb-rating": 0.5022016826055937
+    },
+    "nba": {
+      "fivethirtyeight-nba-elo-modern": 0.49331739298460847,
+      "fivethirtyeight-nba-raptor": 0.5066826070153915
+    },
+    "nfl": {
+      "fivethirtyeight-nfl-elo": 0.2426436809259774,
+      "fivethirtyeight-nfl-qbelo": 0.23637448575356756,
+      "market-close": 0.26049091666022756,
+      "market-consensus": 0.26049091666022756
+    },
+    "wta": {
+      "market-close": 0.3407355371785354,
+      "market-consensus": 0.3407355371785354,
+      "tennis-rank-bt": 0.3185289256429293
+    }
+  },
+  "global": {
+    "atp:market-close": 0.08738244538276696,
+    "atp:market-consensus": 0.08738244538276696,
+    "atp:tennis-rank-bt": 0.0916128591593223,
+    "mlb:fivethirtyeight-mlb-elo": 0.03255810939128363,
+    "mlb:fivethirtyeight-mlb-rating": 0.03284610804701638,
+    "nba:fivethirtyeight-nba-elo-modern": 0.03462965757103145,
+    "nba:fivethirtyeight-nba-raptor": 0.03556786245055006,
+    "nfl:fivethirtyeight-nfl-elo": 0.08244178534412781,
+    "nfl:fivethirtyeight-nfl-qbelo": 0.07966945252075004,
+    "nfl:market-close": 0.08880112152292105,
+    "nfl:market-consensus": 0.08880112152292105,
+    "wta:market-close": 0.08790532777517435,
+    "wta:market-consensus": 0.08790532777517435,
+    "wta:tennis-rank-bt": 0.0824963761541937
+  },
+  "min_events": 50,
+  "mode": "brier_roi_hybrid",
+  "schema": "v2",
+  "temperature": 4.0
 }

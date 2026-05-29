@@ -1,7 +1,7 @@
 <div class="container">
 
 <h2>Source <span class="accent">Scoreboard</span></h2>
-<p class="lede">Every source that contributes a probability gets graded on every historical event in the backtest window. Brier score measures calibration (lower is better, 0 = perfect). ROI is profit ÷ wagered on $100-flat bets. Weights are derived from <code class="inline">softmax(−Brier)</code> and refresh every backtest run.</p>
+<p class="lede">Flashcat is a meta-model: every public probability source on the internet is graded on historical outcomes, then weighted by accuracy. Brier score (lower&nbsp;=&nbsp;better) drives the per-sport softmax; ROI is profit ÷ wagered using the model's stake rule. Rows are color-coded by accuracy quartile within each sport &mdash; <span class="acc-top inline-chip">top 25%</span>, <span class="acc-mid inline-chip">middle 50%</span>, <span class="acc-bottom inline-chip">bottom 25%</span>. Weighting mode: <code class="inline">{{ weight_mode }}</code>.</p>
 
 <div class="kpi-row">
   <div class="kpi"><div class="num">{{ n_sources }}</div><div class="label">Live Sources</div></div>
@@ -9,6 +9,38 @@
   <div class="kpi"><div class="num">{{ window }}</div><div class="label">Backtest Window</div></div>
 </div>
 
+{% if per_sport_tables %}
+{% for tbl in per_sport_tables %}
+<h3 style="margin-top:24px">{{ tbl.sport_upper }} <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; {{ tbl.n_events }} events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+{% for row in tbl.rows %}
+<tr class="{{ row.acc_cls }}">
+  <td><strong>{{ row.source }}</strong>{% if row.is_model %} <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span>{% endif %}</td>
+  <td class="num">{{ row.n_events }}</td>
+  <td class="num">{{ row.brier_str }}</td>
+  <td class="num {{ row.roi_cls }}">{{ row.roi_str }}</td>
+  <td class="num">{{ row.wl_str }}</td>
+  <td class="num {{ row.profit_cls }}">{{ row.profit_str }}</td>
+  <td class="num">{{ row.weight_str }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endfor %}
+{% endif %}
+
+<h3 style="margin-top:32px">Global Pool</h3>
+<p class="lede" style="margin-top:-4px;font-size:13px">All sources, keyed by <code class="inline">&lt;sport&gt;:&lt;source&gt;</code>. The blender prefers the per-sport pool above; this table is the fallback when sport is unknown.</p>
 <table>
 <thead><tr>
   <th>Source</th>
@@ -21,7 +53,7 @@
 </tr></thead>
 <tbody>
 {% for row in rows %}
-<tr>
+<tr class="{{ row.acc_cls }}">
   <td><strong>{{ row.source }}</strong>{% if row.is_model %} <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span>{% endif %}</td>
   <td class="num">{{ row.n_events }}</td>
   <td class="num">{{ row.brier_str }}</td>
@@ -34,6 +66,6 @@
 </tbody>
 </table>
 
-<p class="lede" style="margin-top:18px">Live sources are stubbed-out connectors that return real data when configured. Stubbed-only sources (Pinnacle, DraftKings, FanDuel page scrapes, Kalshi, FiveThirtyEight, Massey/Sagarin, KenPom, BPI) ship clean interfaces but return empty in Phase 1 — they wire in once their connectors are implemented.</p>
+<p class="lede" style="margin-top:18px">Sources with <em>n_events &lt; 50</em> are excluded from the weight pool (insufficient data) but still graded for transparency. <code class="inline">market-close</code> / <code class="inline">market-consensus</code> are devigged consensus moneylines &mdash; they are the bar every source must clear to earn weight in the blend.</p>
 
 </div>

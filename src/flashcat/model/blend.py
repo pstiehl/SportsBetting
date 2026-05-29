@@ -11,19 +11,55 @@ from ..types import Event
 from .pick import pick_side
 
 
-def load_weights(path: Path | None = None) -> dict[str, float]:
+def load_weights(path: Path | None = None) -> dict:
+    """Load weights as a v2 payload.
+
+    Returns a dict shaped like::
+
+        {"schema": "v2",
+         "global": {source: weight, ...},
+         "by_sport": {sport: {source: weight, ...}, ...}}
+
+    If the file on disk is the legacy v1 flat ``{source: weight}`` mapping,
+    we promote it into the v2 shape with no per-sport breakdown.
+    """
     p = path or SOURCE_WEIGHTS_PATH
     if not p.exists():
-        return {}
+        return {"schema": "v2", "global": {}, "by_sport": {}}
     with open(p) as f:
-        return json.load(f)
+        data = json.load(f)
+    if not isinstance(data, dict):
+        return {"schema": "v2", "global": {}, "by_sport": {}}
+    if data.get("schema") == "v2":
+        data.setdefault("global", {})
+        data.setdefault("by_sport", {})
+        return data
+    # Legacy v1 (flat mapping).
+    return {"schema": "v2", "global": dict(data), "by_sport": {}}
 
 
-def save_weights(weights: dict[str, float], path: Path | None = None) -> None:
+def save_weights(weights: dict, path: Path | None = None) -> None:
     p = path or SOURCE_WEIGHTS_PATH
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "w") as f:
         json.dump(weights, f, indent=2, sort_keys=True)
+
+
+def weights_for_sport(weights: dict, sport: str | None) -> dict[str, float]:
+    """Resolve the source-weight dict for an event of the given sport.
+
+    Prefers ``by_sport[sport]`` if non-empty; falls back to ``global``; falls
+    back to an empty dict (which the blender treats as uniform weighting).
+    """
+    if not isinstance(weights, dict):
+        return {}
+    by_sport = weights.get("by_sport") if weights.get("schema") == "v2" else None
+    if isinstance(by_sport, dict) and sport in by_sport and by_sport[sport]:
+        return dict(by_sport[sport])
+    if weights.get("schema") == "v2":
+        return dict(weights.get("global") or {})
+    # Legacy flat shape.
+    return {k: v for k, v in weights.items() if isinstance(v, (int, float))}
 
 
 def _resolve_weights(sources: Iterable[str], weights: dict[str, float]) -> dict[str, float]:
@@ -39,7 +75,7 @@ def _resolve_weights(sources: Iterable[str], weights: dict[str, float]) -> dict[
     return {k: v / total for k, v in out.items()}
 
 
-def blend_event(event: Event, weights: dict[str, float] | None = None) -> Event:
+def blend_event(event: Event, weights: dict | None = None) -> Event:
     """Compute blended home win prob, write pick + pick_prob, return event."""
     weights = weights if weights is not None else load_weights()
     if not event.source_probs:
@@ -48,7 +84,8 @@ def blend_event(event: Event, weights: dict[str, float] | None = None) -> Event:
         event.pick_prob = None
         return event
     src_names = [p.source for p in event.source_probs]
-    w_norm = _resolve_weights(src_names, weights)
+    sport_weights = weights_for_sport(weights, event.sport)
+    w_norm = _resolve_weights(src_names, sport_weights)
     blended = sum(p.home_win_prob * w_norm.get(p.source, 0.0) for p in event.source_probs)
     blended = max(0.0, min(1.0, blended))
     event.blended_home_prob = blended
@@ -58,6 +95,6 @@ def blend_event(event: Event, weights: dict[str, float] | None = None) -> Event:
     return event
 
 
-def blend_events(events: list[Event], weights: dict[str, float] | None = None) -> list[Event]:
+def blend_events(events: list[Event], weights: dict | None = None) -> list[Event]:
     weights = weights if weights is not None else load_weights()
     return [blend_event(e, weights) for e in events]

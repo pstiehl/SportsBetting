@@ -166,3 +166,33 @@ img.chart { max-width: 100%; border-radius: 8px; border: 1px solid var(--border)
 span.pos { color: var(--green); }
 span.neg { color: var(--red); }
 strong.pos { color: var(--green); }
+
+/* Site status badge (live betting vs research mode) */
+.site-status {
+  display: inline-block; margin-top: 4px; padding: 3px 9px;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.site-status.research { background: rgba(245, 158, 11, 0.16); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
+.site-status.live { background: rgba(34, 197, 94, 0.16); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); }
+
+.callout.research { border-color: #f59e0b; border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.10); }
+.callout.research strong { color: #f59e0b; }
+
+.research-banner {
+  margin: 10px 0 6px; padding: 8px 12px; border-radius: 6px;
+  background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b;
+  color: #d97706; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+}
+
+/* Accuracy quartile row tinting on the source scoreboard. */
+tr.acc-top    td:first-child { border-left: 3px solid #22c55e; }
+tr.acc-mid    td:first-child { border-left: 3px solid #f59e0b; }
+tr.acc-bottom td:first-child { border-left: 3px solid #ef4444; }
+.inline-chip {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.inline-chip.acc-top { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+.inline-chip.acc-mid { background: rgba(245, 158, 11, 0.16); color: #f59e0b; }
+.inline-chip.acc-bottom { background: rgba(239, 68, 68, 0.16); color: #ef4444; }

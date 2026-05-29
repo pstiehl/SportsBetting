@@ -15,7 +15,10 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">$100 flat · probability-blended · 2026-05-29 17:46 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-29 22:22 UTC</div>
+        
+        <div class="site-status research" title="Blended backtest ROI: -6.7%">🟡 RESEARCH MODE &middot; backtest ROI -6.7%</div>
+        
       </div>
     </div>
     <nav>
@@ -29,14 +32,290 @@
 <div class="container">
 
 <h2>Source <span class="accent">Scoreboard</span></h2>
-<p class="lede">Every source that contributes a probability gets graded on every historical event in the backtest window. Brier score measures calibration (lower is better, 0 = perfect). ROI is profit ÷ wagered on $100-flat bets. Weights are derived from <code class="inline">softmax(−Brier)</code> and refresh every backtest run.</p>
+<p class="lede">Flashcat is a meta-model: every public probability source on the internet is graded on historical outcomes, then weighted by accuracy. Brier score (lower&nbsp;=&nbsp;better) drives the per-sport softmax; ROI is profit ÷ wagered using the model's stake rule. Rows are color-coded by accuracy quartile within each sport &mdash; <span class="acc-top inline-chip">top 25%</span>, <span class="acc-mid inline-chip">middle 50%</span>, <span class="acc-bottom inline-chip">bottom 25%</span>. Weighting mode: <code class="inline">brier_roi_hybrid</code>.</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">8</div><div class="label">Live Sources</div></div>
-  <div class="kpi"><div class="num">6524</div><div class="label">Events Graded</div></div>
-  <div class="kpi"><div class="num">2023-09-01 → 2024-12-31</div><div class="label">Backtest Window</div></div>
+  <div class="kpi"><div class="num">14</div><div class="label">Live Sources</div></div>
+  <div class="kpi"><div class="num">8874</div><div class="label">Events Graded</div></div>
+  <div class="kpi"><div class="num">2022-01-01 → 2022-12-31</div><div class="label">Backtest Window</div></div>
 </div>
 
+
+
+<h3 style="margin-top:24px">ATP <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 2547 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">2547</td>
+  <td class="num">0.2056</td>
+  <td class="num neg">-5.3%</td>
+  <td class="num">114 / 126</td>
+  <td class="num neg">$-2,890</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="">
+  <td><strong>market-close</strong></td>
+  <td class="num">2544</td>
+  <td class="num">0.1980</td>
+  <td class="num neg">-5.2%</td>
+  <td class="num">1729 / 815</td>
+  <td class="num neg">$-13,250</td>
+  <td class="num">33.0%</td>
+</tr>
+
+<tr class="">
+  <td><strong>market-consensus</strong></td>
+  <td class="num">2544</td>
+  <td class="num">0.1980</td>
+  <td class="num neg">-5.2%</td>
+  <td class="num">1729 / 815</td>
+  <td class="num neg">$-13,250</td>
+  <td class="num">33.0%</td>
+</tr>
+
+<tr class="">
+  <td><strong>tennis-rank-bt</strong></td>
+  <td class="num">2545</td>
+  <td class="num">0.2228</td>
+  <td class="num neg">-1.5%</td>
+  <td class="num">1635 / 907</td>
+  <td class="num neg">$-3,716</td>
+  <td class="num">34.0%</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">MLB <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 2401 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">2401</td>
+  <td class="num">0.2453</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="">
+  <td><strong>fivethirtyeight-mlb-elo</strong></td>
+  <td class="num">2470</td>
+  <td class="num">0.2409</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">49.8%</td>
+</tr>
+
+<tr class="">
+  <td><strong>fivethirtyeight-mlb-rating</strong></td>
+  <td class="num">2470</td>
+  <td class="num">0.2387</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">50.2%</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">NBA <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 1342 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">1342</td>
+  <td class="num">0.2196</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="">
+  <td><strong>fivethirtyeight-nba-elo-modern</strong></td>
+  <td class="num">1342</td>
+  <td class="num">0.2255</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">49.3%</td>
+</tr>
+
+<tr class="">
+  <td><strong>fivethirtyeight-nba-raptor</strong></td>
+  <td class="num">1342</td>
+  <td class="num">0.2188</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">50.7%</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">NFL <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 330 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="acc-mid">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">330</td>
+  <td class="num">0.2227</td>
+  <td class="num neg">-24.0%</td>
+  <td class="num">31 / 35</td>
+  <td class="num neg">$-4,190</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="acc-bottom">
+  <td><strong>fivethirtyeight-nfl-elo</strong></td>
+  <td class="num">286</td>
+  <td class="num">0.2285</td>
+  <td class="num neg">-5.5%</td>
+  <td class="num">121 / 76</td>
+  <td class="num neg">$-1,078</td>
+  <td class="num">24.3%</td>
+</tr>
+
+<tr class="acc-mid">
+  <td><strong>fivethirtyeight-nfl-qbelo</strong></td>
+  <td class="num">286</td>
+  <td class="num">0.2234</td>
+  <td class="num neg">-7.3%</td>
+  <td class="num">122 / 75</td>
+  <td class="num neg">$-1,445</td>
+  <td class="num">23.6%</td>
+</tr>
+
+<tr class="acc-top">
+  <td><strong>market-close</strong></td>
+  <td class="num">241</td>
+  <td class="num">0.2157</td>
+  <td class="num neg">-3.2%</td>
+  <td class="num">156 / 85</td>
+  <td class="num neg">$-773</td>
+  <td class="num">26.0%</td>
+</tr>
+
+<tr class="acc-top">
+  <td><strong>market-consensus</strong></td>
+  <td class="num">241</td>
+  <td class="num">0.2157</td>
+  <td class="num neg">-3.2%</td>
+  <td class="num">156 / 85</td>
+  <td class="num neg">$-773</td>
+  <td class="num">26.0%</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">WTA <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 2254 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">2254</td>
+  <td class="num">0.2080</td>
+  <td class="num neg">-0.8%</td>
+  <td class="num">72 / 102</td>
+  <td class="num neg">$-310</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="">
+  <td><strong>market-close</strong></td>
+  <td class="num">2251</td>
+  <td class="num">0.2014</td>
+  <td class="num neg">-4.7%</td>
+  <td class="num">1526 / 725</td>
+  <td class="num neg">$-10,537</td>
+  <td class="num">34.1%</td>
+</tr>
+
+<tr class="">
+  <td><strong>market-consensus</strong></td>
+  <td class="num">2251</td>
+  <td class="num">0.2014</td>
+  <td class="num neg">-4.7%</td>
+  <td class="num">1526 / 725</td>
+  <td class="num neg">$-10,537</td>
+  <td class="num">34.1%</td>
+</tr>
+
+<tr class="">
+  <td><strong>tennis-rank-bt</strong></td>
+  <td class="num">2249</td>
+  <td class="num">0.2252</td>
+  <td class="num neg">-5.7%</td>
+  <td class="num">1423 / 823</td>
+  <td class="num neg">$-12,756</td>
+  <td class="num">31.9%</td>
+</tr>
+
+</tbody>
+</table>
+
+
+
+<h3 style="margin-top:32px">Global Pool</h3>
+<p class="lede" style="margin-top:-4px;font-size:13px">All sources, keyed by <code class="inline">&lt;sport&gt;:&lt;source&gt;</code>. The blender prefers the per-sport pool above; this table is the fallback when sport is unknown.</p>
 <table>
 <thead><tr>
   <th>Source</th>
@@ -49,95 +328,184 @@
 </tr></thead>
 <tbody>
 
-<tr>
+<tr class="acc-mid">
   <td><strong>nfl:market-close</strong></td>
-  <td class="num">541</td>
-  <td class="num">0.2100</td>
-  <td class="num pos">+2.3%</td>
-  <td class="num">374 / 167</td>
-  <td class="num pos">$+1,238</td>
-  <td class="num">12.4%</td>
+  <td class="num">241</td>
+  <td class="num">0.2157</td>
+  <td class="num neg">-3.2%</td>
+  <td class="num">156 / 85</td>
+  <td class="num neg">$-773</td>
+  <td class="num">8.9%</td>
 </tr>
 
-<tr>
+<tr class="acc-mid">
   <td><strong>nfl:market-consensus</strong></td>
-  <td class="num">541</td>
-  <td class="num">0.2100</td>
-  <td class="num pos">+2.3%</td>
-  <td class="num">374 / 167</td>
-  <td class="num pos">$+1,238</td>
-  <td class="num">12.4%</td>
+  <td class="num">241</td>
+  <td class="num">0.2157</td>
+  <td class="num neg">-3.2%</td>
+  <td class="num">156 / 85</td>
+  <td class="num neg">$-773</td>
+  <td class="num">8.9%</td>
 </tr>
 
-<tr>
+<tr class="acc-bottom">
+  <td><strong>nfl:fivethirtyeight-nfl-elo</strong></td>
+  <td class="num">286</td>
+  <td class="num">0.2285</td>
+  <td class="num neg">-5.5%</td>
+  <td class="num">121 / 76</td>
+  <td class="num neg">$-1,078</td>
+  <td class="num">8.2%</td>
+</tr>
+
+<tr class="acc-mid">
+  <td><strong>nfl:fivethirtyeight-nfl-qbelo</strong></td>
+  <td class="num">286</td>
+  <td class="num">0.2234</td>
+  <td class="num neg">-7.3%</td>
+  <td class="num">122 / 75</td>
+  <td class="num neg">$-1,445</td>
+  <td class="num">8.0%</td>
+</tr>
+
+<tr class="acc-bottom">
+  <td><strong>nba:fivethirtyeight-nba-elo-modern</strong></td>
+  <td class="num">1342</td>
+  <td class="num">0.2255</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">3.5%</td>
+</tr>
+
+<tr class="acc-mid">
+  <td><strong>nba:fivethirtyeight-nba-raptor</strong></td>
+  <td class="num">1342</td>
+  <td class="num">0.2188</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">3.6%</td>
+</tr>
+
+<tr class="acc-bottom">
+  <td><strong>mlb:fivethirtyeight-mlb-elo</strong></td>
+  <td class="num">2470</td>
+  <td class="num">0.2409</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">3.3%</td>
+</tr>
+
+<tr class="acc-bottom">
+  <td><strong>mlb:fivethirtyeight-mlb-rating</strong></td>
+  <td class="num">2470</td>
+  <td class="num">0.2387</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">3.3%</td>
+</tr>
+
+<tr class="acc-mid">
   <td><strong>atp:tennis-rank-bt</strong></td>
-  <td class="num">3104</td>
-  <td class="num">0.2245</td>
-  <td class="num neg">-3.3%</td>
-  <td class="num">1981 / 1118</td>
-  <td class="num neg">$-10,250</td>
-  <td class="num">11.7%</td>
+  <td class="num">2545</td>
+  <td class="num">0.2228</td>
+  <td class="num neg">-1.5%</td>
+  <td class="num">1635 / 907</td>
+  <td class="num neg">$-3,716</td>
+  <td class="num">9.2%</td>
 </tr>
 
-<tr>
+<tr class="acc-top">
   <td><strong>atp:market-close</strong></td>
-  <td class="num">3101</td>
-  <td class="num">0.1994</td>
-  <td class="num neg">-2.8%</td>
-  <td class="num">2124 / 977</td>
-  <td class="num neg">$-8,536</td>
-  <td class="num">13.0%</td>
+  <td class="num">2544</td>
+  <td class="num">0.1980</td>
+  <td class="num neg">-5.2%</td>
+  <td class="num">1729 / 815</td>
+  <td class="num neg">$-13,250</td>
+  <td class="num">8.7%</td>
 </tr>
 
-<tr>
+<tr class="acc-top">
   <td><strong>atp:market-consensus</strong></td>
-  <td class="num">3101</td>
-  <td class="num">0.1994</td>
-  <td class="num neg">-2.8%</td>
-  <td class="num">2124 / 977</td>
-  <td class="num neg">$-8,536</td>
-  <td class="num">13.0%</td>
+  <td class="num">2544</td>
+  <td class="num">0.1980</td>
+  <td class="num neg">-5.2%</td>
+  <td class="num">1729 / 815</td>
+  <td class="num neg">$-13,250</td>
+  <td class="num">8.7%</td>
 </tr>
 
-<tr>
+<tr class="acc-mid">
   <td><strong>wta:tennis-rank-bt</strong></td>
-  <td class="num">2870</td>
-  <td class="num">0.2247</td>
-  <td class="num neg">-4.4%</td>
-  <td class="num">1812 / 1054</td>
-  <td class="num neg">$-12,663</td>
-  <td class="num">11.7%</td>
+  <td class="num">2249</td>
+  <td class="num">0.2252</td>
+  <td class="num neg">-5.7%</td>
+  <td class="num">1423 / 823</td>
+  <td class="num neg">$-12,756</td>
+  <td class="num">8.2%</td>
 </tr>
 
-<tr>
+<tr class="acc-top">
   <td><strong>wta:market-close</strong></td>
-  <td class="num">2873</td>
-  <td class="num">0.2018</td>
-  <td class="num neg">-4.9%</td>
-  <td class="num">1935 / 938</td>
-  <td class="num neg">$-14,081</td>
-  <td class="num">12.9%</td>
+  <td class="num">2251</td>
+  <td class="num">0.2014</td>
+  <td class="num neg">-4.7%</td>
+  <td class="num">1526 / 725</td>
+  <td class="num neg">$-10,537</td>
+  <td class="num">8.8%</td>
 </tr>
 
-<tr>
+<tr class="acc-top">
   <td><strong>wta:market-consensus</strong></td>
-  <td class="num">2873</td>
-  <td class="num">0.2018</td>
-  <td class="num neg">-4.9%</td>
-  <td class="num">1935 / 938</td>
-  <td class="num neg">$-14,081</td>
-  <td class="num">12.9%</td>
+  <td class="num">2251</td>
+  <td class="num">0.2014</td>
+  <td class="num neg">-4.7%</td>
+  <td class="num">1526 / 725</td>
+  <td class="num neg">$-10,537</td>
+  <td class="num">8.8%</td>
 </tr>
 
 </tbody>
 </table>
 
-<p class="lede" style="margin-top:18px">Live sources are stubbed-out connectors that return real data when configured. Stubbed-only sources (Pinnacle, DraftKings, FanDuel page scrapes, Kalshi, FiveThirtyEight, Massey/Sagarin, KenPom, BPI) ship clean interfaces but return empty in Phase 1 — they wire in once their connectors are implemented.</p>
+<p class="lede" style="margin-top:18px">Sources with <em>n_events &lt; 50</em> are excluded from the weight pool (insufficient data) but still graded for transparency. <code class="inline">market-close</code> / <code class="inline">market-consensus</code> are devigged consensus moneylines &mdash; they are the bar every source must clear to earn weight in the blend.</p>
 
 </div>
 <footer>
-  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  Flashcat Betting &middot; Research only. Not investment or gambling advice. &middot;
   <a href="https://github.com/pstiehl/SportsBetting">source</a>
 </footer>
+<script>
+// Convert UTC timestamps to the visitor's local time. CSP-friendly: no eval, no
+// external dependencies. Falls back to the rendered UTC string for no-JS users.
+(function () {
+  function localize() {
+    var nodes = document.querySelectorAll('time[data-local="show"]');
+    var opts = {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    };
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var iso = el.getAttribute('datetime');
+      if (!iso) continue;
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) continue;
+      try {
+        el.textContent = d.toLocaleString(undefined, opts);
+        el.setAttribute('title', iso);
+      } catch (e) { /* keep UTC fallback */ }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', localize);
+  } else {
+    localize();
+  }
+})();
+</script>
 </body>
 </html>

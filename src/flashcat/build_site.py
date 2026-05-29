@@ -38,7 +38,7 @@ from .config import (
     ensure_dirs,
     stake_mode,
 )
-from .model.blend import _resolve_weights, load_weights
+from .model.blend import _resolve_weights, load_weights, weights_for_sport
 from .model.staking import StakeDecision, decide_stake
 from .site.logo import cat_face_svg, write_favicon_png, write_logo
 from .types import (
@@ -96,9 +96,84 @@ def _slugify(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "event"
 
 
+def _research_mode_state(scoreboard: dict | None = None) -> dict:
+    """Decide whether the site is LIVE BETTING or RESEARCH MODE.
+
+    A site is in research mode when:
+      * the blended backtest ROI is missing or non-positive overall, OR
+      * ANY individual sport's blended ROI is negative.
+
+    Phil's rule (2026-05-29): *"I am not putting any model on these games
+    when the model backtest is -12%."* Until every sport we expose has a
+    blended backtest ROI ≥ 0, the entire site is research-only.
+
+    Returns dict with keys: ``research_mode`` (bool), ``roi`` (float|None),
+    ``roi_str`` (str), and ``badge_label``/``badge_cls``.
+    """
+    if scoreboard is None:
+        if SOURCE_SCOREBOARD_PATH.exists():
+            try:
+                with open(SOURCE_SCOREBOARD_PATH) as f:
+                    scoreboard = json.load(f)
+            except Exception:
+                scoreboard = {}
+        else:
+            scoreboard = {}
+    sources = (scoreboard or {}).get("sources", {}) if isinstance(scoreboard, dict) else {}
+    fc = sources.get("flashcat-blended", {}) if isinstance(sources, dict) else {}
+    blended_overall = (scoreboard or {}).get("blended_overall") if isinstance(scoreboard, dict) else None
+    per_sport = (scoreboard or {}).get("per_sport") if isinstance(scoreboard, dict) else None
+    roi = None
+    if isinstance(blended_overall, dict) and blended_overall.get("roi") is not None:
+        roi = blended_overall["roi"]
+    elif isinstance(fc, dict) and fc.get("roi") is not None:
+        roi = fc["roi"]
+
+    # Aggregate research-mode triggers.
+    research = False
+    reason = None
+    if roi is None:
+        research, reason = True, "no backtest ROI available"
+    elif roi <= 0:
+        research, reason = True, f"overall ROI {roi*100:+.1f}%"
+    elif isinstance(per_sport, dict):
+        worst_sport = None
+        worst_roi = None
+        for sport, p in per_sport.items():
+            bm = (p or {}).get("blended") or {}
+            sport_roi = bm.get("roi")
+            if sport_roi is None:
+                continue
+            if worst_roi is None or sport_roi < worst_roi:
+                worst_roi = sport_roi
+                worst_sport = sport
+        if worst_roi is not None and worst_roi < 0:
+            research, reason = True, f"{worst_sport.upper()} blended ROI {worst_roi*100:+.1f}%"
+
+    roi_str = f"{roi*100:+.1f}%" if roi is not None else "n/a"
+    if research:
+        return {
+            "research_mode": True,
+            "roi": roi,
+            "roi_str": roi_str,
+            "reason": reason,
+            "badge_label": "🟡 RESEARCH MODE",
+            "badge_cls": "research",
+        }
+    return {
+        "research_mode": False,
+        "roi": roi,
+        "roi_str": roi_str,
+        "reason": None,
+        "badge_label": "🟢 LIVE BETTING",
+        "badge_cls": "live",
+    }
+
+
 def _layout(env: Environment, page_title: str, active: str, content_html: str, asset_root: str = "") -> str:
     layout = env.get_template("_layout.html")
     mode = stake_mode()
+    rm = _research_mode_state()
     return layout.render(
         page_title=page_title,
         active=active,
@@ -106,6 +181,10 @@ def _layout(env: Environment, page_title: str, active: str, content_html: str, a
         asset_root=asset_root,
         updated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         stake_mode_label=STAKE_MODE_LABELS.get(mode, mode),
+        site_status_badge_label=rm["badge_label"],
+        site_status_badge_cls=rm["badge_cls"],
+        site_status_research=rm["research_mode"],
+        site_status_roi_str=rm["roi_str"],
     )
 
 
@@ -239,10 +318,11 @@ def _american_str(price: int) -> str:
     return f"{price:+d}"
 
 
-def _build_event_page_view(ev: Event, weights: dict[str, float]) -> dict:
+def _build_event_page_view(ev: Event, weights: dict) -> dict:
     view = _event_view(ev, weights)
     src_names = [p.source for p in ev.source_probs]
-    w_norm = _resolve_weights(src_names, weights) if src_names else {}
+    sport_weights = weights_for_sport(weights, ev.sport)
+    w_norm = _resolve_weights(src_names, sport_weights) if src_names else {}
     source_rows = []
     for sp in ev.source_probs:
         source_rows.append(
@@ -353,15 +433,32 @@ def _calibration_chart(calibration: list[dict], out_path: Path) -> None:
 def render_index(env: Environment, events: list[Event], weights: dict[str, float]) -> str:
     # Render every live event, including those without a market line yet —
     # users want to see today's slate even when lines haven't published.
+    rm = _research_mode_state()
     views = [_event_view(ev, weights) for ev in events]
+    if rm["research_mode"]:
+        # Suppress stake / EV / EDGE banner. Cards still render with sources
+        # and the blended prob — Phil sees provenance, not stake recs.
+        for v in views:
+            v["is_recommended"] = False
+            v["recommended_stake"] = 0.0
+            v["recommended_stake_str"] = "Research only — backtest ROI not yet positive."
+            v["ev_at_stake"] = None
+            v["ev_at_stake_str"] = "—"
+            v["edge_str"] = "—"
+            v["edge_cls"] = ""
+            v["edge_value"] = None
     # Pickable events are the subset where we'd actually place a bet.
     pickable = [v for v in views if v["pick_label"] != "—"]
     n_signals = sum(1 for v in pickable if v["badges"])
     n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
 
     # Top recommended plays: positive recommended stake, sorted by edge desc.
-    recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
-    recs.sort(key=lambda v: v["edge_value"], reverse=True)
+    # Suppressed entirely when in research mode.
+    if rm["research_mode"]:
+        recs = []
+    else:
+        recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
+        recs.sort(key=lambda v: v["edge_value"], reverse=True)
     top_recs = recs[:5]
     total_recommended_stake = sum(v["recommended_stake"] for v in recs)
     mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
@@ -379,6 +476,8 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
         stake_mode_label=mode_label,
         bankroll_str=f"${bankroll():,.0f}",
         edge_threshold_pp=f"{edge_threshold()*100:.1f}",
+        research_mode=rm["research_mode"],
+        backtest_roi_str=rm["roi_str"],
     )
     return _layout(env, "Today's Slate", "home", content, asset_root="")
 
@@ -395,38 +494,101 @@ def render_event_pages(env: Environment, events: list[Event], weights: dict[str,
         (EVENT_PAGES_DIR / f"{view['slug']}.html").write_text(full)
 
 
-def render_sources(env: Environment, scoreboard: dict, weights: dict[str, float]) -> str:
-    rows = []
+def _accuracy_color_class(brier: float | None, all_briers: list[float]) -> str:
+    """Quartile-color a row by Brier score. Top 25% = green, mid = yellow, bottom = red."""
+    if brier is None or not all_briers:
+        return ""
+    sorted_briers = sorted(all_briers)
+    n = len(sorted_briers)
+    if n < 4:
+        return ""
+    q1 = sorted_briers[n // 4]
+    q3 = sorted_briers[(3 * n) // 4]
+    if brier <= q1:
+        return "acc-top"
+    if brier >= q3:
+        return "acc-bottom"
+    return "acc-mid"
+
+
+def _source_row(name: str, v: dict, weight: float, all_briers: list[float], *, is_model: bool = False) -> dict:
+    brier = v.get("brier")
+    roi = v.get("roi")
+    profit = v.get("profit")
+    return {
+        "source": name,
+        "is_model": is_model,
+        "n_events": v.get("n_events", 0),
+        "brier_str": f"{brier:.4f}" if brier is not None else "—",
+        "acc_cls": _accuracy_color_class(brier, all_briers),
+        "roi_str": f"{roi:+.1%}" if roi is not None else "—",
+        "roi_cls": ("pos" if (roi or 0) > 0 else "neg" if (roi or 0) < 0 else ""),
+        "wl_str": f"{v.get('wins', 0)} / {v.get('losses', 0)}",
+        "profit_str": f"${profit:+,.0f}" if profit is not None else "—",
+        "profit_cls": ("pos" if (profit or 0) > 0 else "neg" if (profit or 0) < 0 else ""),
+        "weight_str": f"{weight:.1%}" if weight else "—",
+    }
+
+
+def render_sources(env: Environment, scoreboard: dict, weights: dict) -> str:
     sources = scoreboard.get("sources", {}) if isinstance(scoreboard, dict) else {}
+    per_sport = scoreboard.get("per_sport") or {}
+    # Global pool: v2 layout puts source weights under "global".
+    global_pool = (
+        weights.get("global", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"
+        else weights
+    )
+    if not isinstance(global_pool, dict):
+        global_pool = {}
+    by_sport_pool = (
+        weights.get("by_sport", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"
+        else {}
+    )
+
+    # Global table (every source, prefixed by <sport>:<source> when multi-sport).
     if "flashcat-blended" in sources:
         keys = ["flashcat-blended"] + [k for k in sources if k != "flashcat-blended"]
     else:
         keys = list(sources.keys())
+    all_briers = [sources[k].get("brier") for k in keys if sources[k].get("brier") is not None and k != "flashcat-blended"]
+    global_rows = []
     for k in keys:
         v = sources[k]
-        brier = v.get("brier")
-        roi = v.get("roi")
-        profit = v.get("profit")
-        weight = weights.get(k, 0.0)
-        rows.append({
-            "source": k,
-            "is_model": k == "flashcat-blended",
-            "n_events": v.get("n_events", 0),
-            "brier_str": f"{brier:.4f}" if brier is not None else "—",
-            "roi_str": f"{roi:+.1%}" if roi is not None else "—",
-            "roi_cls": ("pos" if (roi or 0) > 0 else "neg" if (roi or 0) < 0 else ""),
-            "wl_str": f"{v.get('wins', 0)} / {v.get('losses', 0)}",
-            "profit_str": f"${profit:+,.0f}" if profit is not None else "—",
-            "profit_cls": ("pos" if (profit or 0) > 0 else "neg" if (profit or 0) < 0 else ""),
-            "weight_str": f"{weight:.1%}" if weight else "—",
+        weight = global_pool.get(k, 0.0) if isinstance(global_pool.get(k, 0.0), (int, float)) else 0.0
+        global_rows.append(_source_row(k, v, weight, all_briers, is_model=(k == "flashcat-blended")))
+
+    # Per-sport tables. Each sport gets its own quartile-coloring (we don't
+    # want to penalize MLB sources for having different Brier ranges than NFL).
+    per_sport_tables = []
+    for sport in sorted(per_sport.keys()):
+        p = per_sport[sport] or {}
+        srcs = p.get("sources") or {}
+        sport_pool = by_sport_pool.get(sport, {}) or {}
+        sport_briers = [v.get("brier") for v in srcs.values() if isinstance(v, dict) and v.get("brier") is not None]
+        rows = []
+        for src_name, v in sorted(srcs.items()):
+            weight = sport_pool.get(src_name, 0.0)
+            rows.append(_source_row(src_name, v, weight, sport_briers))
+        # Add the blended row at the top for context.
+        blended = p.get("blended")
+        if isinstance(blended, dict):
+            rows.insert(0, _source_row("flashcat-blended", blended, 0.0, sport_briers, is_model=True))
+        per_sport_tables.append({
+            "sport": sport,
+            "sport_upper": sport.upper(),
+            "n_events": p.get("n_events", 0),
+            "rows": rows,
         })
+
     window_obj = scoreboard.get("window", {})
     window = f"{window_obj.get('start','—')} → {window_obj.get('end','—')}"
     content = env.get_template("sources.html").render(
-        rows=rows,
-        n_sources=len([r for r in rows if r["n_events"] > 0]),
+        rows=global_rows,
+        per_sport_tables=per_sport_tables,
+        n_sources=len([r for r in global_rows if r["n_events"] > 0]),
         n_events=scoreboard.get("n_events", 0),
         window=window,
+        weight_mode=(weights.get("mode") if isinstance(weights, dict) else None) or "brier",
     )
     return _layout(env, "Source Scoreboard", "sources", content)
 

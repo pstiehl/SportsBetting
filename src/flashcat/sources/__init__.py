@@ -9,6 +9,11 @@ from .polymarket import Polymarket
 from .nflverse import NFLverseHistorical
 from .tennis_history import TennisDataHistorical
 from .nba_history import FiveThirtyEightNBAHistorical
+from .fivethirtyeight_archives import (
+    FiveThirtyEightMLBElo,
+    FiveThirtyEightNBAModern,
+    FiveThirtyEightNFLElo,
+)
 from .stubs import (
     PinnacleStub,
     DraftKingsStub,
@@ -29,6 +34,9 @@ ALL_CONNECTORS: list[type[SourceConnector]] = [
     NFLverseHistorical,
     TennisDataHistorical,
     FiveThirtyEightNBAHistorical,
+    FiveThirtyEightMLBElo,
+    FiveThirtyEightNFLElo,
+    FiveThirtyEightNBAModern,
     PinnacleStub,
     DraftKingsStub,
     FanDuelStub,
@@ -50,6 +58,9 @@ __all__ = [
     "NFLverseHistorical",
     "TennisDataHistorical",
     "FiveThirtyEightNBAHistorical",
+    "FiveThirtyEightMLBElo",
+    "FiveThirtyEightNFLElo",
+    "FiveThirtyEightNBAModern",
     "PinnacleStub",
     "DraftKingsStub",
     "FanDuelStub",
