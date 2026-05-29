@@ -1,35 +1,85 @@
 <div class="container">
 
 <h2>Today's <span class="accent">Slate</span></h2>
-<p class="lede">Live events from in-season sports. The model blends multiple publicly-available probability sources and picks the higher-blended-probability side, with a Kelly-fractional stake gated by a configurable edge threshold. Coin-flip events get skipped instead of bet — that's the difference between $100-on-everything and a research-grade ROI engine.</p>
+<p class="lede">Live events from in-season sports. The model blends multiple publicly-available probability sources and picks the higher-blended-probability side, with a Kelly-fractional stake gated by a configurable edge threshold. Coin-flip events get skipped instead of bet &mdash; that's the difference between $100-on-everything and a research-grade ROI engine.</p>
 
 <div class="kpi-row">
   <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events Today</div></div>
   <div class="kpi"><div class="num">{{ n_pickable }}</div><div class="label">With Live Odds</div></div>
-  <div class="kpi"><div class="num">{{ n_chalk }}</div><div class="label">Chalk-Overpriced</div></div>
-  <div class="kpi"><div class="num">{{ n_signals }}</div><div class="label">Active Signals</div></div>
+  <div class="kpi"><div class="num">{{ n_recommended }}</div><div class="label">Recommended Plays</div></div>
+  <div class="kpi"><div class="num">{{ total_recommended_stake_str }}</div><div class="label">Total Stake ({{ stake_mode_label }})</div></div>
 </div>
 
 {% if n_events == 0 %}
 <div class="callout"><strong>No live events for today.</strong> Either no in-season sport has matches today, or no live source returned data. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets for the daily refresh to pull moneylines.</div>
 {% elif n_pickable == 0 %}
-<div class="callout"><strong>{{ n_events }} live events but no moneylines yet.</strong> The slate is real — Roland-Garros tennis, MLB regular season, etc. — but Flashcat can't pick or stake without sportsbook lines. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets to unlock pricing.</div>
+<div class="callout"><strong>{{ n_events }} live events but no moneylines yet.</strong> The slate is real &mdash; Roland-Garros tennis, MLB regular season, etc. &mdash; but Flashcat can't pick or stake without sportsbook lines. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets to unlock pricing.</div>
 {% endif %}
+
+<div class="recommended-plays">
+  <h3>Recommended Plays Today</h3>
+  <p class="lede" style="margin-top:-4px">Bankroll {{ bankroll_str }} &middot; {{ stake_mode_label }} &middot; edge threshold {{ edge_threshold_pp }}&thinsp;pp</p>
+  {% if top_recs %}
+  <table class="recs">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Pick</th>
+        <th>Sport</th>
+        <th>Matchup</th>
+        <th class="num">Edge</th>
+        <th class="num">Price</th>
+        <th class="num">Stake</th>
+        <th class="num">EV</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in top_recs %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="event/{{ v.slug }}.html" style="color:var(--accent);font-weight:700">{{ v.pick_label }}</a></td>
+        <td>{{ v.sport_upper }}</td>
+        <td>{{ v.away }} <span class="vs">@</span> {{ v.home }}</td>
+        <td class="num {{ v.edge_cls }}">{{ v.edge_str }}</td>
+        <td class="num">{{ v.pick_price_str }}</td>
+        <td class="num">${{ "{:,.2f}".format(v.recommended_stake) }}</td>
+        <td class="num {% if v.ev_at_stake is not none and v.ev_at_stake > 0 %}pos{% endif %}">{{ v.ev_at_stake_str }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="callout"><strong>No edge plays today &mdash; model sitting out.</strong> Either no event cleared the {{ edge_threshold_pp }}&thinsp;pp edge threshold, or live odds haven't published yet.</div>
+  {% endif %}
+</div>
 
 <div class="event-grid">
   {% for ev in events %}
   <a href="event/{{ ev.slug }}.html" class="event-card" style="text-decoration:none;color:inherit">
     <div class="top">
-      <span>{{ ev.sport_upper }} · {{ ev.commence_str }}</span>
+      <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time></span>
       <span>{{ ev.n_sources }} sources</span>
     </div>
     <div class="matchup">{{ ev.away }} <span class="vs">@</span> {{ ev.home }}</div>
     {% if ev.pick_label != "—" %}
     <div class="pick">
       <span class="side">PICK: {{ ev.pick_label }}</span>
-      <span class="prob">{{ "{:.1%}".format(ev.pick_prob) }}</span>
+      <span class="prob">{{ ev.pick_price_str }}</span>
     </div>
-    <div class="stake">$100 flat · {{ ev.pick_price_str }}{% if ev.expected_profit is not none %} · model EV {{ ev.expected_profit_str }}{% endif %}</div>
+    <div class="rec-rows">
+      <div class="rec-row">
+        <span class="label">Model edge</span>
+        <span class="val {{ ev.edge_cls }}">{{ ev.edge_str }}</span>
+      </div>
+      <div class="rec-row">
+        <span class="label">Recommended stake</span>
+        <span class="val {% if ev.is_recommended %}pos{% endif %}">{{ ev.recommended_stake_str }}</span>
+      </div>
+      <div class="rec-row">
+        <span class="label">Expected value</span>
+        <span class="val {% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</span>
+      </div>
+    </div>
     <div class="probs">
       <span class="label">Blended home prob</span><span class="val">{{ "{:.1%}".format(ev.blended_home_prob) }}</span>
       <span class="label">Market implied (devig)</span><span class="val">{{ ev.market_home_str }}</span>

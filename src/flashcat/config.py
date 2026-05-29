@@ -60,6 +60,14 @@ def edge_threshold() -> float:
         return 0.03
 
 
+def bankroll() -> float:
+    """Notional bankroll for Kelly sizing on the rendered site. Default $10,000."""
+    try:
+        return float(os.getenv("FLASHCAT_BANKROLL", "10000"))
+    except Exception:
+        return 10_000.0
+
+
 class NoLiveDataError(RuntimeError):
     """Raised when no live source returned events for any in-season sport.
 

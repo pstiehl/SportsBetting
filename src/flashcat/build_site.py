@@ -33,9 +33,13 @@ from .config import (
     FLAT_STAKE,
     SOURCE_SCOREBOARD_PATH,
     SOURCE_WEIGHTS_PATH,
+    bankroll,
+    edge_threshold,
     ensure_dirs,
+    stake_mode,
 )
 from .model.blend import _resolve_weights, load_weights
+from .model.staking import StakeDecision, decide_stake
 from .site.logo import cat_face_svg, write_favicon_png, write_logo
 from .types import (
     BookLine,
@@ -45,6 +49,22 @@ from .types import (
     american_to_profit,
     devig_two_way,
 )
+
+STAKE_MODE_LABELS = {
+    "flat": "flat",
+    "kelly_quarter": "¼ Kelly",
+    "kelly_half": "½ Kelly",
+    "kelly_full": "full Kelly",
+}
+
+SKIP_REASON_LABELS = {
+    "no_market_price": "No live price",
+    "no_market_devig": "No two-way market",
+    "within_no_bet_band": "Coin flip — no bet",
+    "edge_below_threshold": "Edge below threshold — NO BET",
+    "kelly_non_positive": "Kelly non-positive — NO BET",
+    "degenerate_odds": "Degenerate odds",
+}
 
 log = logging.getLogger(__name__)
 
@@ -78,12 +98,14 @@ def _slugify(s: str) -> str:
 
 def _layout(env: Environment, page_title: str, active: str, content_html: str, asset_root: str = "") -> str:
     layout = env.get_template("_layout.html")
+    mode = stake_mode()
     return layout.render(
         page_title=page_title,
         active=active,
         content=content_html,
         asset_root=asset_root,
         updated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        stake_mode_label=STAKE_MODE_LABELS.get(mode, mode),
     )
 
 
@@ -122,29 +144,89 @@ def _pick_price(ev: Event) -> int | None:
     return int(round(sum(prices) / len(prices)))
 
 
-def _expected_profit(ev: Event, price: int | None) -> float | None:
-    if price is None or ev.pick_prob is None:
+def _expected_profit_at_stake(price: int | None, win_prob: float | None, stake: float) -> float | None:
+    if price is None or win_prob is None or stake <= 0:
         return None
-    win_profit = american_to_profit(price, FLAT_STAKE)
-    return ev.pick_prob * win_profit - (1 - ev.pick_prob) * FLAT_STAKE
+    win_profit = american_to_profit(price, stake)
+    return win_prob * win_profit - (1 - win_prob) * stake
+
+
+def _stake_decision_for(ev: Event) -> StakeDecision | None:
+    """Run the live staking decision for an event, if the model picked a side."""
+    if ev.pick is None or ev.pick_prob is None:
+        return None
+    if not ev.lines:
+        return None
+    return decide_stake(
+        ev,
+        ev.pick,
+        ev.pick_prob,
+        mode=stake_mode(),
+        bankroll=bankroll(),
+        edge_threshold=edge_threshold(),
+    )
 
 
 def _event_view(ev: Event, weights: dict[str, float]) -> dict:
     market_p = _market_devigged_home_prob(ev)
     price = _pick_price(ev)
-    ep = _expected_profit(ev, price)
     badges = _badge_blocks(ev.signals)
+
+    decision = _stake_decision_for(ev)
+    bk = bankroll()
+    mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
+    threshold_pp = edge_threshold() * 100
+
+    if decision is None:
+        stake_value = 0.0
+        edge_value: float | None = None
+        edge_str = "—"
+        edge_cls = ""
+        recommended_stake_str = "NO BET — no market"
+        ev_at_stake_str = "—"
+        ev_at_stake: float | None = None
+        is_recommended = False
+    else:
+        stake_value = float(decision.stake)
+        edge_value = decision.edge
+        edge_pp = decision.edge * 100
+        edge_str = f"{edge_pp:+.1f} pp"
+        edge_cls = "pos" if decision.edge > 0 else ("neg" if decision.edge < 0 else "")
+        if stake_value > 0:
+            pct = (stake_value / bk * 100) if bk > 0 else 0
+            recommended_stake_str = (
+                f"${stake_value:,.2f} ({mode_label}, {pct:.1f}% bankroll)"
+            )
+        else:
+            reason = decision.skipped_reason or "edge_below_threshold"
+            label = SKIP_REASON_LABELS.get(reason, "NO BET")
+            if reason == "edge_below_threshold":
+                label = f"NO BET — edge below {threshold_pp:.0f}pp"
+            recommended_stake_str = label
+        ev_at_stake = _expected_profit_at_stake(price, ev.pick_prob, stake_value) if stake_value > 0 else None
+        ev_at_stake_str = f"${ev_at_stake:+,.2f}" if ev_at_stake is not None else "—"
+        is_recommended = stake_value > 0
+
     return {
         "raw": ev,
         "slug": _slugify(f"{ev.commence_time.strftime('%Y-%m-%d')}-{ev.away}-at-{ev.home}-{ev.event_id[-6:]}"),
         "sport_upper": ev.sport.upper(),
+        "sport": ev.sport,
         "commence_str": ev.commence_time.strftime("%a %b %d · %H:%M UTC"),
+        "commence_iso": ev.commence_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "n_sources": len(ev.source_probs),
         "pick_label": (ev.home if ev.pick == "home" else ev.away).upper() if ev.pick else "—",
         "pick_prob": ev.pick_prob or 0.0,
         "pick_price_str": _american_str(price) if price is not None else "—",
-        "expected_profit": ep,
-        "expected_profit_str": f"${ep:+.0f}" if ep is not None else "—",
+        "pick_price": price,
+        "edge_value": edge_value,
+        "edge_str": edge_str,
+        "edge_cls": edge_cls,
+        "recommended_stake": stake_value,
+        "recommended_stake_str": recommended_stake_str,
+        "ev_at_stake": ev_at_stake,
+        "ev_at_stake_str": ev_at_stake_str,
+        "is_recommended": is_recommended,
         "blended_home_prob": ev.blended_home_prob or 0.0,
         "market_home_str": f"{market_p:.1%}" if market_p is not None else "—",
         "badges": badges,
@@ -276,13 +358,27 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
     pickable = [v for v in views if v["pick_label"] != "—"]
     n_signals = sum(1 for v in pickable if v["badges"])
     n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
+
+    # Top recommended plays: positive recommended stake, sorted by edge desc.
+    recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
+    recs.sort(key=lambda v: v["edge_value"], reverse=True)
+    top_recs = recs[:5]
+    total_recommended_stake = sum(v["recommended_stake"] for v in recs)
+    mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
+
     content = env.get_template("index.html").render(
         events=views,
         n_events=len(views),
         n_pickable=len(pickable),
-        total_wagered=len(pickable) * FLAT_STAKE,
+        n_recommended=len(recs),
+        total_wagered=total_recommended_stake or len(pickable) * FLAT_STAKE,
+        total_recommended_stake_str=f"${total_recommended_stake:,.2f}",
         n_signals=n_signals,
         n_chalk=n_chalk,
+        top_recs=top_recs,
+        stake_mode_label=mode_label,
+        bankroll_str=f"${bankroll():,.0f}",
+        edge_threshold_pp=f"{edge_threshold()*100:.1f}",
     )
     return _layout(env, "Today's Slate", "home", content, asset_root="")
 

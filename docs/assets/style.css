@@ -143,3 +143,26 @@ footer {
 }
 
 img.chart { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); background: var(--card); }
+
+/* Recommended plays panel + edge-aware card rows */
+.recommended-plays { margin: 28px 0; }
+.recommended-plays h3 { margin: 0 0 4px 0; font-size: 18px; color: var(--accent); }
+.recommended-plays table.recs { margin-top: 10px; }
+.recommended-plays table.recs td.pos { color: var(--green); }
+.recommended-plays table.recs td.neg { color: var(--red); }
+.recommended-plays .vs { color: var(--muted); padding: 0 4px; }
+
+.event-card .rec-rows {
+  display: flex; flex-direction: column; gap: 4px;
+  margin: 8px 0; padding: 8px 10px; background: var(--card-2);
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 12px;
+}
+.event-card .rec-row { display: flex; justify-content: space-between; align-items: baseline; }
+.event-card .rec-row .label { color: var(--muted); }
+.event-card .rec-row .val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
+.event-card .rec-row .val.pos { color: var(--green); }
+.event-card .rec-row .val.neg { color: var(--red); }
+span.pos { color: var(--green); }
+span.neg { color: var(--red); }
+strong.pos { color: var(--green); }

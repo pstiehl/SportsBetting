@@ -1,13 +1,19 @@
 <div class="container narrow">
 
 <h2>{{ ev.away }} <span style="color:var(--muted);font-weight:500">@</span> {{ ev.home }}</h2>
-<p class="lede">{{ ev.sport_upper }} · {{ ev.commence_str }}</p>
+<p class="lede">{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time></p>
 
 <div class="kpi-row">
   <div class="kpi"><div class="num">{{ ev.pick_label }}</div><div class="label">Model Pick</div></div>
   <div class="kpi"><div class="num">{{ "{:.1%}".format(ev.pick_prob) }}</div><div class="label">Blended Prob (Pick)</div></div>
-  <div class="kpi"><div class="num">$100</div><div class="label">Stake (Flat)</div></div>
+  <div class="kpi"><div class="num"><span class="{{ ev.edge_cls }}">{{ ev.edge_str }}</span></div><div class="label">Model Edge</div></div>
   <div class="kpi"><div class="num">{{ ev.pick_price_str }}</div><div class="label">Avg Book Price</div></div>
+</div>
+
+<div class="card">
+  <h3>Recommended bet</h3>
+  <p style="font-size:18px;margin:6px 0"><strong>{{ ev.recommended_stake_str }}</strong></p>
+  <p class="lede" style="margin:0">Expected value at recommended stake: <strong class="{% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</strong></p>
 </div>
 
 {% if ev.badges %}
