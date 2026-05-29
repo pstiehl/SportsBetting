@@ -50,7 +50,7 @@ jobs:
         env:
           # Optional. If unset, the OddsAPI source falls back to the
           # committed sample data — site still publishes, just not fresh.
-          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          THE_ODDS_API_KEY: ${{ secrets.API }}
         run: |
           python -m flashcat all
 
