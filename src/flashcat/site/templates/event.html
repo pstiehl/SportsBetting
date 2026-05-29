@@ -1,0 +1,46 @@
+<div class="container narrow">
+
+<h2>{{ ev.away }} <span style="color:var(--muted);font-weight:500">@</span> {{ ev.home }}</h2>
+<p class="lede">{{ ev.sport_upper }} · {{ ev.commence_str }}</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">{{ ev.pick_label }}</div><div class="label">Model Pick</div></div>
+  <div class="kpi"><div class="num">{{ "{:.1%}".format(ev.pick_prob) }}</div><div class="label">Blended Prob (Pick)</div></div>
+  <div class="kpi"><div class="num">$100</div><div class="label">Stake (Flat)</div></div>
+  <div class="kpi"><div class="num">{{ ev.pick_price_str }}</div><div class="label">Avg Book Price</div></div>
+</div>
+
+{% if ev.badges %}
+<div class="card">
+  <h3>Active signals</h3>
+  <div class="badges">{% for badge in ev.badges %}<span class="badge {{ badge.cls }}">{{ badge.label }}</span>{% endfor %}</div>
+  <p class="lede" style="margin-top:14px">{{ ev.signal_explanation }}</p>
+</div>
+{% endif %}
+
+<h3>Per-source probabilities (home win)</h3>
+<table>
+  <thead><tr><th>Source</th><th class="num">P(home wins)</th><th class="num">Weight</th><th>Captured</th></tr></thead>
+  <tbody>
+  {% for row in ev.source_rows %}
+  <tr><td>{{ row.source }}</td><td class="num">{{ "{:.1%}".format(row.prob) }}</td><td class="num">{{ "{:.1%}".format(row.weight) }}</td><td>{{ row.captured }}</td></tr>
+  {% endfor %}
+  <tr style="font-weight:700"><td>Blended</td><td class="num">{{ "{:.1%}".format(ev.blended_home_prob) }}</td><td class="num">—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+{% if ev.lines %}
+<h3>Lines across books</h3>
+<table>
+  <thead><tr><th>Book</th><th>Side</th><th class="num">American</th><th class="num">Implied</th><th>Type</th></tr></thead>
+  <tbody>
+  {% for ln in ev.lines %}
+  <tr><td>{{ ln.book }}</td><td>{{ ln.side_label }}</td><td class="num">{{ ln.american_str }}</td><td class="num">{{ "{:.1%}".format(ln.implied) }}</td><td>{{ ln.kind }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p style="margin-top:24px"><a href="../index.html">← back to slate</a></p>
+
+</div>

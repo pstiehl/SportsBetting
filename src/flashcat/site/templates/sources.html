@@ -1,0 +1,39 @@
+<div class="container">
+
+<h2>Source <span class="accent">Scoreboard</span></h2>
+<p class="lede">Every source that contributes a probability gets graded on every historical event in the backtest window. Brier score measures calibration (lower is better, 0 = perfect). ROI is profit ÷ wagered on $100-flat bets. Weights are derived from <code class="inline">softmax(−Brier)</code> and refresh every backtest run.</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">{{ n_sources }}</div><div class="label">Live Sources</div></div>
+  <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events Graded</div></div>
+  <div class="kpi"><div class="num">{{ window }}</div><div class="label">Backtest Window</div></div>
+</div>
+
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Current Weight</th>
+</tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+  <td><strong>{{ row.source }}</strong>{% if row.is_model %} <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span>{% endif %}</td>
+  <td class="num">{{ row.n_events }}</td>
+  <td class="num">{{ row.brier_str }}</td>
+  <td class="num {{ row.roi_cls }}">{{ row.roi_str }}</td>
+  <td class="num">{{ row.wl_str }}</td>
+  <td class="num {{ row.profit_cls }}">{{ row.profit_str }}</td>
+  <td class="num">{{ row.weight_str }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<p class="lede" style="margin-top:18px">Live sources are stubbed-out connectors that return real data when configured. Stubbed-only sources (Pinnacle, DraftKings, FanDuel page scrapes, Kalshi, FiveThirtyEight, Massey/Sagarin, KenPom, BPI) ship clean interfaces but return empty in Phase 1 — they wire in once their connectors are implemented.</p>
+
+</div>
