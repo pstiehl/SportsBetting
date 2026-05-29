@@ -15,7 +15,10 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">$100 flat · probability-blended · 2026-05-29 17:46 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-29 22:22 UTC</div>
+        
+        <div class="site-status research" title="Blended backtest ROI: -6.7%">🟡 RESEARCH MODE &middot; backtest ROI -6.7%</div>
+        
       </div>
     </div>
     <nav>
@@ -30,7 +33,7 @@
 
 <h2>Backtest</h2>
 <p class="lede">
-  Multi-sport backtest over 2023-09-01 → 2024-12-31. The blended Flashcat model is graded
+  Multi-sport backtest over 2022-01-01 → 2022-12-31. The blended Flashcat model is graded
   with the configured staking rule, currently
   <code class="inline">kelly_quarter</code>
   with an edge-threshold of
@@ -40,10 +43,10 @@
 </p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">6524</div><div class="label">Events graded</div></div>
-  <div class="kpi"><div class="num pos">+1.6%</div><div class="label">Blended ROI</div></div>
+  <div class="kpi"><div class="num">8874</div><div class="label">Events graded</div></div>
+  <div class="kpi"><div class="num neg">-6.7%</div><div class="label">Blended ROI</div></div>
   <div class="kpi"><div class="num">—</div><div class="label">Blended Brier ↓</div></div>
-  <div class="kpi"><div class="num pos">$+2,112</div><div class="label">Total Profit</div></div>
+  <div class="kpi"><div class="num neg">$-7,390</div><div class="label">Total Profit</div></div>
 </div>
 
 
@@ -55,7 +58,16 @@
 
 <tr>
   <td><strong>NFL</strong></td>
-  <td class="num">541</td>
+  <td class="num">330</td>
+  <td class="num">66</td>
+  <td class="num">$17,493</td>
+  <td class="num">$-4,190</td>
+  <td class="num neg">-23.95%</td>
+</tr>
+
+<tr>
+  <td><strong>NBA</strong></td>
+  <td class="num">1342</td>
   <td class="num">0</td>
   <td class="num">$0</td>
   <td class="num">$+0</td>
@@ -63,30 +75,30 @@
 </tr>
 
 <tr>
-  <td><strong>NBA</strong></td>
+  <td><strong>MLB</strong></td>
+  <td class="num">2401</td>
   <td class="num">0</td>
-  <td class="num">0</td>
-  <td class="num">—</td>
-  <td class="num">—</td>
+  <td class="num">$0</td>
+  <td class="num">$+0</td>
   <td class="num ">—</td>
 </tr>
 
 <tr>
   <td><strong>ATP</strong></td>
-  <td class="num">3106</td>
-  <td class="num">322</td>
-  <td class="num">$70,361</td>
-  <td class="num">$-6,754</td>
-  <td class="num neg">-9.60%</td>
+  <td class="num">2547</td>
+  <td class="num">240</td>
+  <td class="num">$54,334</td>
+  <td class="num">$-2,890</td>
+  <td class="num neg">-5.32%</td>
 </tr>
 
 <tr>
   <td><strong>WTA</strong></td>
-  <td class="num">2877</td>
-  <td class="num">305</td>
-  <td class="num">$65,888</td>
-  <td class="num">$+8,866</td>
-  <td class="num pos">+13.46%</td>
+  <td class="num">2254</td>
+  <td class="num">174</td>
+  <td class="num">$38,818</td>
+  <td class="num">$-310</td>
+  <td class="num neg">-0.80%</td>
 </tr>
 
 </tbody>
@@ -104,8 +116,37 @@
 
 </div>
 <footer>
-  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  Flashcat Betting &middot; Research only. Not investment or gambling advice. &middot;
   <a href="https://github.com/pstiehl/SportsBetting">source</a>
 </footer>
+<script>
+// Convert UTC timestamps to the visitor's local time. CSP-friendly: no eval, no
+// external dependencies. Falls back to the rendered UTC string for no-JS users.
+(function () {
+  function localize() {
+    var nodes = document.querySelectorAll('time[data-local="show"]');
+    var opts = {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    };
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var iso = el.getAttribute('datetime');
+      if (!iso) continue;
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) continue;
+      try {
+        el.textContent = d.toLocaleString(undefined, opts);
+        el.setAttribute('title', iso);
+      } catch (e) { /* keep UTC fallback */ }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', localize);
+  } else {
+    localize();
+  }
+})();
+</script>
 </body>
 </html>
