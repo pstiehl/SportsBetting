@@ -83,6 +83,9 @@ def build(
         except Exception as e:  # noqa: BLE001
             log.warning("  %s failed: %s", c.name, e)
     events = _merge_events(*all_lists)
+    # If an event has no source probs but does have lines, synthesize a market-close source prob.
+    from .backtest.runner import _attach_market_source_prob
+    _attach_market_source_prob(events)
     weights = load_weights()
     blended = blend_events(events, weights)
     for ev in blended:
@@ -113,6 +116,8 @@ def backtest(
 def reweight() -> None:
     """Update source weights from the latest scoreboard."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    ensure_dirs()
+    init_db()
     new = update_weights_fn()
     if not new:
         log.info("No eligible sources for reweighting (need ≥ 20 events).")

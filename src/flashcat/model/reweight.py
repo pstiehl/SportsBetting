@@ -37,9 +37,15 @@ def update_weights(
         return {}
     with open(sp) as f:
         scoreboard = json.load(f)
+    # New scoreboard format wraps sources under a 'sources' key.
+    sources = scoreboard.get("sources", scoreboard) if isinstance(scoreboard, dict) else {}
     # Negative Brier → higher is better. We softmax that.
     neg_brier: dict[str, float] = {}
-    for source, row in scoreboard.items():
+    for source, row in sources.items():
+        if source == "flashcat-blended":
+            continue  # don't reweight the model itself into its own inputs
+        if not isinstance(row, dict):
+            continue
         n = int(row.get("n_events", 0))
         b = row.get("brier")
         if b is None or n < min_events:
