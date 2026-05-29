@@ -1,7 +1,9 @@
 """Source connectors. Each connector is a SourceConnector subclass."""
 
 from .base import SourceConnector
+from .bovada import Bovada
 from .espn import ESPNScoreboard
+from .fanduel import FanDuel
 from .odds_api import TheOddsAPI
 from .polymarket import Polymarket
 from .nflverse import NFLverseHistorical
@@ -20,6 +22,8 @@ from .stubs import (
 
 ALL_CONNECTORS: list[type[SourceConnector]] = [
     TheOddsAPI,
+    Bovada,
+    FanDuel,
     ESPNScoreboard,
     Polymarket,
     NFLverseHistorical,
@@ -39,6 +43,8 @@ __all__ = [
     "SourceConnector",
     "ALL_CONNECTORS",
     "TheOddsAPI",
+    "Bovada",
+    "FanDuel",
     "ESPNScoreboard",
     "Polymarket",
     "NFLverseHistorical",
