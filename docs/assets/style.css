@@ -184,3 +184,15 @@ strong.pos { color: var(--green); }
   background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b;
   color: #d97706; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
 }
+
+/* Accuracy quartile row tinting on the source scoreboard. */
+tr.acc-top    td:first-child { border-left: 3px solid #22c55e; }
+tr.acc-mid    td:first-child { border-left: 3px solid #f59e0b; }
+tr.acc-bottom td:first-child { border-left: 3px solid #ef4444; }
+.inline-chip {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.inline-chip.acc-top { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+.inline-chip.acc-mid { background: rgba(245, 158, 11, 0.16); color: #f59e0b; }
+.inline-chip.acc-bottom { background: rgba(239, 68, 68, 0.16); color: #ef4444; }

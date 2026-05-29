@@ -494,45 +494,101 @@ def render_event_pages(env: Environment, events: list[Event], weights: dict[str,
         (EVENT_PAGES_DIR / f"{view['slug']}.html").write_text(full)
 
 
+def _accuracy_color_class(brier: float | None, all_briers: list[float]) -> str:
+    """Quartile-color a row by Brier score. Top 25% = green, mid = yellow, bottom = red."""
+    if brier is None or not all_briers:
+        return ""
+    sorted_briers = sorted(all_briers)
+    n = len(sorted_briers)
+    if n < 4:
+        return ""
+    q1 = sorted_briers[n // 4]
+    q3 = sorted_briers[(3 * n) // 4]
+    if brier <= q1:
+        return "acc-top"
+    if brier >= q3:
+        return "acc-bottom"
+    return "acc-mid"
+
+
+def _source_row(name: str, v: dict, weight: float, all_briers: list[float], *, is_model: bool = False) -> dict:
+    brier = v.get("brier")
+    roi = v.get("roi")
+    profit = v.get("profit")
+    return {
+        "source": name,
+        "is_model": is_model,
+        "n_events": v.get("n_events", 0),
+        "brier_str": f"{brier:.4f}" if brier is not None else "—",
+        "acc_cls": _accuracy_color_class(brier, all_briers),
+        "roi_str": f"{roi:+.1%}" if roi is not None else "—",
+        "roi_cls": ("pos" if (roi or 0) > 0 else "neg" if (roi or 0) < 0 else ""),
+        "wl_str": f"{v.get('wins', 0)} / {v.get('losses', 0)}",
+        "profit_str": f"${profit:+,.0f}" if profit is not None else "—",
+        "profit_cls": ("pos" if (profit or 0) > 0 else "neg" if (profit or 0) < 0 else ""),
+        "weight_str": f"{weight:.1%}" if weight else "—",
+    }
+
+
 def render_sources(env: Environment, scoreboard: dict, weights: dict) -> str:
-    rows = []
     sources = scoreboard.get("sources", {}) if isinstance(scoreboard, dict) else {}
-    if "flashcat-blended" in sources:
-        keys = ["flashcat-blended"] + [k for k in sources if k != "flashcat-blended"]
-    else:
-        keys = list(sources.keys())
-    # Flat key into the global weight pool. v2 weights live under "global".
+    per_sport = scoreboard.get("per_sport") or {}
+    # Global pool: v2 layout puts source weights under "global".
     global_pool = (
         weights.get("global", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"
         else weights
     )
     if not isinstance(global_pool, dict):
         global_pool = {}
+    by_sport_pool = (
+        weights.get("by_sport", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"
+        else {}
+    )
+
+    # Global table (every source, prefixed by <sport>:<source> when multi-sport).
+    if "flashcat-blended" in sources:
+        keys = ["flashcat-blended"] + [k for k in sources if k != "flashcat-blended"]
+    else:
+        keys = list(sources.keys())
+    all_briers = [sources[k].get("brier") for k in keys if sources[k].get("brier") is not None and k != "flashcat-blended"]
+    global_rows = []
     for k in keys:
         v = sources[k]
-        brier = v.get("brier")
-        roi = v.get("roi")
-        profit = v.get("profit")
         weight = global_pool.get(k, 0.0) if isinstance(global_pool.get(k, 0.0), (int, float)) else 0.0
-        rows.append({
-            "source": k,
-            "is_model": k == "flashcat-blended",
-            "n_events": v.get("n_events", 0),
-            "brier_str": f"{brier:.4f}" if brier is not None else "—",
-            "roi_str": f"{roi:+.1%}" if roi is not None else "—",
-            "roi_cls": ("pos" if (roi or 0) > 0 else "neg" if (roi or 0) < 0 else ""),
-            "wl_str": f"{v.get('wins', 0)} / {v.get('losses', 0)}",
-            "profit_str": f"${profit:+,.0f}" if profit is not None else "—",
-            "profit_cls": ("pos" if (profit or 0) > 0 else "neg" if (profit or 0) < 0 else ""),
-            "weight_str": f"{weight:.1%}" if weight else "—",
+        global_rows.append(_source_row(k, v, weight, all_briers, is_model=(k == "flashcat-blended")))
+
+    # Per-sport tables. Each sport gets its own quartile-coloring (we don't
+    # want to penalize MLB sources for having different Brier ranges than NFL).
+    per_sport_tables = []
+    for sport in sorted(per_sport.keys()):
+        p = per_sport[sport] or {}
+        srcs = p.get("sources") or {}
+        sport_pool = by_sport_pool.get(sport, {}) or {}
+        sport_briers = [v.get("brier") for v in srcs.values() if isinstance(v, dict) and v.get("brier") is not None]
+        rows = []
+        for src_name, v in sorted(srcs.items()):
+            weight = sport_pool.get(src_name, 0.0)
+            rows.append(_source_row(src_name, v, weight, sport_briers))
+        # Add the blended row at the top for context.
+        blended = p.get("blended")
+        if isinstance(blended, dict):
+            rows.insert(0, _source_row("flashcat-blended", blended, 0.0, sport_briers, is_model=True))
+        per_sport_tables.append({
+            "sport": sport,
+            "sport_upper": sport.upper(),
+            "n_events": p.get("n_events", 0),
+            "rows": rows,
         })
+
     window_obj = scoreboard.get("window", {})
     window = f"{window_obj.get('start','—')} → {window_obj.get('end','—')}"
     content = env.get_template("sources.html").render(
-        rows=rows,
-        n_sources=len([r for r in rows if r["n_events"] > 0]),
+        rows=global_rows,
+        per_sport_tables=per_sport_tables,
+        n_sources=len([r for r in global_rows if r["n_events"] > 0]),
         n_events=scoreboard.get("n_events", 0),
         window=window,
+        weight_mode=(weights.get("mode") if isinstance(weights, dict) else None) or "brier",
     )
     return _layout(env, "Source Scoreboard", "sources", content)
 
