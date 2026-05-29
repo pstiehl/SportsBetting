@@ -27,6 +27,11 @@ from ..signals.sharp import detect as detect_sharp
 from ..sources.nflverse import NFLverseHistorical
 from ..sources.tennis_history import TennisDataHistorical
 from ..sources.nba_history import FiveThirtyEightNBAHistorical
+from ..sources.fivethirtyeight_archives import (
+    FiveThirtyEightMLBElo,
+    FiveThirtyEightNBAModern,
+    FiveThirtyEightNFLElo,
+)
 from ..types import (
     Event,
     HistoricalResult,
@@ -39,12 +44,19 @@ from .grader import brier_score, build_scoreboard, simulate_bet, _book_avg_price
 
 log = logging.getLogger(__name__)
 
-SPORT_LOADERS = {
-    "nfl": NFLverseHistorical,
-    "atp": lambda: TennisDataHistorical(tour="atp"),
-    "wta": lambda: TennisDataHistorical(tour="wta"),
-    "nba": FiveThirtyEightNBAHistorical,
+# Per-sport list of historical connectors. Each backtested sport may have
+# multiple connectors; we merge their events on (date, home, away).
+SPORT_LOADERS: dict[str, list] = {
+    "nfl": [NFLverseHistorical, FiveThirtyEightNFLElo],
+    "atp": [lambda: TennisDataHistorical(tour="atp")],
+    "wta": [lambda: TennisDataHistorical(tour="wta")],
+    "nba": [FiveThirtyEightNBAHistorical, FiveThirtyEightNBAModern],
+    "mlb": [FiveThirtyEightMLBElo],
 }
+
+
+def _normalize_team(name: str) -> str:
+    return (name or "").lower().replace(".", "").strip()
 
 
 def _attach_market_source_prob(events: list[Event]) -> None:
@@ -85,17 +97,93 @@ def _attach_market_source_prob(events: list[Event]) -> None:
 
 
 def _load_for_sport(sport: str, start: date, end: date) -> tuple[list[Event], list[HistoricalResult]]:
-    if sport not in SPORT_LOADERS:
+    """Load historical events + results for one sport from every wired connector.
+
+    Events from multiple connectors are merged on a (date, sorted-team-pair)
+    key so the blender sees one Event per game with N source_probs attached.
+    """
+    loaders = SPORT_LOADERS.get(sport, [])
+    if not loaders:
         log.warning("no historical loader for sport=%s — skipping", sport)
         return [], []
-    loader_cls = SPORT_LOADERS[sport]
-    loader = loader_cls() if callable(loader_cls) else loader_cls
-    events = loader.fetch_events(start, end, sport=sport)  # type: ignore[arg-type]
-    if hasattr(loader, "load_results"):
-        results = loader.load_results(start, end)
-    else:
-        results = []
-    return events, results
+
+    merged_events: dict[tuple, Event] = {}
+    merged_results: dict[str, HistoricalResult] = {}
+
+    for loader_factory in loaders:
+        try:
+            loader = loader_factory() if callable(loader_factory) else loader_factory
+            ev_list = loader.fetch_events(start, end, sport=sport)  # type: ignore[arg-type]
+        except Exception as e:  # noqa: BLE001
+            log.warning("%s loader fetch_events failed: %s", sport, e)
+            ev_list = []
+        try:
+            res_list = loader.load_results(start, end) if hasattr(loader, "load_results") else []
+        except Exception as e:  # noqa: BLE001
+            log.warning("%s loader load_results failed: %s", sport, e)
+            res_list = []
+
+        for ev in ev_list:
+            key = _merge_key(ev)
+            if key in merged_events:
+                target = merged_events[key]
+                target.source_probs.extend(ev.source_probs)
+                target.lines.extend(ev.lines)
+            else:
+                merged_events[key] = ev
+
+        # Map results onto the merged event_ids (use whichever loader
+        # produced the first event for the matchup).
+        for res in res_list:
+            key = (
+                res.commence_time.date().isoformat(),
+                *sorted([_normalize_team(res.home), _normalize_team(res.away)]),
+            )
+            ev = merged_events.get(key)
+            if ev is None:
+                # Result without an event — keep with its original id.
+                merged_results.setdefault(res.event_id, res)
+                continue
+            # Re-key the result to the merged event's id, but only if the
+            # result corresponds to the same home/away orientation.
+            same_home = _normalize_team(res.home) == _normalize_team(ev.home)
+            if same_home:
+                merged_results.setdefault(
+                    ev.event_id,
+                    HistoricalResult(
+                        event_id=ev.event_id,
+                        sport=res.sport,
+                        home=ev.home,
+                        away=ev.away,
+                        commence_time=res.commence_time,
+                        home_won=res.home_won,
+                        home_score=res.home_score,
+                        away_score=res.away_score,
+                    ),
+                )
+            else:
+                merged_results.setdefault(
+                    ev.event_id,
+                    HistoricalResult(
+                        event_id=ev.event_id,
+                        sport=res.sport,
+                        home=ev.home,
+                        away=ev.away,
+                        commence_time=res.commence_time,
+                        home_won=not res.home_won,
+                        home_score=res.away_score,
+                        away_score=res.home_score,
+                    ),
+                )
+
+    return list(merged_events.values()), list(merged_results.values())
+
+
+def _merge_key(ev: Event) -> tuple:
+    return (
+        ev.commence_time.date().isoformat(),
+        *sorted([_normalize_team(ev.home), _normalize_team(ev.away)]),
+    )
 
 
 def run_backtest(
@@ -156,7 +244,7 @@ def run_multi_sport_backtest(
     The top-level ``sources`` block is keyed by ``"<sport>:<source>"`` so the
     site can show per-sport ROI per source.
     """
-    sports = sports or ["nfl", "nba", "atp", "wta"]
+    sports = sports or ["nfl", "nba", "mlb", "atp", "wta"]
     log.info("Multi-sport backtest %s — %s, sports=%s", start, end, sports)
 
     weights = load_weights()
