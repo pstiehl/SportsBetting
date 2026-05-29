@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 
 Side = Literal["home", "away"]
 
-SPORTS = ("nfl", "nba", "mlb", "nhl", "cfb", "cbb")
-Sport = Literal["nfl", "nba", "mlb", "nhl", "cfb", "cbb"]
+SPORTS = ("nfl", "nba", "mlb", "nhl", "cfb", "cbb", "atp", "wta")
+Sport = Literal["nfl", "nba", "mlb", "nhl", "cfb", "cbb", "atp", "wta"]
 
 
 class BookLine(BaseModel):

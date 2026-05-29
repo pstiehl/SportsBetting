@@ -30,6 +30,8 @@ SPORT_HINTS: dict[Sport, list[str]] = {
     "nhl": ["nhl", "hockey"],
     "cfb": ["college football", "ncaaf"],
     "cbb": ["college basketball", "ncaab", "march madness"],
+    "atp": ["atp ", "french open", "roland garros", "wimbledon", "us open tennis", "australian open"],
+    "wta": ["wta "],
 }
 
 

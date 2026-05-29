@@ -15,7 +15,7 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">$100 flat · probability-blended · 2026-05-29 16:54 UTC</div>
+        <div class="meta">$100 flat · probability-blended · 2026-05-29 17:46 UTC</div>
       </div>
     </div>
     <nav>
@@ -32,9 +32,9 @@
 <p class="lede">Every source that contributes a probability gets graded on every historical event in the backtest window. Brier score measures calibration (lower is better, 0 = perfect). ROI is profit ÷ wagered on $100-flat bets. Weights are derived from <code class="inline">softmax(−Brier)</code> and refresh every backtest run.</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">3</div><div class="label">Live Sources</div></div>
-  <div class="kpi"><div class="num">285</div><div class="label">Events Graded</div></div>
-  <div class="kpi"><div class="num">2023-09-01 → 2024-02-15</div><div class="label">Backtest Window</div></div>
+  <div class="kpi"><div class="num">8</div><div class="label">Live Sources</div></div>
+  <div class="kpi"><div class="num">6524</div><div class="label">Events Graded</div></div>
+  <div class="kpi"><div class="num">2023-09-01 → 2024-12-31</div><div class="label">Backtest Window</div></div>
 </div>
 
 <table>
@@ -50,33 +50,83 @@
 <tbody>
 
 <tr>
-  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
-  <td class="num">285</td>
-  <td class="num">0.2186</td>
-  <td class="num neg">-3.0%</td>
-  <td class="num">187 / 98</td>
-  <td class="num neg">$-861</td>
-  <td class="num">—</td>
+  <td><strong>nfl:market-close</strong></td>
+  <td class="num">541</td>
+  <td class="num">0.2100</td>
+  <td class="num pos">+2.3%</td>
+  <td class="num">374 / 167</td>
+  <td class="num pos">$+1,238</td>
+  <td class="num">12.4%</td>
 </tr>
 
 <tr>
-  <td><strong>market-close</strong></td>
-  <td class="num">285</td>
-  <td class="num">0.2186</td>
-  <td class="num neg">-0.5%</td>
-  <td class="num">191 / 94</td>
-  <td class="num neg">$-151</td>
-  <td class="num">50.0%</td>
+  <td><strong>nfl:market-consensus</strong></td>
+  <td class="num">541</td>
+  <td class="num">0.2100</td>
+  <td class="num pos">+2.3%</td>
+  <td class="num">374 / 167</td>
+  <td class="num pos">$+1,238</td>
+  <td class="num">12.4%</td>
 </tr>
 
 <tr>
-  <td><strong>market-consensus</strong></td>
-  <td class="num">285</td>
-  <td class="num">0.2186</td>
-  <td class="num neg">-0.5%</td>
-  <td class="num">191 / 94</td>
-  <td class="num neg">$-151</td>
-  <td class="num">50.0%</td>
+  <td><strong>atp:tennis-rank-bt</strong></td>
+  <td class="num">3104</td>
+  <td class="num">0.2245</td>
+  <td class="num neg">-3.3%</td>
+  <td class="num">1981 / 1118</td>
+  <td class="num neg">$-10,250</td>
+  <td class="num">11.7%</td>
+</tr>
+
+<tr>
+  <td><strong>atp:market-close</strong></td>
+  <td class="num">3101</td>
+  <td class="num">0.1994</td>
+  <td class="num neg">-2.8%</td>
+  <td class="num">2124 / 977</td>
+  <td class="num neg">$-8,536</td>
+  <td class="num">13.0%</td>
+</tr>
+
+<tr>
+  <td><strong>atp:market-consensus</strong></td>
+  <td class="num">3101</td>
+  <td class="num">0.1994</td>
+  <td class="num neg">-2.8%</td>
+  <td class="num">2124 / 977</td>
+  <td class="num neg">$-8,536</td>
+  <td class="num">13.0%</td>
+</tr>
+
+<tr>
+  <td><strong>wta:tennis-rank-bt</strong></td>
+  <td class="num">2870</td>
+  <td class="num">0.2247</td>
+  <td class="num neg">-4.4%</td>
+  <td class="num">1812 / 1054</td>
+  <td class="num neg">$-12,663</td>
+  <td class="num">11.7%</td>
+</tr>
+
+<tr>
+  <td><strong>wta:market-close</strong></td>
+  <td class="num">2873</td>
+  <td class="num">0.2018</td>
+  <td class="num neg">-4.9%</td>
+  <td class="num">1935 / 938</td>
+  <td class="num neg">$-14,081</td>
+  <td class="num">12.9%</td>
+</tr>
+
+<tr>
+  <td><strong>wta:market-consensus</strong></td>
+  <td class="num">2873</td>
+  <td class="num">0.2018</td>
+  <td class="num neg">-4.9%</td>
+  <td class="num">1935 / 938</td>
+  <td class="num neg">$-14,081</td>
+  <td class="num">12.9%</td>
 </tr>
 
 </tbody>
