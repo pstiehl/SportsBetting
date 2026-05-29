@@ -1,17 +1,19 @@
 <div class="container">
 
 <h2>Today's <span class="accent">Slate</span></h2>
-<p class="lede">Every event gets a $100 flat bet. The model blends multiple publicly available probability sources, picks the higher-blended-probability side, and surfaces two signal flags: <strong>chalk-overpriced</strong> when the market overprices the favorite, and <strong>RLM / book-dispersion</strong> when sharp action shows up in line moves or cross-book spreads.</p>
+<p class="lede">Live events from in-season sports. The model blends multiple publicly-available probability sources and picks the higher-blended-probability side, with a Kelly-fractional stake gated by a configurable edge threshold. Coin-flip events get skipped instead of bet — that's the difference between $100-on-everything and a research-grade ROI engine.</p>
 
 <div class="kpi-row">
   <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events Today</div></div>
-  <div class="kpi"><div class="num">${{ "{:,.0f}".format(total_wagered) }}</div><div class="label">Total Wagered</div></div>
+  <div class="kpi"><div class="num">{{ n_pickable }}</div><div class="label">With Live Odds</div></div>
   <div class="kpi"><div class="num">{{ n_chalk }}</div><div class="label">Chalk-Overpriced</div></div>
   <div class="kpi"><div class="num">{{ n_signals }}</div><div class="label">Active Signals</div></div>
 </div>
 
 {% if n_events == 0 %}
-<div class="callout"><strong>No events for today.</strong> Run <code class="inline">python -m flashcat.cli build</code> after market open to pull the slate, or set <code class="inline">THE_ODDS_API_KEY</code> in <code class="inline">.env</code> to fetch live odds.</div>
+<div class="callout"><strong>No live events for today.</strong> Either no in-season sport has matches today, or no live source returned data. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets for the daily refresh to pull moneylines.</div>
+{% elif n_pickable == 0 %}
+<div class="callout"><strong>{{ n_events }} live events but no moneylines yet.</strong> The slate is real — Roland-Garros tennis, MLB regular season, etc. — but Flashcat can't pick or stake without sportsbook lines. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets to unlock pricing.</div>
 {% endif %}
 
 <div class="event-grid">
@@ -22,6 +24,7 @@
       <span>{{ ev.n_sources }} sources</span>
     </div>
     <div class="matchup">{{ ev.away }} <span class="vs">@</span> {{ ev.home }}</div>
+    {% if ev.pick_label != "—" %}
     <div class="pick">
       <span class="side">PICK: {{ ev.pick_label }}</span>
       <span class="prob">{{ "{:.1%}".format(ev.pick_prob) }}</span>
@@ -31,6 +34,13 @@
       <span class="label">Blended home prob</span><span class="val">{{ "{:.1%}".format(ev.blended_home_prob) }}</span>
       <span class="label">Market implied (devig)</span><span class="val">{{ ev.market_home_str }}</span>
     </div>
+    {% else %}
+    <div class="pick">
+      <span class="side" style="color:#8b8d96">NO LIVE ODDS</span>
+      <span class="prob">—</span>
+    </div>
+    <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
+    {% endif %}
     {% if ev.badges %}
     <div class="badges">
       {% for badge in ev.badges %}<span class="badge {{ badge.cls }}">{{ badge.label }}</span>{% endfor %}

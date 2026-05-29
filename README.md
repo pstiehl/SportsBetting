@@ -1,6 +1,14 @@
 # Flashcat Betting
 
-> Probability-blended sports betting research model. Universal **$100 flat bet** on every event, picked from a weighted blend of publicly available win-probability sources.
+> Probability-blended sports betting research model. Picks come from a
+> weighted blend of publicly available win-probability sources; staking
+> uses **1/4 Kelly fractional** by default with a **3pp edge threshold**
+> over the devigged market. Coin-flips get skipped, not bet.
+
+> **2026-05-29:** Replaced the v1 "flat-$100-on-everything" rule (which is
+> structurally -vig) with the Kelly-gated rule. Added MLB + tennis live
+> sources, fail-loud builds (no more silent sample fallback), and multi-sport
+> historical backtest (NFL + ATP + WTA). See `PHIL_PLAN.md`.
 
 <p align="center"><img src="docs/assets/flashcat-logo.svg" alt="Flashcat" width="180"></p>
 
@@ -8,10 +16,10 @@
 
 ## What Flashcat does
 
-1. **Pulls per-event win probabilities** from multiple public sources (The Odds API, ESPN, Polymarket, the devigged market consensus from book moneylines).
+1. **Pulls per-event win probabilities** from multiple public sources (The Odds API, ESPN, Polymarket, the devigged market consensus from book moneylines, and per-sport historical models like ATP/WTA rank-points).
 2. **Blends them** with a weighted average. Weights iterate from observed accuracy.
-3. **Picks the higher-probability side** on every event and bets a flat **$100**.
-4. **Backtests every source** independently on a $100-flat basis, tracking **Brier score** (calibration) and **ROI** (profit ÷ wagered).
+3. **Picks the higher-blended-probability side** and stakes a fractional Kelly bet, **only when edge over the devigged market exceeds the threshold** (default 3pp). Otherwise: no bet.
+4. **Backtests every source** independently, tracking **Brier score** (calibration) and **ROI** (profit ÷ wagered).
 5. **Reweights sources** after every backtest via a softmax of negative Brier — better-calibrated sources get more weight.
 6. **Flags two signals** Phil cares about:
    - **Chalk-overpriced** (favorite-longshot bias): market implied probability on the favorite is more than 5 percentage points above the model.
@@ -44,10 +52,13 @@ flashcat-betting/
 
 | Source | Status | What it provides |
 |---|---|---|
-| `the-odds-api` | **live** (key optional, sample fallback) | Moneylines across US books |
-| `espn-scoreboard` | **live** | Events + ESPN's `predictor.gameProjection` win prob when available |
+| `the-odds-api` | **live** (key required for prod; opt-in samples for offline dev) | Moneylines across US books; in-season sports auto-detected |
+| `espn-scoreboard` | **live** | Events + ESPN's `predictor.gameProjection` for team sports; per-match draws for ATP/WTA |
 | `polymarket` | **live** | Crowd-implied probability from active sports markets |
 | `nflverse` | **live** | Historical NFL schedules + moneylines via `nfl_data_py` |
+| `tennis-data` | **live** | Historical ATP/WTA matches with Pinnacle/Bet365 closing odds (tennis-data.co.uk) |
+| `tennis-rank-bt` | **live** | Bradley-Terry probability from ATP/WTA rank points |
+| `fivethirtyeight-nba-elo` | **live** | 538 historical NBA Elo-based pre-game forecasts (through 2014-15) |
 | `market-close` (synthetic) | **live** | Devigged consensus probability across book averages |
 | `pinnacle` | stub | Phase 2 |
 | `draftkings`, `fanduel` | stub | Phase 2 (page scrapes) |
@@ -90,7 +101,12 @@ Set in a `.env` file at the repo root (gitignored):
 THE_ODDS_API_KEY=your_key_here  # https://the-odds-api.com/, free tier available
 ```
 
-Without `THE_ODDS_API_KEY`, the model falls back to committed sample odds in `data/samples/odds_api_sample.json` so the pipeline still runs and the site still renders.
+Without `THE_ODDS_API_KEY`, the OddsAPI connector returns `[]` and the pipeline
+**fails loud** if no other live source returns events for any in-season sport.
+That's intentional — silently shipping stale samples to the live site was the
+v1 bug that put fake NBA games on `pstiehl.github.io/SportsBetting` in May 2026.
+For offline local builds, opt in with `FLASHCAT_USE_SAMPLES=1` to read the
+`data/samples/odds_api_sample.example.json` fallback.
 
 ## The two hunches as first-class features
 

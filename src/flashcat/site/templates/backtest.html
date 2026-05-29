@@ -1,14 +1,42 @@
 <div class="container">
 
 <h2>Backtest</h2>
-<p class="lede">Phase 1 backtests on {{ window }} via <code class="inline">nfl_data_py</code>. Each event is simulated as a $100 flat bet at the book-average closing line. The blended Flashcat model is graded alongside every individual source.</p>
+<p class="lede">
+  Multi-sport backtest over {{ window }}. The blended Flashcat model is graded
+  with the configured staking rule, currently
+  <code class="inline">{{ stake_mode }}</code>
+  with an edge-threshold of
+  <code class="inline">{{ "{:.0%}".format(edge_threshold) }}</code>
+  over the devigged market. Coin-flips inside the no-bet band are skipped,
+  not bet, which is the central ROI fix vs. v1's "$100 on every event."
+</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events</div></div>
-  <div class="kpi"><div class="num {{ overall_roi_cls }}">{{ overall_roi_str }}</div><div class="label">Flashcat ROI</div></div>
-  <div class="kpi"><div class="num">{{ overall_brier_str }}</div><div class="label">Flashcat Brier ↓</div></div>
+  <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events graded</div></div>
+  <div class="kpi"><div class="num {{ overall_roi_cls }}">{{ overall_roi_str }}</div><div class="label">Blended ROI</div></div>
+  <div class="kpi"><div class="num">{{ overall_brier_str }}</div><div class="label">Blended Brier ↓</div></div>
   <div class="kpi"><div class="num {{ overall_profit_cls }}">{{ overall_profit_str }}</div><div class="label">Total Profit</div></div>
 </div>
+
+{% if per_sport_rows %}
+<h3>Per-sport breakdown</h3>
+<p class="lede">Honest, per-sport ROI on the blended model. Sports without a second probability source (e.g. NFL with only market-close) end up with zero wagered, because the model has no informational edge over the line.</p>
+<table>
+<thead><tr><th>Sport</th><th class="num">Events</th><th class="num">Bets placed</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
+<tbody>
+{% for row in per_sport_rows %}
+<tr>
+  <td><strong>{{ row.sport }}</strong></td>
+  <td class="num">{{ row.n }}</td>
+  <td class="num">{{ row.bets }}</td>
+  <td class="num">{{ row.wagered_str }}</td>
+  <td class="num">{{ row.profit_str }}</td>
+  <td class="num {{ row.roi_cls }}">{{ row.roi_str }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
 
 <h3>Bankroll curve</h3>
 <img class="chart" src="assets/bankroll.png" alt="Cumulative profit over time">
@@ -17,7 +45,8 @@
 <p class="lede">Blended-model predicted probability vs. realized win rate, bucketed in 10% bins. A perfectly calibrated model sits on the diagonal.</p>
 <img class="chart" src="assets/calibration.png" alt="Blended model calibration">
 
-<h3>ROI by slice</h3>
+{% if slice_rows %}
+<h3>ROI by signal slice</h3>
 <table>
 <thead><tr><th>Slice</th><th class="num">Events</th><th class="num">Wins/Losses</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
 <tbody>
@@ -33,5 +62,6 @@
 {% endfor %}
 </tbody>
 </table>
+{% endif %}
 
 </div>

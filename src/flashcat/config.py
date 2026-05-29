@@ -37,6 +37,37 @@ def the_odds_api_key() -> str | None:
     return os.getenv("THE_ODDS_API_KEY")
 
 
+def use_samples_fallback() -> bool:
+    """Opt-in flag to allow stale-sample fallback for local dev.
+
+    CI never sets this. Production builds fail loud when no live data arrives.
+    Set FLASHCAT_USE_SAMPLES=1 (or true/yes) locally if you want offline mode.
+    """
+    val = os.getenv("FLASHCAT_USE_SAMPLES", "").strip().lower()
+    return val in ("1", "true", "yes", "on")
+
+
+def stake_mode() -> str:
+    """Stake sizing: flat, kelly_quarter, kelly_half, kelly_full. Default kelly_quarter."""
+    return os.getenv("FLASHCAT_STAKE_MODE", "kelly_quarter").strip().lower()
+
+
+def edge_threshold() -> float:
+    """Minimum edge (blended_prob - devigged_market) to take a bet. Default 0.03."""
+    try:
+        return float(os.getenv("FLASHCAT_EDGE_THRESHOLD", "0.03"))
+    except Exception:
+        return 0.03
+
+
+class NoLiveDataError(RuntimeError):
+    """Raised when no live source returned events for any in-season sport.
+
+    The build pipeline must fail loud (CI red) rather than silently shipping
+    stale samples to the rendered site. Opt out with FLASHCAT_USE_SAMPLES=1.
+    """
+
+
 def ensure_dirs() -> None:
     for d in (DATA_DIR, SAMPLES_DIR, CACHE_DIR, DOCS_DIR, ASSETS_DIR, EVENT_PAGES_DIR):
         d.mkdir(parents=True, exist_ok=True)
