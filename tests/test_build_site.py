@@ -9,6 +9,46 @@ from flashcat.config import DOCS_DIR, SOURCE_SCOREBOARD_PATH
 from flashcat.types import BookLine, Event, SourceProb
 
 
+def _write_live_scoreboard(path: Path) -> None:
+    """A scoreboard that signals 'LIVE BETTING' (positive blended ROI)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "window": {"start": "2024-01-01", "end": "2024-12-31", "sport": "multi"},
+        "weights": {},
+        "n_events": 100,
+        "sources": {"flashcat-blended": {"n_events": 100, "roi": 0.05, "brier": 0.22}},
+        "per_sport": {"nfl": {"n_events": 100, "sources": {}, "blended": {"n_events": 100, "roi": 0.05, "brier": 0.22}}},
+        "blended_overall": {"n_events": 100, "wagered": 10000, "profit": 500, "wins": 60, "losses": 40, "roi": 0.05},
+    }))
+
+
+def _write_research_scoreboard(path: Path) -> None:
+    """A scoreboard that signals 'RESEARCH MODE' (negative blended ROI somewhere)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "window": {"start": "2024-01-01", "end": "2024-12-31", "sport": "multi"},
+        "weights": {},
+        "n_events": 100,
+        "sources": {"flashcat-blended": {"n_events": 100, "roi": -0.12, "brier": 0.22}},
+        "per_sport": {"atp": {"n_events": 100, "sources": {}, "blended": {"n_events": 100, "roi": -0.12, "brier": 0.22}}},
+        "blended_overall": {"n_events": 100, "wagered": 10000, "profit": -1200, "wins": 45, "losses": 55, "roi": -0.12},
+    }))
+
+
+def _patch_scoreboard(tmp_path, monkeypatch, kind: str = "live") -> Path:
+    from flashcat import build_site as bs
+    from flashcat import config as cfg
+
+    sb_path = tmp_path / "data" / "source_scoreboard.json"
+    if kind == "live":
+        _write_live_scoreboard(sb_path)
+    else:
+        _write_research_scoreboard(sb_path)
+    monkeypatch.setattr(cfg, "SOURCE_SCOREBOARD_PATH", sb_path)
+    monkeypatch.setattr(bs, "SOURCE_SCOREBOARD_PATH", sb_path)
+    return sb_path
+
+
 def test_site_build_smoke(tmp_path, monkeypatch):
     # Use a temp docs dir so tests don't blow over the real site
     from flashcat import build_site as bs
@@ -23,6 +63,7 @@ def test_site_build_smoke(tmp_path, monkeypatch):
     monkeypatch.setattr(bs, "DOCS_DIR", tmp_docs)
     monkeypatch.setattr(bs, "ASSETS_DIR", tmp_assets)
     monkeypatch.setattr(bs, "EVENT_PAGES_DIR", tmp_events)
+    _patch_scoreboard(tmp_path, monkeypatch, kind="live")
 
     # Sample event
     now = datetime(2024, 1, 7, 18, 0, tzinfo=timezone.utc)
@@ -84,6 +125,7 @@ def test_recommended_plays_panel_shows_edge_plays(tmp_path, monkeypatch):
     monkeypatch.setattr(bs, "DOCS_DIR", tmp_docs)
     monkeypatch.setattr(bs, "ASSETS_DIR", tmp_assets)
     monkeypatch.setattr(bs, "EVENT_PAGES_DIR", tmp_events)
+    _patch_scoreboard(tmp_path, monkeypatch, kind="live")
 
     now = datetime(2024, 1, 7, 18, 0, tzinfo=timezone.utc)
     # Pick home, blended 0.60 vs devigged-market ~0.50 (-110/-110) → edge ~10pp
@@ -125,6 +167,7 @@ def test_recommended_plays_sit_out_fallback(tmp_path, monkeypatch):
     monkeypatch.setattr(bs, "DOCS_DIR", tmp_docs)
     monkeypatch.setattr(bs, "ASSETS_DIR", tmp_assets)
     monkeypatch.setattr(bs, "EVENT_PAGES_DIR", tmp_events)
+    _patch_scoreboard(tmp_path, monkeypatch, kind="live")
 
     now = datetime(2024, 1, 7, 18, 0, tzinfo=timezone.utc)
     # Blended ~0.51 vs market ~0.50 → edge well below threshold.
@@ -149,3 +192,72 @@ def test_recommended_plays_sit_out_fallback(tmp_path, monkeypatch):
     # Card itself should show a no-bet line for this event (the exact phrasing
     # depends on which gate caught it: within_no_bet_band or edge_below_threshold).
     assert ("NO BET" in html) or ("no bet" in html) or ("Coin flip" in html)
+
+
+def test_research_mode_gate_hides_stake_recs(tmp_path, monkeypatch):
+    """When blended backtest ROI is negative, no stake recommendations are shown."""
+    from flashcat import build_site as bs
+    from flashcat import config as cfg
+
+    tmp_docs = tmp_path / "docs"
+    tmp_assets = tmp_docs / "assets"
+    tmp_events = tmp_docs / "event"
+    monkeypatch.setattr(cfg, "DOCS_DIR", tmp_docs)
+    monkeypatch.setattr(cfg, "ASSETS_DIR", tmp_assets)
+    monkeypatch.setattr(cfg, "EVENT_PAGES_DIR", tmp_events)
+    monkeypatch.setattr(bs, "DOCS_DIR", tmp_docs)
+    monkeypatch.setattr(bs, "ASSETS_DIR", tmp_assets)
+    monkeypatch.setattr(bs, "EVENT_PAGES_DIR", tmp_events)
+    _patch_scoreboard(tmp_path, monkeypatch, kind="research")
+
+    now = datetime(2024, 1, 7, 18, 0, tzinfo=timezone.utc)
+    ev = Event(
+        event_id="research:1",
+        sport="nfl",
+        home="Sharks",
+        away="Bears",
+        commence_time=now,
+        source_probs=[SourceProb(source="src-a", home_win_prob=0.60, captured_at=now)],
+        lines=[
+            BookLine(book="dk", side="home", american=-110, captured_at=now),
+            BookLine(book="dk", side="away", american=-110, captured_at=now),
+        ],
+        blended_home_prob=0.60,
+        pick="home",
+        pick_prob=0.60,
+    )
+    bs.build([ev])
+    html = (tmp_docs / "index.html").read_text()
+    # Status badge in header
+    assert "RESEARCH MODE" in html
+    # The disclaimer callout copy.
+    assert "model is in research mode" in html
+    assert "No live recommendations shown" in html
+    # Event card still renders the sources + blended prob (transparency).
+    assert "Blended home prob" in html
+    # But the EDGE banner / stake recs are suppressed.
+    assert "Model edge" not in html
+    assert "Expected value" not in html
+    # The per-card research banner is present.
+    assert "Research only" in html
+
+
+def test_live_mode_shows_status_badge(tmp_path, monkeypatch):
+    """Positive blended ROI flips the header badge to LIVE BETTING."""
+    from flashcat import build_site as bs
+    from flashcat import config as cfg
+
+    tmp_docs = tmp_path / "docs"
+    tmp_assets = tmp_docs / "assets"
+    tmp_events = tmp_docs / "event"
+    monkeypatch.setattr(cfg, "DOCS_DIR", tmp_docs)
+    monkeypatch.setattr(cfg, "ASSETS_DIR", tmp_assets)
+    monkeypatch.setattr(cfg, "EVENT_PAGES_DIR", tmp_events)
+    monkeypatch.setattr(bs, "DOCS_DIR", tmp_docs)
+    monkeypatch.setattr(bs, "ASSETS_DIR", tmp_assets)
+    monkeypatch.setattr(bs, "EVENT_PAGES_DIR", tmp_events)
+    _patch_scoreboard(tmp_path, monkeypatch, kind="live")
+    bs.build([])
+    html = (tmp_docs / "index.html").read_text()
+    assert "LIVE BETTING" in html
+    assert "RESEARCH MODE" not in html

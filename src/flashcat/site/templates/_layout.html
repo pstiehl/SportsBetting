@@ -16,6 +16,9 @@
       <div>
         <h1><a href="{{ asset_root }}index.html"><span class="accent">Flashcat</span> Betting</a></h1>
         <div class="meta">{{ stake_mode_label }} stake-sized &middot; probability-blended &middot; {{ updated_at }}</div>
+        {% if site_status_badge_label %}
+        <div class="site-status {{ site_status_badge_cls }}" title="Blended backtest ROI: {{ site_status_roi_str }}">{{ site_status_badge_label }} &middot; backtest ROI {{ site_status_roi_str }}</div>
+        {% endif %}
       </div>
     </div>
     <nav>

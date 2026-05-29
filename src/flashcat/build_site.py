@@ -96,9 +96,84 @@ def _slugify(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "event"
 
 
+def _research_mode_state(scoreboard: dict | None = None) -> dict:
+    """Decide whether the site is LIVE BETTING or RESEARCH MODE.
+
+    A site is in research mode when:
+      * the blended backtest ROI is missing or non-positive overall, OR
+      * ANY individual sport's blended ROI is negative.
+
+    Phil's rule (2026-05-29): *"I am not putting any model on these games
+    when the model backtest is -12%."* Until every sport we expose has a
+    blended backtest ROI ≥ 0, the entire site is research-only.
+
+    Returns dict with keys: ``research_mode`` (bool), ``roi`` (float|None),
+    ``roi_str`` (str), and ``badge_label``/``badge_cls``.
+    """
+    if scoreboard is None:
+        if SOURCE_SCOREBOARD_PATH.exists():
+            try:
+                with open(SOURCE_SCOREBOARD_PATH) as f:
+                    scoreboard = json.load(f)
+            except Exception:
+                scoreboard = {}
+        else:
+            scoreboard = {}
+    sources = (scoreboard or {}).get("sources", {}) if isinstance(scoreboard, dict) else {}
+    fc = sources.get("flashcat-blended", {}) if isinstance(sources, dict) else {}
+    blended_overall = (scoreboard or {}).get("blended_overall") if isinstance(scoreboard, dict) else None
+    per_sport = (scoreboard or {}).get("per_sport") if isinstance(scoreboard, dict) else None
+    roi = None
+    if isinstance(blended_overall, dict) and blended_overall.get("roi") is not None:
+        roi = blended_overall["roi"]
+    elif isinstance(fc, dict) and fc.get("roi") is not None:
+        roi = fc["roi"]
+
+    # Aggregate research-mode triggers.
+    research = False
+    reason = None
+    if roi is None:
+        research, reason = True, "no backtest ROI available"
+    elif roi <= 0:
+        research, reason = True, f"overall ROI {roi*100:+.1f}%"
+    elif isinstance(per_sport, dict):
+        worst_sport = None
+        worst_roi = None
+        for sport, p in per_sport.items():
+            bm = (p or {}).get("blended") or {}
+            sport_roi = bm.get("roi")
+            if sport_roi is None:
+                continue
+            if worst_roi is None or sport_roi < worst_roi:
+                worst_roi = sport_roi
+                worst_sport = sport
+        if worst_roi is not None and worst_roi < 0:
+            research, reason = True, f"{worst_sport.upper()} blended ROI {worst_roi*100:+.1f}%"
+
+    roi_str = f"{roi*100:+.1f}%" if roi is not None else "n/a"
+    if research:
+        return {
+            "research_mode": True,
+            "roi": roi,
+            "roi_str": roi_str,
+            "reason": reason,
+            "badge_label": "🟡 RESEARCH MODE",
+            "badge_cls": "research",
+        }
+    return {
+        "research_mode": False,
+        "roi": roi,
+        "roi_str": roi_str,
+        "reason": None,
+        "badge_label": "🟢 LIVE BETTING",
+        "badge_cls": "live",
+    }
+
+
 def _layout(env: Environment, page_title: str, active: str, content_html: str, asset_root: str = "") -> str:
     layout = env.get_template("_layout.html")
     mode = stake_mode()
+    rm = _research_mode_state()
     return layout.render(
         page_title=page_title,
         active=active,
@@ -106,6 +181,10 @@ def _layout(env: Environment, page_title: str, active: str, content_html: str, a
         asset_root=asset_root,
         updated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         stake_mode_label=STAKE_MODE_LABELS.get(mode, mode),
+        site_status_badge_label=rm["badge_label"],
+        site_status_badge_cls=rm["badge_cls"],
+        site_status_research=rm["research_mode"],
+        site_status_roi_str=rm["roi_str"],
     )
 
 
@@ -353,15 +432,32 @@ def _calibration_chart(calibration: list[dict], out_path: Path) -> None:
 def render_index(env: Environment, events: list[Event], weights: dict[str, float]) -> str:
     # Render every live event, including those without a market line yet —
     # users want to see today's slate even when lines haven't published.
+    rm = _research_mode_state()
     views = [_event_view(ev, weights) for ev in events]
+    if rm["research_mode"]:
+        # Suppress stake / EV / EDGE banner. Cards still render with sources
+        # and the blended prob — Phil sees provenance, not stake recs.
+        for v in views:
+            v["is_recommended"] = False
+            v["recommended_stake"] = 0.0
+            v["recommended_stake_str"] = "Research only — backtest ROI not yet positive."
+            v["ev_at_stake"] = None
+            v["ev_at_stake_str"] = "—"
+            v["edge_str"] = "—"
+            v["edge_cls"] = ""
+            v["edge_value"] = None
     # Pickable events are the subset where we'd actually place a bet.
     pickable = [v for v in views if v["pick_label"] != "—"]
     n_signals = sum(1 for v in pickable if v["badges"])
     n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
 
     # Top recommended plays: positive recommended stake, sorted by edge desc.
-    recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
-    recs.sort(key=lambda v: v["edge_value"], reverse=True)
+    # Suppressed entirely when in research mode.
+    if rm["research_mode"]:
+        recs = []
+    else:
+        recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
+        recs.sort(key=lambda v: v["edge_value"], reverse=True)
     top_recs = recs[:5]
     total_recommended_stake = sum(v["recommended_stake"] for v in recs)
     mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
@@ -379,6 +475,8 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
         stake_mode_label=mode_label,
         bankroll_str=f"${bankroll():,.0f}",
         edge_threshold_pp=f"{edge_threshold()*100:.1f}",
+        research_mode=rm["research_mode"],
+        backtest_roi_str=rm["roi_str"],
     )
     return _layout(env, "Today's Slate", "home", content, asset_root="")
 
