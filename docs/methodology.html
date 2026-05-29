@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Methodology — Flashcat Betting</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="alternate icon" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <div class="brand">
+      <img src="assets/flashcat-logo.svg" alt="Flashcat">
+      <div>
+        <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
+        <div class="meta">$100 flat · probability-blended · 2026-05-29 16:50 UTC</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" >Today</a>
+      <a href="backtest.html" >Backtest</a>
+      <a href="source-scoreboard.html" >Sources</a>
+      <a href="methodology.html" class="active">Methodology</a>
+    </nav>
+  </div>
+</header>
+<div class="container narrow">
+
+<h2>Methodology</h2>
+
+<h3>1. The universal bet</h3>
+<p>Flashcat bets <strong>$100 flat on every event</strong>. No Kelly, no fractional sizing, no abstention. The research question is: <em>can a probability blend, scored across many sources, beat the closing market on $100-flat?</em> Position sizing is a Phase 2 problem.</p>
+
+<h3>2. Probability blending</h3>
+<p>For each event, we collect a home-win probability from every source that has one:</p>
+<ul>
+  <li><strong>The Odds API</strong> — devigged consensus across US books</li>
+  <li><strong>ESPN scoreboard / predictor</strong> — ESPN's <code class="inline">gameProjection</code> field</li>
+  <li><strong>Polymarket</strong> — last-trade price on the relevant market</li>
+  <li><strong>Market consensus</strong> — devigged moneyline from book-average closing odds</li>
+  <li><em>(Phase 2: Pinnacle, DraftKings, FanDuel, Kalshi, FiveThirtyEight, Massey/Sagarin, KenPom, BPI — stubs are in the codebase)</em></li>
+</ul>
+<p>Each source has a weight <code class="inline">w_s ∈ [0, 1]</code> with <code class="inline">Σw_s = 1</code>. The blended home probability is:</p>
+<pre>p_blend(home) = Σ_s ( w_s × p_s(home) )</pre>
+<p>On a fresh deploy, weights are uniform across active sources. After each backtest, weights update to favor sources with better calibration.</p>
+
+<h3>3. Pick rule</h3>
+<p>We bet $100 on whichever side has the higher blended probability. The only exception is the <strong>tie-breaker band</strong>: when <code class="inline">p_blend(home) ∈ [0.48, 0.52]</code>, we bet the underdog by moneyline. This encodes the "favorite is a sucker's bet" hunch — in coin-flip games, the market premium on the slight favorite has historically been overpriced.</p>
+
+<h3>4. Source reweighting</h3>
+<p>After every backtest, each source gets a Brier score <code class="inline">B_s = mean((p_s − y)²)</code>, where <code class="inline">y ∈ {0, 1}</code> is the home-win outcome. New weights are a tempered softmax over <em>negative</em> Brier (so low-Brier sources get more weight):</p>
+<pre>w_s = softmax( −τ × B_s )    where τ = 4.0 by default</pre>
+<p>Sources with fewer than 20 graded events are excluded from reweighting — they keep their prior weight until the sample size is meaningful. Snapshots of every weight update are saved to SQLite (<code class="inline">weight_history</code> table) so we can audit drift.</p>
+
+<h3>5. The two signal flags</h3>
+
+<h4>5a. Chalk-overpriced (favorite-longshot bias)</h4>
+<p>For each event we compute the devigged implied probability of the favorite from book averages. If that implied probability is more than <strong>5 percentage points</strong> above the model's blended probability for the favorite, we flag <code class="inline">chalk-overpriced</code>. This is the modern restatement of the classic favorite-longshot bias result.</p>
+
+<h4>5b. Reverse line movement + cross-book dispersion</h4>
+<p>For events where we have both opening and current moneylines:</p>
+<ul>
+  <li><strong>RLM:</strong> if the home implied probability moved ≥ 2 percentage points away from opening, we flag the direction of the move (<code class="inline">reverse-line-movement-toward-home</code> or <code class="inline">toward-away</code>). Sharp money pushes lines against the public bet distribution.</li>
+  <li><strong>Book dispersion:</strong> if the spread between the highest and lowest implied probabilities on the underdog side across books exceeds 4 percentage points, we flag <code class="inline">book-dispersion-dog</code>. A wide spread means books disagree, and the soft books are exploitable.</li>
+</ul>
+
+<h3>6. Backtest</h3>
+<p>Phase 1 backtests on the most recent complete NFL season via <code class="inline">nfl_data_py</code>. Each historical event is simulated as a $100 flat bet at the book-average closing line; outcomes determine P&L. The bankroll curve, calibration bins, and ROI slices (overall / chalk-only / dog-only / RLM-only / dispersion-only) are recomputed every run.</p>
+
+<h3>7. What is out of scope (Phase 1)</h3>
+<ul>
+  <li>Live in-game probabilities</li>
+  <li>Real-money execution</li>
+  <li>Account / bankroll / Kelly sizing</li>
+  <li>Sport-specific deep models (those are Phase 2 — Flashcat is the blender, not the sport model)</li>
+  <li>Scraping behind login walls</li>
+</ul>
+
+</div>
+<footer>
+  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  <a href="https://github.com/pstiehl/SportsBetting">source</a>
+</footer>
+</body>
+</html>

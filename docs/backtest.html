@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backtest — Flashcat Betting</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="alternate icon" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <div class="brand">
+      <img src="assets/flashcat-logo.svg" alt="Flashcat">
+      <div>
+        <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
+        <div class="meta">$100 flat · probability-blended · 2026-05-29 16:50 UTC</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" >Today</a>
+      <a href="backtest.html" class="active">Backtest</a>
+      <a href="source-scoreboard.html" >Sources</a>
+      <a href="methodology.html" >Methodology</a>
+    </nav>
+  </div>
+</header>
+<div class="container">
+
+<h2>Backtest</h2>
+<p class="lede">Phase 1 backtests on 2023-09-01 → 2024-02-15 via <code class="inline">nfl_data_py</code>. Each event is simulated as a $100 flat bet at the book-average closing line. The blended Flashcat model is graded alongside every individual source.</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">285</div><div class="label">Events</div></div>
+  <div class="kpi"><div class="num neg">-3.0%</div><div class="label">Flashcat ROI</div></div>
+  <div class="kpi"><div class="num">0.2186</div><div class="label">Flashcat Brier ↓</div></div>
+  <div class="kpi"><div class="num neg">$-861</div><div class="label">Total Profit</div></div>
+</div>
+
+<h3>Bankroll curve</h3>
+<img class="chart" src="assets/bankroll.png" alt="Cumulative profit over time">
+
+<h3>Calibration</h3>
+<p class="lede">Blended-model predicted probability vs. realized win rate, bucketed in 10% bins. A perfectly calibrated model sits on the diagonal.</p>
+<img class="chart" src="assets/calibration.png" alt="Blended model calibration">
+
+<h3>ROI by slice</h3>
+<table>
+<thead><tr><th>Slice</th><th class="num">Events</th><th class="num">Wins/Losses</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
+<tbody>
+
+<tr>
+  <td>no-signal</td>
+  <td class="num">285</td>
+  <td class="num">187 / 98</td>
+  <td class="num">$28,500</td>
+  <td class="num neg">$-861</td>
+  <td class="num neg">-3.0%</td>
+</tr>
+
+</tbody>
+</table>
+
+</div>
+<footer>
+  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  <a href="https://github.com/pstiehl/SportsBetting">source</a>
+</footer>
+</body>
+</html>
