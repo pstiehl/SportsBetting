@@ -24,7 +24,9 @@ from .model.reweight import update_weights as update_weights_fn
 from .signals.favlong import detect as detect_favlong
 from .signals.sharp import detect as detect_sharp
 from .sources import (
+    Bovada,
     ESPNScoreboard,
+    FanDuel,
     Polymarket,
     TheOddsAPI,
 )
@@ -128,7 +130,7 @@ def build(
     start = date.today()
     end = start + timedelta(days=days_ahead)
     log.info("Building slate for %s → %s", start, end)
-    connectors = [TheOddsAPI(), ESPNScoreboard(), Polymarket()]
+    connectors = [TheOddsAPI(), Bovada(), FanDuel(), ESPNScoreboard(), Polymarket()]
 
     active = _active_sports(connectors)
     log.info("Active sports today: %s", active)

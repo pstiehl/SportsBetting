@@ -44,6 +44,8 @@ def test_build_fails_loud_when_no_live_events(monkeypatch):
         return []
 
     monkeypatch.setattr("flashcat.cli.TheOddsAPI.fetch_events", empty_fetch)
+    monkeypatch.setattr("flashcat.cli.Bovada.fetch_events", empty_fetch)
+    monkeypatch.setattr("flashcat.cli.FanDuel.fetch_events", empty_fetch)
     monkeypatch.setattr("flashcat.cli.ESPNScoreboard.fetch_events", empty_fetch)
     monkeypatch.setattr("flashcat.cli.Polymarket.fetch_events", empty_fetch)
 
