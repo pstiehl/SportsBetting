@@ -101,17 +101,28 @@ def _active_sports(connectors) -> list[Sport]:
     """Discover in-season sports today.
 
     Order:
-      1. Ask Odds API ``active_sports()`` if a key is configured — that gives
-         us the authoritative list of currently-active sport keys.
-      2. Otherwise fall back to the union of all sports our live connectors
-         can pull. The per-source fetch will yield 0 events for out-of-season
-         sports, and the fail-loud check below will trip if nothing comes back.
+      1. Ask Odds API ``active_sports()`` if a key is configured and reachable.
+      2. Always union in atp/wta when Bovada is in the connector list — Bovada
+         discovers active tennis tournaments live, so as long as Roland Garros
+         (or any other tour) is running we want those events in the slate.
+      3. Fall back to the full SPORTS list otherwise. Per-source fetch yields
+         0 events for out-of-season sports; the fail-loud check trips if
+         nothing comes back.
     """
+    discovered: set[Sport] = set()
     for c in connectors:
         if isinstance(c, TheOddsAPI) and c.api_key:
-            sports = c.active_sports()
-            if sports:
-                return sorted({tag for tag, _key in sports})
+            try:
+                sports = c.active_sports()
+            except Exception:  # noqa: BLE001
+                sports = []
+            for tag, _key in sports:
+                discovered.add(tag)
+        if isinstance(c, Bovada):
+            # Bovada always handles tennis discovery itself.
+            discovered.update({"atp", "wta"})
+    if discovered:
+        return sorted(discovered)
     return list(SPORTS)
 
 
