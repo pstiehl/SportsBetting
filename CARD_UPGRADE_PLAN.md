@@ -1,0 +1,9 @@
+# Card Upgrade Plan — feat/odds-and-edge-display
+
+Three bundled changes shipped as one PR to address Phil's feedback:
+
+1. **Real recommended stakes on every card.** Replace the hard-coded "$100 flat · model EV $-4" line with a live call to `model.staking.decide_stake()` (mode = `FLASHCAT_STAKE_MODE`, default `kelly_quarter`; threshold = `FLASHCAT_EDGE_THRESHOLD`, default 0.03; bankroll = `FLASHCAT_BANKROLL`, default $10k). Each card now shows: PICK + price, Model edge in percentage points (green/red), recommended stake (`$X.XX (¼ Kelly, Y% bankroll)` or `NO BET — edge below 3pp`), and EV computed against the recommended stake (not $100 flat). Blended-vs-market probs stay as a secondary row. Old "$100 flat" footer + nav copy moved to "stake-aware".
+2. **"Recommended Plays Today" panel at top of `index.html`.** Above the grid, render up to top 5 events where `decide_stake().stake > 0`, sorted by edge desc, with pick · sport · matchup · edge · stake · price · expected profit. When no plays clear the threshold, render "No edge plays today — model sitting out."
+3. **Local-time conversion in HTML.** Card timestamps emit `<time datetime="ISO8601" data-local="show">UTC fallback</time>`. `_layout.html` gets a tiny inline DOMContentLoaded script that converts those elements to the visitor's local time via `toLocaleString`. No-JS users still see UTC. CSP-friendly (no eval, no external deps).
+
+Tests: update `test_build_site.py` to assert on the new "edge" / "Recommended stake" copy; existing staking tests stay green. Add a new test that confirms the index renders a recommended-plays panel when edges clear threshold and a "sitting out" fallback otherwise. Verify pipeline behavior is correct (don't print or commit the Odds API key); merging the PR triggers `daily-refresh.yml` which will now pick up the new repo secret.

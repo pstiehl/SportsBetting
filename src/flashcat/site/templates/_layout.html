@@ -15,7 +15,7 @@
       <img src="{{ asset_root }}assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="{{ asset_root }}index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">$100 flat · probability-blended · {{ updated_at }}</div>
+        <div class="meta">{{ stake_mode_label }} stake-sized &middot; probability-blended &middot; {{ updated_at }}</div>
       </div>
     </div>
     <nav>
@@ -28,8 +28,37 @@
 </header>
 {{ content | safe }}
 <footer>
-  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  Flashcat Betting &middot; Research only. Not investment or gambling advice. &middot;
   <a href="https://github.com/pstiehl/SportsBetting">source</a>
 </footer>
+<script>
+// Convert UTC timestamps to the visitor's local time. CSP-friendly: no eval, no
+// external dependencies. Falls back to the rendered UTC string for no-JS users.
+(function () {
+  function localize() {
+    var nodes = document.querySelectorAll('time[data-local="show"]');
+    var opts = {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    };
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var iso = el.getAttribute('datetime');
+      if (!iso) continue;
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) continue;
+      try {
+        el.textContent = d.toLocaleString(undefined, opts);
+        el.setAttribute('title', iso);
+      } catch (e) { /* keep UTC fallback */ }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', localize);
+  } else {
+    localize();
+  }
+})();
+</script>
 </body>
 </html>
