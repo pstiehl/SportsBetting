@@ -269,13 +269,18 @@ def _calibration_chart(calibration: list[dict], out_path: Path) -> None:
 
 
 def render_index(env: Environment, events: list[Event], weights: dict[str, float]) -> str:
-    views = [_event_view(ev, weights) for ev in events if ev.pick is not None]
-    n_signals = sum(1 for v in views if v["badges"])
-    n_chalk = sum(1 for v in views if any(b["cls"] == "chalk" for b in v["badges"]))
+    # Render every live event, including those without a market line yet —
+    # users want to see today's slate even when lines haven't published.
+    views = [_event_view(ev, weights) for ev in events]
+    # Pickable events are the subset where we'd actually place a bet.
+    pickable = [v for v in views if v["pick_label"] != "—"]
+    n_signals = sum(1 for v in pickable if v["badges"])
+    n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
     content = env.get_template("index.html").render(
         events=views,
         n_events=len(views),
-        total_wagered=len(views) * FLAT_STAKE,
+        n_pickable=len(pickable),
+        total_wagered=len(pickable) * FLAT_STAKE,
         n_signals=n_signals,
         n_chalk=n_chalk,
     )
@@ -286,8 +291,8 @@ def render_event_pages(env: Environment, events: list[Event], weights: dict[str,
     template = env.get_template("event.html")
     ensure_dirs()
     for ev in events:
-        if ev.pick is None:
-            continue
+        # Render a page for every event — even ones we don't bet on, so the
+        # slate-card click-throughs always resolve.
         view = _build_event_page_view(ev, weights)
         content = template.render(ev=view)
         full = _layout(env, f"{view['away']} @ {view['home']}", "home", content, asset_root="../")
@@ -338,6 +343,14 @@ def render_methodology(env: Environment) -> str:
 def render_backtest(env: Environment, scoreboard: dict) -> str:
     sources = scoreboard.get("sources", {})
     fc = sources.get("flashcat-blended", {})
+    # Multi-sport scoreboards carry an overall blended block separately.
+    blended_overall = scoreboard.get("blended_overall")
+    if blended_overall:
+        # The blended_overall block is the bottom line when running multi-sport.
+        # Keep fc's calibration if present, but overwrite the headline numbers.
+        for k in ("n_events", "wagered", "profit", "roi", "wins", "losses"):
+            if blended_overall.get(k) is not None:
+                fc[k] = blended_overall[k]
     slices_raw = fc.get("slices", {}) or {}
     slice_rows = []
     for label, v in sorted(slices_raw.items()):
@@ -365,6 +378,33 @@ def render_backtest(env: Environment, scoreboard: dict) -> str:
     # Render charts
     _bankroll_chart(scoreboard.get("bankroll_curve", []) or [], ASSETS_DIR / "bankroll.png")
     _calibration_chart(fc.get("calibration", []) or [], ASSETS_DIR / "calibration.png")
+    # Per-sport rows for the multi-sport breakdown table.
+    per_sport_rows = []
+    for sport, p in (scoreboard.get("per_sport") or {}).items():
+        bm = p.get("blended") or {}
+        if not bm:
+            per_sport_rows.append({
+                "sport": sport.upper(),
+                "n": p.get("n_events", 0),
+                "bets": 0,
+                "wagered_str": "—",
+                "profit_str": "—",
+                "roi_str": "—",
+                "roi_cls": "",
+                "brier_str": "—",
+            })
+            continue
+        roi = bm.get("roi")
+        per_sport_rows.append({
+            "sport": sport.upper(),
+            "n": bm.get("n_events", 0),
+            "bets": (bm.get("wins", 0) + bm.get("losses", 0)),
+            "wagered_str": f"${bm.get('wagered', 0):,.0f}",
+            "profit_str": f"${bm.get('profit', 0):+,.0f}",
+            "roi_str": f"{roi:+.2%}" if roi is not None else "—",
+            "roi_cls": "pos" if (roi or 0) > 0 else "neg" if (roi or 0) < 0 else "",
+            "brier_str": f"{bm.get('brier', 0):.4f}" if bm.get("brier") is not None else "—",
+        })
     content = env.get_template("backtest.html").render(
         window=window,
         n_events=fc.get("n_events", 0),
@@ -374,6 +414,9 @@ def render_backtest(env: Environment, scoreboard: dict) -> str:
         overall_profit_str=f"${overall_profit:+,.0f}",
         overall_profit_cls="pos" if overall_profit > 0 else "neg" if overall_profit < 0 else "",
         slice_rows=slice_rows,
+        per_sport_rows=per_sport_rows,
+        stake_mode=scoreboard.get("stake_mode", "flat"),
+        edge_threshold=scoreboard.get("edge_threshold", 0.0),
     )
     return _layout(env, "Backtest", "backtest", content)
 

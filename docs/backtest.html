@@ -15,7 +15,7 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">$100 flat · probability-blended · 2026-05-29 16:54 UTC</div>
+        <div class="meta">$100 flat · probability-blended · 2026-05-29 17:46 UTC</div>
       </div>
     </div>
     <nav>
@@ -29,14 +29,69 @@
 <div class="container">
 
 <h2>Backtest</h2>
-<p class="lede">Phase 1 backtests on 2023-09-01 → 2024-02-15 via <code class="inline">nfl_data_py</code>. Each event is simulated as a $100 flat bet at the book-average closing line. The blended Flashcat model is graded alongside every individual source.</p>
+<p class="lede">
+  Multi-sport backtest over 2023-09-01 → 2024-12-31. The blended Flashcat model is graded
+  with the configured staking rule, currently
+  <code class="inline">kelly_quarter</code>
+  with an edge-threshold of
+  <code class="inline">3%</code>
+  over the devigged market. Coin-flips inside the no-bet band are skipped,
+  not bet, which is the central ROI fix vs. v1's "$100 on every event."
+</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">285</div><div class="label">Events</div></div>
-  <div class="kpi"><div class="num neg">-3.0%</div><div class="label">Flashcat ROI</div></div>
-  <div class="kpi"><div class="num">0.2186</div><div class="label">Flashcat Brier ↓</div></div>
-  <div class="kpi"><div class="num neg">$-861</div><div class="label">Total Profit</div></div>
+  <div class="kpi"><div class="num">6524</div><div class="label">Events graded</div></div>
+  <div class="kpi"><div class="num pos">+1.6%</div><div class="label">Blended ROI</div></div>
+  <div class="kpi"><div class="num">—</div><div class="label">Blended Brier ↓</div></div>
+  <div class="kpi"><div class="num pos">$+2,112</div><div class="label">Total Profit</div></div>
 </div>
+
+
+<h3>Per-sport breakdown</h3>
+<p class="lede">Honest, per-sport ROI on the blended model. Sports without a second probability source (e.g. NFL with only market-close) end up with zero wagered, because the model has no informational edge over the line.</p>
+<table>
+<thead><tr><th>Sport</th><th class="num">Events</th><th class="num">Bets placed</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><strong>NFL</strong></td>
+  <td class="num">541</td>
+  <td class="num">0</td>
+  <td class="num">$0</td>
+  <td class="num">$+0</td>
+  <td class="num ">—</td>
+</tr>
+
+<tr>
+  <td><strong>NBA</strong></td>
+  <td class="num">0</td>
+  <td class="num">0</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num ">—</td>
+</tr>
+
+<tr>
+  <td><strong>ATP</strong></td>
+  <td class="num">3106</td>
+  <td class="num">322</td>
+  <td class="num">$70,361</td>
+  <td class="num">$-6,754</td>
+  <td class="num neg">-9.60%</td>
+</tr>
+
+<tr>
+  <td><strong>WTA</strong></td>
+  <td class="num">2877</td>
+  <td class="num">305</td>
+  <td class="num">$65,888</td>
+  <td class="num">$+8,866</td>
+  <td class="num pos">+13.46%</td>
+</tr>
+
+</tbody>
+</table>
+
 
 <h3>Bankroll curve</h3>
 <img class="chart" src="assets/bankroll.png" alt="Cumulative profit over time">
@@ -45,22 +100,7 @@
 <p class="lede">Blended-model predicted probability vs. realized win rate, bucketed in 10% bins. A perfectly calibrated model sits on the diagonal.</p>
 <img class="chart" src="assets/calibration.png" alt="Blended model calibration">
 
-<h3>ROI by slice</h3>
-<table>
-<thead><tr><th>Slice</th><th class="num">Events</th><th class="num">Wins/Losses</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
-<tbody>
 
-<tr>
-  <td>no-signal</td>
-  <td class="num">285</td>
-  <td class="num">187 / 98</td>
-  <td class="num">$28,500</td>
-  <td class="num neg">$-861</td>
-  <td class="num neg">-3.0%</td>
-</tr>
-
-</tbody>
-</table>
 
 </div>
 <footer>

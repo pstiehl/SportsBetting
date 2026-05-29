@@ -5,6 +5,8 @@ from .espn import ESPNScoreboard
 from .odds_api import TheOddsAPI
 from .polymarket import Polymarket
 from .nflverse import NFLverseHistorical
+from .tennis_history import TennisDataHistorical
+from .nba_history import FiveThirtyEightNBAHistorical
 from .stubs import (
     PinnacleStub,
     DraftKingsStub,
@@ -21,6 +23,8 @@ ALL_CONNECTORS: list[type[SourceConnector]] = [
     ESPNScoreboard,
     Polymarket,
     NFLverseHistorical,
+    TennisDataHistorical,
+    FiveThirtyEightNBAHistorical,
     PinnacleStub,
     DraftKingsStub,
     FanDuelStub,
@@ -38,6 +42,8 @@ __all__ = [
     "ESPNScoreboard",
     "Polymarket",
     "NFLverseHistorical",
+    "TennisDataHistorical",
+    "FiveThirtyEightNBAHistorical",
     "PinnacleStub",
     "DraftKingsStub",
     "FanDuelStub",

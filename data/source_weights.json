@@ -1,4 +1,10 @@
 {
-  "market-close": 0.5,
-  "market-consensus": 0.5
+  "atp:market-close": 0.12976871182585614,
+  "atp:market-consensus": 0.12976871182585614,
+  "atp:tennis-rank-bt": 0.11737275812872351,
+  "nfl:market-close": 0.12440109137211199,
+  "nfl:market-consensus": 0.12440109137211199,
+  "wta:market-close": 0.12850972939276822,
+  "wta:market-consensus": 0.12850972939276822,
+  "wta:tennis-rank-bt": 0.11726817668980387
 }

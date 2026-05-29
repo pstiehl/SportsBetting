@@ -2,6 +2,12 @@
 
 Docs: https://the-odds-api.com/liveapi/guides/v4/
 Free tier requires an API key in env var THE_ODDS_API_KEY.
+
+Behavior change (post-fake-data incident):
+- If no API key is set, this connector returns ``[]`` unless
+  ``FLASHCAT_USE_SAMPLES=1`` is set (opt-in for offline local dev).
+- Active-sport detection: ``active_sports()`` queries ``/v4/sports?all=false``
+  so the build pipeline only requests sports that are in season today.
 """
 
 from __future__ import annotations
@@ -13,7 +19,7 @@ from pathlib import Path
 
 import httpx
 
-from ..config import CACHE_DIR, SAMPLES_DIR, the_odds_api_key
+from ..config import CACHE_DIR, SAMPLES_DIR, the_odds_api_key, use_samples_fallback
 from ..types import BookLine, Event, Sport
 from .base import SourceConnector
 
@@ -21,6 +27,8 @@ log = logging.getLogger(__name__)
 
 BASE_URL = "https://api.the-odds-api.com/v4"
 
+# Canonical sport-key map. Tennis keys are seasonal (e.g. french_open),
+# so for tennis we resolve at runtime via ``active_sports()``.
 SPORT_KEYS = {
     "nfl": "americanfootball_nfl",
     "nba": "basketball_nba",
@@ -29,6 +37,17 @@ SPORT_KEYS = {
     "cfb": "americanfootball_ncaaf",
     "cbb": "basketball_ncaab",
 }
+
+# Group-prefix → our sport tag for runtime tennis discovery.
+TENNIS_PREFIXES = ("tennis_atp", "tennis_wta")
+
+
+def _tennis_tag(sport_key: str) -> Sport | None:
+    if sport_key.startswith("tennis_atp"):
+        return "atp"
+    if sport_key.startswith("tennis_wta"):
+        return "wta"
+    return None
 
 
 class TheOddsAPI(SourceConnector):
@@ -40,6 +59,49 @@ class TheOddsAPI(SourceConnector):
         self.timeout = timeout
         self.api_key = the_odds_api_key()
 
+    # ----- discovery ---------------------------------------------------
+
+    def active_sports(self) -> list[tuple[Sport, str]]:
+        """Return list of ``(our_sport_tag, oddsapi_key)`` currently in season.
+
+        Falls back to the static SPORT_KEYS dict if no API key is available.
+        Tennis keys are dynamic — we only emit them when the API reports them
+        active.
+        """
+        static = [(s, SPORT_KEYS[s]) for s in SPORT_KEYS]
+        if not self.api_key:
+            log.info(
+                "THE_ODDS_API_KEY not set; can't discover active sports — using static list"
+            )
+            return static
+        url = f"{BASE_URL}/sports/"
+        params = {"apiKey": self.api_key, "all": "false"}
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                r = client.get(url, params=params)
+                r.raise_for_status()
+                data = r.json()
+        except Exception as e:  # noqa: BLE001
+            log.warning("Odds API /sports list failed: %s — falling back to static", e)
+            return static
+        out: list[tuple[Sport, str]] = []
+        reverse = {v: k for k, v in SPORT_KEYS.items()}
+        for s in data:
+            key = s.get("key", "")
+            if not s.get("active"):
+                continue
+            if key in reverse:
+                out.append((reverse[key], key))
+                continue
+            t = _tennis_tag(key)
+            if t is not None:
+                out.append((t, key))
+        # Dedupe — many tennis tournaments map to same atp/wta tag; we'll
+        # union them at fetch time by storing the underlying keys.
+        return out
+
+    # ----- fetch -------------------------------------------------------
+
     def fetch_events(
         self,
         start: date,
@@ -47,19 +109,30 @@ class TheOddsAPI(SourceConnector):
         sport: Sport | None = None,
     ) -> list[Event]:
         if not self.api_key:
-            log.info("THE_ODDS_API_KEY not set; falling back to committed sample data")
-            return self._load_sample()
-        sports = [sport] if sport else list(SPORT_KEYS.keys())
+            if use_samples_fallback():
+                log.warning(
+                    "THE_ODDS_API_KEY not set; FLASHCAT_USE_SAMPLES=1 → loading committed samples"
+                )
+                return self._load_sample()
+            log.warning(
+                "THE_ODDS_API_KEY not set; OddsAPI returning [] "
+                "(set FLASHCAT_USE_SAMPLES=1 for offline dev)"
+            )
+            return []
+
+        # Pull active sport list once and filter.
+        active = self.active_sports()
+        if sport:
+            active = [(t, k) for (t, k) in active if t == sport]
         events: list[Event] = []
-        for s in sports:
+        for tag, key in active:
             try:
-                events.extend(self._fetch_sport(s))
+                events.extend(self._fetch_sport_key(tag, key))
             except Exception as e:  # noqa: BLE001
-                log.warning("the-odds-api fetch failed for %s: %s", s, e)
+                log.warning("the-odds-api fetch failed for %s/%s: %s", tag, key, e)
         return events
 
-    def _fetch_sport(self, sport: Sport) -> list[Event]:
-        sport_key = SPORT_KEYS[sport]
+    def _fetch_sport_key(self, sport: Sport, sport_key: str) -> list[Event]:
         url = f"{BASE_URL}/sports/{sport_key}/odds"
         params = {
             "apiKey": self.api_key,
@@ -71,9 +144,8 @@ class TheOddsAPI(SourceConnector):
             r = client.get(url, params=params)
             r.raise_for_status()
             data = r.json()
-        # Cache for diagnostics
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        with open(CACHE_DIR / f"odds_api_{sport}.json", "w") as f:
+        with open(CACHE_DIR / f"odds_api_{sport_key}.json", "w") as f:
             json.dump(data, f, indent=2)
         return self._parse_payload(data, sport)
 
@@ -91,6 +163,9 @@ class TheOddsAPI(SourceConnector):
                 commence = now
             home = game.get("home_team", "")
             away = game.get("away_team", "")
+            # Tennis events don't have home/away — Odds API still returns one
+            # side as "home_team". We keep the convention but the meaning is
+            # just "team listed first".
             lines: list[BookLine] = []
             for bk in game.get("bookmakers", []):
                 book = bk.get("key", "unknown")
@@ -126,10 +201,13 @@ class TheOddsAPI(SourceConnector):
     @staticmethod
     def _load_sample() -> list[Event]:
         sample_path = SAMPLES_DIR / "odds_api_sample.json"
-        if not sample_path.exists():
-            log.debug("no odds_api sample found at %s", sample_path)
+        # Prefer the explicit `.example.json` quarantined file when present.
+        example_path = SAMPLES_DIR / "odds_api_sample.example.json"
+        path = example_path if example_path.exists() else sample_path
+        if not path.exists():
+            log.debug("no odds_api sample found at %s or %s", sample_path, example_path)
             return []
-        with open(sample_path) as f:
+        with open(path) as f:
             data = json.load(f)
         out: list[Event] = []
         for sport, payload in data.items():
