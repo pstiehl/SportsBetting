@@ -1,0 +1,67 @@
+name: Daily refresh and publish
+
+# When does this workflow run?
+on:
+  # Every day at 11:15 UTC (6:15 AM Central / 4:15 AM Pacific).
+  # Offset 15 min from the football model so we don't both hit
+  # external APIs on the same minute.
+  schedule:
+    - cron: '15 11 * * *'
+  # Also run when you push changes to main.
+  push:
+    branches: [main]
+  # And let you trigger it manually from the Actions tab.
+  workflow_dispatch:
+
+# Permissions needed to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Don't run two of these at the same time.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Run the model end-to-end (backtest → reweight → build)
+        env:
+          # Optional. If unset, the OddsAPI source falls back to the
+          # committed sample data — site still publishes, just not fresh.
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+        run: |
+          python -m flashcat all
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs/ as a GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
