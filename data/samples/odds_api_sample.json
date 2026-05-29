@@ -1,0 +1,219 @@
+{
+  "mlb": [
+    {
+      "id": "sample-mlb-001",
+      "sport_key": "baseball_mlb",
+      "commence_time": "2026-05-29T23:10:00Z",
+      "home_team": "Los Angeles Dodgers",
+      "away_team": "San Francisco Giants",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "title": "DraftKings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Los Angeles Dodgers", "price": -165},
+                {"name": "San Francisco Giants", "price": 140}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "title": "FanDuel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Los Angeles Dodgers", "price": -170},
+                {"name": "San Francisco Giants", "price": 145}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "betmgm",
+          "title": "BetMGM",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Los Angeles Dodgers", "price": -158},
+                {"name": "San Francisco Giants", "price": 132}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sample-mlb-002",
+      "sport_key": "baseball_mlb",
+      "commence_time": "2026-05-30T00:05:00Z",
+      "home_team": "New York Yankees",
+      "away_team": "Boston Red Sox",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "New York Yankees", "price": -120},
+                {"name": "Boston Red Sox", "price": 100}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "New York Yankees", "price": -135},
+                {"name": "Boston Red Sox", "price": 115}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sample-mlb-003",
+      "sport_key": "baseball_mlb",
+      "commence_time": "2026-05-30T01:40:00Z",
+      "home_team": "Houston Astros",
+      "away_team": "Seattle Mariners",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Houston Astros", "price": -250},
+                {"name": "Seattle Mariners", "price": 210}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Houston Astros", "price": -240},
+                {"name": "Seattle Mariners", "price": 205}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sample-mlb-004",
+      "sport_key": "baseball_mlb",
+      "commence_time": "2026-05-30T02:10:00Z",
+      "home_team": "Tampa Bay Rays",
+      "away_team": "Toronto Blue Jays",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Tampa Bay Rays", "price": -110},
+                {"name": "Toronto Blue Jays", "price": -110}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Tampa Bay Rays", "price": -115},
+                {"name": "Toronto Blue Jays", "price": -105}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nba": [
+    {
+      "id": "sample-nba-001",
+      "sport_key": "basketball_nba",
+      "commence_time": "2026-05-30T00:00:00Z",
+      "home_team": "Boston Celtics",
+      "away_team": "New York Knicks",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Boston Celtics", "price": -180},
+                {"name": "New York Knicks", "price": 155}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Boston Celtics", "price": -185},
+                {"name": "New York Knicks", "price": 160}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sample-nba-002",
+      "sport_key": "basketball_nba",
+      "commence_time": "2026-05-30T02:30:00Z",
+      "home_team": "Denver Nuggets",
+      "away_team": "Oklahoma City Thunder",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Denver Nuggets", "price": 105},
+                {"name": "Oklahoma City Thunder", "price": -125}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fanduel",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Denver Nuggets", "price": 110},
+                {"name": "Oklahoma City Thunder", "price": -130}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

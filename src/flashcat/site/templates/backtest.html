@@ -1,0 +1,37 @@
+<div class="container">
+
+<h2>Backtest</h2>
+<p class="lede">Phase 1 backtests on {{ window }} via <code class="inline">nfl_data_py</code>. Each event is simulated as a $100 flat bet at the book-average closing line. The blended Flashcat model is graded alongside every individual source.</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">{{ n_events }}</div><div class="label">Events</div></div>
+  <div class="kpi"><div class="num {{ overall_roi_cls }}">{{ overall_roi_str }}</div><div class="label">Flashcat ROI</div></div>
+  <div class="kpi"><div class="num">{{ overall_brier_str }}</div><div class="label">Flashcat Brier ↓</div></div>
+  <div class="kpi"><div class="num {{ overall_profit_cls }}">{{ overall_profit_str }}</div><div class="label">Total Profit</div></div>
+</div>
+
+<h3>Bankroll curve</h3>
+<img class="chart" src="assets/bankroll.png" alt="Cumulative profit over time">
+
+<h3>Calibration</h3>
+<p class="lede">Blended-model predicted probability vs. realized win rate, bucketed in 10% bins. A perfectly calibrated model sits on the diagonal.</p>
+<img class="chart" src="assets/calibration.png" alt="Blended model calibration">
+
+<h3>ROI by slice</h3>
+<table>
+<thead><tr><th>Slice</th><th class="num">Events</th><th class="num">Wins/Losses</th><th class="num">Wagered</th><th class="num">Profit</th><th class="num">ROI</th></tr></thead>
+<tbody>
+{% for row in slice_rows %}
+<tr>
+  <td>{{ row.label }}</td>
+  <td class="num">{{ row.n }}</td>
+  <td class="num">{{ row.wl }}</td>
+  <td class="num">${{ "{:,.0f}".format(row.wagered) }}</td>
+  <td class="num {{ row.profit_cls }}">{{ row.profit_str }}</td>
+  <td class="num {{ row.roi_cls }}">{{ row.roi_str }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>

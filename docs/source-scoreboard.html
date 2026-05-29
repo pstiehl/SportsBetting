@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Source Scoreboard — Flashcat Betting</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="alternate icon" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <div class="brand">
+      <img src="assets/flashcat-logo.svg" alt="Flashcat">
+      <div>
+        <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
+        <div class="meta">$100 flat · probability-blended · 2026-05-29 16:54 UTC</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" >Today</a>
+      <a href="backtest.html" >Backtest</a>
+      <a href="source-scoreboard.html" class="active">Sources</a>
+      <a href="methodology.html" >Methodology</a>
+    </nav>
+  </div>
+</header>
+<div class="container">
+
+<h2>Source <span class="accent">Scoreboard</span></h2>
+<p class="lede">Every source that contributes a probability gets graded on every historical event in the backtest window. Brier score measures calibration (lower is better, 0 = perfect). ROI is profit ÷ wagered on $100-flat bets. Weights are derived from <code class="inline">softmax(−Brier)</code> and refresh every backtest run.</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">3</div><div class="label">Live Sources</div></div>
+  <div class="kpi"><div class="num">285</div><div class="label">Events Graded</div></div>
+  <div class="kpi"><div class="num">2023-09-01 → 2024-02-15</div><div class="label">Backtest Window</div></div>
+</div>
+
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Current Weight</th>
+</tr></thead>
+<tbody>
+
+<tr>
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">285</td>
+  <td class="num">0.2186</td>
+  <td class="num neg">-3.0%</td>
+  <td class="num">187 / 98</td>
+  <td class="num neg">$-861</td>
+  <td class="num">—</td>
+</tr>
+
+<tr>
+  <td><strong>market-close</strong></td>
+  <td class="num">285</td>
+  <td class="num">0.2186</td>
+  <td class="num neg">-0.5%</td>
+  <td class="num">191 / 94</td>
+  <td class="num neg">$-151</td>
+  <td class="num">50.0%</td>
+</tr>
+
+<tr>
+  <td><strong>market-consensus</strong></td>
+  <td class="num">285</td>
+  <td class="num">0.2186</td>
+  <td class="num neg">-0.5%</td>
+  <td class="num">191 / 94</td>
+  <td class="num neg">$-151</td>
+  <td class="num">50.0%</td>
+</tr>
+
+</tbody>
+</table>
+
+<p class="lede" style="margin-top:18px">Live sources are stubbed-out connectors that return real data when configured. Stubbed-only sources (Pinnacle, DraftKings, FanDuel page scrapes, Kalshi, FiveThirtyEight, Massey/Sagarin, KenPom, BPI) ship clean interfaces but return empty in Phase 1 — they wire in once their connectors are implemented.</p>
+
+</div>
+<footer>
+  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  <a href="https://github.com/pstiehl/SportsBetting">source</a>
+</footer>
+</body>
+</html>

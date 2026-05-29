@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ page_title }} — Flashcat Betting</title>
+<link rel="icon" type="image/svg+xml" href="{{ asset_root }}assets/favicon.svg">
+<link rel="alternate icon" href="{{ asset_root }}assets/favicon.png">
+<link rel="stylesheet" href="{{ asset_root }}assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <div class="brand">
+      <img src="{{ asset_root }}assets/flashcat-logo.svg" alt="Flashcat">
+      <div>
+        <h1><a href="{{ asset_root }}index.html"><span class="accent">Flashcat</span> Betting</a></h1>
+        <div class="meta">$100 flat · probability-blended · {{ updated_at }}</div>
+      </div>
+    </div>
+    <nav>
+      <a href="{{ asset_root }}index.html" {% if active == 'home' %}class="active"{% endif %}>Today</a>
+      <a href="{{ asset_root }}backtest.html" {% if active == 'backtest' %}class="active"{% endif %}>Backtest</a>
+      <a href="{{ asset_root }}source-scoreboard.html" {% if active == 'sources' %}class="active"{% endif %}>Sources</a>
+      <a href="{{ asset_root }}methodology.html" {% if active == 'methodology' %}class="active"{% endif %}>Methodology</a>
+    </nav>
+  </div>
+</header>
+{{ content | safe }}
+<footer>
+  Flashcat Betting · Research only. Not investment or gambling advice. ·
+  <a href="https://github.com/pstiehl/SportsBetting">source</a>
+</footer>
+</body>
+</html>
