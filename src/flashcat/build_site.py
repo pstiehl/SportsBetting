@@ -38,7 +38,7 @@ from .config import (
     ensure_dirs,
     stake_mode,
 )
-from .model.blend import _resolve_weights, load_weights
+from .model.blend import _resolve_weights, load_weights, weights_for_sport
 from .model.staking import StakeDecision, decide_stake
 from .site.logo import cat_face_svg, write_favicon_png, write_logo
 from .types import (
@@ -318,10 +318,11 @@ def _american_str(price: int) -> str:
     return f"{price:+d}"
 
 
-def _build_event_page_view(ev: Event, weights: dict[str, float]) -> dict:
+def _build_event_page_view(ev: Event, weights: dict) -> dict:
     view = _event_view(ev, weights)
     src_names = [p.source for p in ev.source_probs]
-    w_norm = _resolve_weights(src_names, weights) if src_names else {}
+    sport_weights = weights_for_sport(weights, ev.sport)
+    w_norm = _resolve_weights(src_names, sport_weights) if src_names else {}
     source_rows = []
     for sp in ev.source_probs:
         source_rows.append(
@@ -493,19 +494,26 @@ def render_event_pages(env: Environment, events: list[Event], weights: dict[str,
         (EVENT_PAGES_DIR / f"{view['slug']}.html").write_text(full)
 
 
-def render_sources(env: Environment, scoreboard: dict, weights: dict[str, float]) -> str:
+def render_sources(env: Environment, scoreboard: dict, weights: dict) -> str:
     rows = []
     sources = scoreboard.get("sources", {}) if isinstance(scoreboard, dict) else {}
     if "flashcat-blended" in sources:
         keys = ["flashcat-blended"] + [k for k in sources if k != "flashcat-blended"]
     else:
         keys = list(sources.keys())
+    # Flat key into the global weight pool. v2 weights live under "global".
+    global_pool = (
+        weights.get("global", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"
+        else weights
+    )
+    if not isinstance(global_pool, dict):
+        global_pool = {}
     for k in keys:
         v = sources[k]
         brier = v.get("brier")
         roi = v.get("roi")
         profit = v.get("profit")
-        weight = weights.get(k, 0.0)
+        weight = global_pool.get(k, 0.0) if isinstance(global_pool.get(k, 0.0), (int, float)) else 0.0
         rows.append({
             "source": k,
             "is_model": k == "flashcat-blended",
