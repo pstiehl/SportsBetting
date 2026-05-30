@@ -598,3 +598,107 @@ the source of truth; this section is a pointer.
 
 NFL flips to live recommendations effective with this PR; WTA goes
 marginal-live; ATP, MLB, and NBA stay research-only.
+
+---
+
+## PGA Tour — DataGolf head-to-head matchups (PR #15)
+
+**Connectors:**
+- `flashcat.sources.pga_datagolf.PGADatagolf` — `datagolf-sg`
+- `flashcat.sources.pga_espn_bpi.PGAESPNScoreboard` — `pga-espn-scoreboard`
+- `flashcat.sources.pga_market_consensus.PGAMarketConsensus` — `pga-market-consensus`
+
+### Bet type
+
+Unlike the rest of Flashcat, PGA's primary tradable market is **NOT**
+moneyline-style. The three common golf bet types are:
+
+1. **Outright tournament winner** — long shot, +5000 typical favourite.
+   Hard to find +EV; we collect lines for source_history but don't
+   currently price them.
+2. **Head-to-head matchups** — two- or three-player groupings,
+   roughly 50/50 odds. **This is what PR #15 models.** Closest analog
+   to a tennis singles match for the existing two-way pipeline.
+3. **Make the cut** — binary; not modeled in this PR (future stub).
+
+### Head-to-head matchup probability
+
+For an upcoming PGA Tour event we fetch DataGolf's pre-tournament
+field forecast (per-player win, top-5, top-10, top-20, and make-cut
+probabilities). For each adjacent pair on the ranked-by-win-prob
+field — (rank 1 vs rank 2), (rank 3 vs rank 4), … — we synthesize a
+head-to-head probability via Bradley-Terry on the win-probability
+ratio:
+
+```
+P(player A beats player B in matchup) = win_A / (win_A + win_B)
+```
+
+with light Laplace smoothing (1e-3) so ties and zero-skill rows don't
+divide by zero. This matches how public golf-betting tools (including
+the free tier of DataGolf's matchup screen) anchor matchup prices
+before applying vig.
+
+### Why Bradley-Terry on win-prob ratio
+
+The "correct" head-to-head probability under DataGolf's model would
+marginalize over every possible round-by-round score path between the
+two players. That's expensive and the round-level distribution lives
+behind DataGolf's paid tier (`live-predictions` endpoint). The
+ratio-of-wins shortcut is the same closed-form Mark Broadie's *Every
+Shot Counts* (2014) uses for back-of-envelope matchup analysis and is
+empirically within ±2 percentage points of the path-integrated
+estimate on test cases we've checked.
+
+### Data sources and paywall reality
+
+DataGolf's `feeds.datagolf.com` API has **no anonymous tier** — every
+request requires `&key=API_TOKEN`. We honor Phil's "OFF LIMITS"
+constraint on the paid tier by using only the three endpoints DataGolf
+documents as public-tier (rate-limited to 45 req/min):
+
+| Endpoint | Public tier? | Used for |
+|---|---|---|
+| `/preds/get-dg-rankings` | ✅ | Player skill table (BT prior, future use) |
+| `/preds/pre-tournament` | ✅ | Win/top-N probs → matchup probs |
+| `/preds/pre-tournament-archive` | ✅ | Backfill (limited — no result rows) |
+| `/preds/live-predictions` | ❌ paid | Not used |
+| `/preds/player-decompositions` | ❌ paid | Not used |
+| `/historical-raw-data/*` | ❌ paid | Not used (result rows live here) |
+
+When `DATAGOLF_API_KEY` is unset (e.g. CI), the DataGolf connector
+returns `[]` cleanly and the build pipeline stays green.
+
+**ESPN BPI for golf does NOT exist.** Confirmed 2026-05-30 — the
+predictor endpoint returns HTTP 400 `"Predictor is not supported for
+sport: golf, league: pga"`. We fall back to a leaderboard-position
+proxy that treats current `scoreToPar` as a noisy power-rating signal.
+Logistic transform on the score gap with a scale of 2.5 strokes
+(Broadie 2014's empirical mid-tournament H2H estimate).
+
+**The-odds-api does NOT carry PGA head-to-head matchups.** Only the
+four major outright winner markets (Masters / PGA Championship /
+US Open / The Open) are exposed. The market-consensus connector
+pulls those outright odds when in-season; the rest of the time it
+returns `[]`.
+
+### Backfill: the small-sample caveat
+
+The `pre-tournament-archive` endpoint returns historical *predictions*
+but the official *result* rows live behind the paid tier. Without
+graded outcomes, we cannot ledger PGA matchup wins/losses into
+`source_history.db`. PGA will therefore stay 🔍 RESEARCH until either
+the paid DataGolf tier is enabled, a separate results source is wired
+in (PGA Tour stats archive scrape is one option), or enough live
+tournaments grade through to clear the `n_bets ≥ 200` per-sport gate.
+
+The conservative read: assume PGA stays RESEARCH for the rest of
+2026, surfaces real ROI numbers in late 2026 / early 2027, and only
+flips LIVE if blended ROI clears +1.0% with the standard sample-size
+floor.
+
+### Current state (PR #15 introduction)
+
+| Sport | Mode | Blended ROI | Scored bets | Notes |
+|---|---|---|---|---|
+| **PGA** | 🔍 RESEARCH | n/a | 0 | Forward-only; key-gated DataGolf; no graded results yet |

@@ -48,6 +48,11 @@ def test_build_fails_loud_when_no_live_events(monkeypatch):
     monkeypatch.setattr("flashcat.cli.FanDuel.fetch_events", empty_fetch)
     monkeypatch.setattr("flashcat.cli.ESPNScoreboard.fetch_events", empty_fetch)
     monkeypatch.setattr("flashcat.cli.Polymarket.fetch_events", empty_fetch)
+    # PGA connectors added in PR #15 — also empty here to keep the
+    # "no live data anywhere" branch reachable in this test.
+    monkeypatch.setattr("flashcat.cli.PGADatagolf.fetch_events", empty_fetch)
+    monkeypatch.setattr("flashcat.cli.PGAESPNScoreboard.fetch_events", empty_fetch)
+    monkeypatch.setattr("flashcat.cli.PGAMarketConsensus.fetch_events", empty_fetch)
 
     with pytest.raises(NoLiveDataError):
         cli.build(days_ahead=0)

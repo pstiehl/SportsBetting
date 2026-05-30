@@ -36,6 +36,9 @@ from .sources import (
     FanDuel,
     MLBStatcastLineup,
     MLBWeather,
+    PGADatagolf,
+    PGAESPNScoreboard,
+    PGAMarketConsensus,
     Polymarket,
     TheOddsAPI,
 )
@@ -130,6 +133,13 @@ def _active_sports(connectors) -> list[Sport]:
         if isinstance(c, Bovada):
             # Bovada always handles tennis discovery itself.
             discovered.update({"atp", "wta"})
+        if isinstance(c, (PGADatagolf, PGAESPNScoreboard, PGAMarketConsensus)):
+            # PGA connectors gate themselves on data availability
+            # (DATAGOLF_API_KEY, active ESPN scoreboard, Odds API outright
+            # markets). We always advertise ``pga`` here so the build loop
+            # fetches from them; per-sport mode gating (RESEARCH MODE)
+            # ensures negative-ROI PGA picks never display $ stakes.
+            discovered.add("pga")
     if discovered:
         return sorted(discovered)
     return list(SPORTS)
@@ -158,6 +168,13 @@ def build(
         Polymarket(),
         MLBStatcastLineup(),
         MLBWeather(),
+        # PGA connectors (PR #15). DataGolf SG model (key-gated, free-tier
+        # endpoints only) + ESPN PGA leaderboard proxy + Odds API outright
+        # winner consensus. All three return [] off-season / unkeyed so
+        # they're cheap to wire in year-round.
+        PGADatagolf(),
+        PGAESPNScoreboard(),
+        PGAMarketConsensus(),
     ]
 
     active = _active_sports(connectors)
