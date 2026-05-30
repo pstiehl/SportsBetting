@@ -10,6 +10,29 @@
   <div class="kpi"><div class="num">{{ total_recommended_stake_str }}</div><div class="label">Total Stake ({{ stake_mode_label }})</div></div>
 </div>
 
+{% if sport_summary_rows %}
+<section class="sport-mode-summary">
+  <h3>Per-Sport Mode <span class="section-count">({{ n_sports_live }} LIVE · {{ n_sports_research }} RESEARCH)</span></h3>
+  <p class="lede" style="margin-top:-4px">Each sport gates its own LIVE/RESEARCH state on its blended backtest ROI &amp; sample size. A sport goes LIVE only if blended ROI ≥ +{{ live_roi_floor_pp }}% with at least {{ live_min_bets }} scored bets.</p>
+  <table class="sport-mode-table">
+    <thead>
+      <tr><th>Sport</th><th>Mode</th><th class="num">Blended ROI</th><th class="num">Scored bets</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      {% for r in sport_summary_rows %}
+      <tr class="mode-{{ r.badge_cls }}">
+        <td><strong>{{ r.sport_upper }}</strong></td>
+        <td><span class="mode-pill {{ r.badge_cls }}">{{ r.badge_label }}</span></td>
+        <td class="num">{{ r.roi_str }}</td>
+        <td class="num">{{ r.n_bets }}</td>
+        <td class="reason">{{ r.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
 {% if n_events == 0 %}
 <div class="callout"><strong>No live events for today.</strong> Either no in-season sport has matches today, or no live source returned data. Set <code class="inline">THE_ODDS_API_KEY</code> in repo secrets for the daily refresh to pull moneylines.</div>
 {% elif n_pickable == 0 %}
@@ -19,9 +42,9 @@
 <div class="recommended-plays">
   <h3>Recommended Plays Today</h3>
   {% if research_mode %}
-  <div class="callout research"><strong>Backtested ROI is currently {{ backtest_roi_str }} &mdash; model is in research mode. No live recommendations shown.</strong> The probability blend is still computed and displayed on each event card for transparency, but no stake suggestions are provided until the blended backtest clears 0% ROI on out-of-sample data.</div>
+  <div class="callout research"><strong>No sport currently qualifies for LIVE mode.</strong> Every exposed sport is either below the per-sport ROI floor or has too few scored bets to trust. The probability blend is still computed and displayed on each event card for transparency, but no stake suggestions are provided.</div>
   {% else %}
-  <p class="lede" style="margin-top:-4px">Bankroll {{ bankroll_str }} &middot; {{ stake_mode_label }} &middot; edge threshold {{ edge_threshold_pp }}&thinsp;pp</p>
+  <p class="lede" style="margin-top:-4px">Bankroll {{ bankroll_str }} &middot; {{ stake_mode_label }} &middot; edge threshold {{ edge_threshold_pp }}&thinsp;pp &middot; staking only on LIVE-mode sports</p>
   {% if top_recs %}
   <table class="recs">
     <thead>
@@ -58,9 +81,9 @@
 </div>
 
 {% macro event_card(ev) -%}
-<a href="event/{{ ev.slug }}.html" class="event-card" style="text-decoration:none;color:inherit">
+<a href="event/{{ ev.slug }}.html" class="event-card mode-{{ ev.sport_mode_cls }}" style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time></span>
+    <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time> <span class="mode-pill {{ ev.sport_mode_cls }}" title="{{ ev.sport_upper }} blended backtest ROI {{ ev.sport_mode_roi_str }}">{{ ev.sport_mode_label }}</span></span>
     <span>{{ ev.n_sources }} sources</span>
   </div>
   <div class="matchup">{{ ev.away }} <span class="vs">@</span> {{ ev.home }}</div>
@@ -69,8 +92,11 @@
     <span class="side">PICK: {{ ev.pick_label }}</span>
     <span class="prob">{{ ev.pick_price_str }}</span>
   </div>
-  {% if research_mode %}
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  {% if ev.sport_research_only %}
+  <div class="research-banner">{{ ev.recommended_stake_str }}</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val {{ ev.edge_cls }}">{{ ev.edge_str }}</span></div>
+  </div>
   {% else %}
   <div class="rec-rows">
     <div class="rec-row"><span class="label">Model edge</span><span class="val {{ ev.edge_cls }}">{{ ev.edge_str }}</span></div>
@@ -100,17 +126,17 @@
 
 <section class="scoreboard-section recommended">
   <h3>⭐ Recommended Plays <span class="section-count">({{ n_grouped_recommended }})</span></h3>
-  <p class="lede" style="margin-top:-4px">Edge clears the {{ edge_threshold_pp }}&thinsp;pp threshold AND per-sport blended ROI is positive.</p>
+  <p class="lede" style="margin-top:-4px">Edge clears the {{ edge_threshold_pp }}&thinsp;pp threshold AND the event's sport is in LIVE mode.</p>
   {% if grouped_recommended %}
   <div class="event-grid">{% for ev in grouped_recommended %}{{ event_card(ev) }}{% endfor %}</div>
   {% else %}
-  <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a positive-ROI sport, or the per-sport ROI gate has temporarily disabled every in-season league.</div>
+  <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a LIVE-mode sport, or no LIVE-mode sport has games on today's slate.</div>
   {% endif %}
 </section>
 
 <section class="scoreboard-section research">
   <h3>🔍 Research-Mode Picks <span class="section-count">({{ n_grouped_research }})</span></h3>
-  <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the per-sport ROI gate is negative — no stake recommendation.</p>
+  <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the event's sport is in RESEARCH mode — no stake recommendation.</p>
   {% if grouped_research %}
   <div class="event-grid">{% for ev in grouped_research %}{{ event_card(ev) }}{% endfor %}</div>
   {% else %}

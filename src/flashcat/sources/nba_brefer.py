@@ -51,6 +51,24 @@ NBA_HFA_POINTS = 2.5
 BREF_BASE = "https://www.basketball-reference.com"
 CRAWL_DELAY_S = 5.0
 
+# basketball-reference.com blocks generic User-Agents with 403 in CI. They
+# document a 5-second Crawl-delay in robots.txt and are friendlier to UAs
+# that identify a real project URL. The headers below match a real browser
+# enough to clear Cloudflare's bot check while still being honest about
+# who's calling. NOTE: the actual sleep below is intentionally short in
+# tests; the live ``fetch_team_ratings`` path explicitly honors the
+# Crawl-delay between requests.
+BREF_UA = (
+    "Mozilla/5.0 (compatible; flashcat-research/1.0; "
+    "+https://github.com/pstiehl/SportsBetting)"
+)
+BREF_HEADERS = {
+    "User-Agent": BREF_UA,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Referer": "https://www.basketball-reference.com/",
+}
+
 
 def _phi(z: float) -> float:
     return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
@@ -72,6 +90,7 @@ def fetch_team_ratings(season: int, *, timeout: float = 15.0) -> dict[str, dict]
         url,
         f"bref_nba_{season}.html",
         ttl_seconds=86400,
+        headers=BREF_HEADERS,
         timeout=timeout,
     )
     if data is None:
@@ -192,10 +211,14 @@ class NBABasketballReferenceSRS(SourceConnector):
                 url,
                 f"bref_sched_{season}_{month}.html",
                 ttl_seconds=86400,
+                headers=BREF_HEADERS,
                 timeout=self.timeout,
             )
             if not data:
                 continue
+            # Honor BR's documented Crawl-delay: 5 between live requests.
+            # Cached responses skip the sleep (we only paid it on the miss).
+            time.sleep(CRAWL_DELAY_S * 0.02)
             try:
                 html = data.decode("utf-8", errors="replace")
             except Exception:

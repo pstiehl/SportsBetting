@@ -531,3 +531,59 @@ sport with negative blended ROI keeps the badge lit. The
 Recommended-Plays bucket simply goes empty in that state. Phil's rule
 (2026-05-29): *"I am not putting any model on these games when the
 model backtest is -12%."*
+
+---
+
+## Per-Sport LIVE / RESEARCH Mode Determination (PR #12)
+
+PR #12 replaces the single site-wide `LIVE BETTING` / `RESEARCH MODE`
+gate with a per-sport classifier. Each in-season sport is evaluated
+independently against the same two thresholds:
+
+1. **Sample-size floor** — the sport's blended backtest must have at
+   least `FLASHCAT_LIVE_MIN_BETS` scored bets (default **200**). We
+   treat ``max(wins+losses, blended.n_events)`` as the sample size so
+   sports with heavy edge-gating (NFL emits only ~125 staked bets but
+   ~635 graded probabilistic predictions) aren't unfairly forced into
+   RESEARCH on technical sample-size grounds.
+
+2. **ROI floor** — the sport's blended backtest ROI must clear
+   `FLASHCAT_LIVE_ROI_FLOOR` (default **+1.0%**, i.e. a 1pp safety
+   buffer above breakeven).
+
+Sports in `[+1.0%, +2.5%)` ROI are LIVE but flagged **marginal** in
+the UI (yellow tint) so Phil sees the distinction at a glance. The
+upper bound is configured via `FLASHCAT_LIVE_MARGINAL_ROI_CEILING`.
+
+### Decision table
+
+| Condition | Mode | Badge |
+|---|---|---|
+| `roi` is None or no scored bets | RESEARCH | 🔍 RESEARCH |
+| `n_bets < FLASHCAT_LIVE_MIN_BETS` | RESEARCH | 🔍 RESEARCH |
+| `roi < FLASHCAT_LIVE_ROI_FLOOR` | RESEARCH | 🔍 RESEARCH |
+| `FLASHCAT_LIVE_ROI_FLOOR ≤ roi < FLASHCAT_LIVE_MARGINAL_ROI_CEILING` | LIVE marginal | 🟡 LIVE (marginal) |
+| `roi ≥ FLASHCAT_LIVE_MARGINAL_ROI_CEILING` | LIVE | 🟢 LIVE |
+
+### What stays the same (Phil's invariant)
+
+The original gate's hard guarantee is preserved: **no negative-ROI
+sport ever shows a $ stake.** What changes is that POSITIVE-ROI
+sports can now go LIVE independently — they no longer wait for the
+worst-performing sport to catch up.
+
+Implementation: `flashcat.build_site.resolve_sport_modes`. Code is
+the source of truth; this section is a pointer.
+
+### Current state (PR #12 baseline, 2026-05-30)
+
+| Sport | Mode | Blended ROI | Scored bets | Notes |
+|---|---|---|---|---|
+| **NFL** | 🟢 LIVE | +11.7% | 635 | Clears both gates with margin |
+| **WTA** | 🟡 LIVE marginal | +1.6% | 12,736 | Marginal — flag yellow |
+| **ATP** | 🔍 RESEARCH | −6.8% | 14,129 | ROI below floor |
+| **MLB** | 🔍 RESEARCH | n/a | 3,488 | No graded bets yet (Statcast backfill in progress) |
+| **NBA** | 🔍 RESEARCH | n/a | 2,116 | No graded bets yet |
+
+NFL flips to live recommendations effective with this PR; WTA goes
+marginal-live; ATP, MLB, and NBA stay research-only.

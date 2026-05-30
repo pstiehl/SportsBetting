@@ -48,3 +48,34 @@ def test_connector_returns_empty_when_offline(monkeypatch):
 def test_hfa_constant_matches_spec():
     assert NBA_HFA_POINTS == 2.5
     assert NBA_MARGIN_SIGMA == 11.0
+
+
+# --- PR #12: polite UA headers fix --------------------------------------------
+
+
+def test_bref_headers_are_polite_and_identify_project():
+    """basketball-reference.com 403s on generic UAs. We send a realistic,
+    project-identifying UA with browser-like Accept headers and a Referer."""
+    from flashcat.sources.nba_brefer import BREF_HEADERS, BREF_UA
+
+    assert "flashcat-research" in BREF_UA
+    assert "github.com/pstiehl/SportsBetting" in BREF_UA
+    assert BREF_HEADERS["User-Agent"] == BREF_UA
+    assert "text/html" in BREF_HEADERS["Accept"]
+    assert BREF_HEADERS["Accept-Language"].startswith("en-US")
+    assert BREF_HEADERS["Referer"] == "https://www.basketball-reference.com/"
+
+
+def test_fetch_team_ratings_passes_polite_headers(monkeypatch):
+    """``fetch_team_ratings`` forwards ``BREF_HEADERS`` into ``_cached_get``."""
+    captured = {}
+
+    def fake_get(url, cache_file, *, ttl_seconds=3600, headers=None, timeout=10.0):
+        captured["url"] = url
+        captured["headers"] = headers
+        return None
+
+    monkeypatch.setattr(nbb, "_cached_get", fake_get)
+    nbb.fetch_team_ratings(2024)
+    assert captured["headers"] is not None
+    assert "flashcat-research" in captured["headers"]["User-Agent"]

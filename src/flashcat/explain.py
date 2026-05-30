@@ -129,6 +129,25 @@ def _epa_explanation(event: Event) -> str | None:
     )
 
 
+def _cpoe_explanation(event: Event) -> str | None:
+    """Rationale snippet for the NFL Next Gen Stats CPOE source."""
+    sp = _find_source(event, "nfl-nextgen-cpoe")
+    if sp is None:
+        return None
+    kv = _parse_kv(sp.notes)
+    try:
+        cpoe_diff = float(kv.get("cpoe_diff", "0").replace("pp", ""))
+        h_cpoe = float(kv.get("h_cpoe", "0"))
+        a_cpoe = float(kv.get("a_cpoe", "0"))
+    except ValueError:
+        return None
+    side = (event.home if cpoe_diff >= 0 else event.away).upper()
+    return (
+        f"QB CPOE edge: {side} +{abs(cpoe_diff):.1f}pp over expected "
+        f"(home CPOE {h_cpoe:+.2f}, away CPOE {a_cpoe:+.2f})."
+    )
+
+
 def _srs_explanation(event: Event) -> str | None:
     sp = _find_source(event, "nba-bref-srs-pace")
     if sp is None:
@@ -185,6 +204,7 @@ PRIORITY_FNS = (
     _statcast_explanation,
     _weather_explanation,
     _epa_explanation,
+    _cpoe_explanation,
     _srs_explanation,
     _market_consensus_explanation,
     _signal_explanation,

@@ -86,3 +86,69 @@ def test_connector_returns_empty_without_nfl_data_py(monkeypatch):
 def test_other_sports_return_nothing():
     src = NFLNflfastREPA()
     assert src.fetch_events(date(2024, 9, 1), date(2024, 9, 30), sport="mlb") == []
+
+
+# --- PR #12: NFL Next Gen Stats CPOE connector ---------------------------------
+
+
+def test_cpoe_to_home_prob_blends_with_epa():
+    """Positive CPOE differential pulls home win prob up; EPA baseline is added."""
+    from flashcat.sources.nfl_nflverse_epa import _cpoe_team_diff_to_home_prob
+
+    # Neutral EPA baseline, +5pp CPOE differential → home > 0.5
+    p = _cpoe_team_diff_to_home_prob(5.0, epa_pred_diff=0.0)
+    assert p > 0.5
+    # Negative CPOE differential → home < 0.5
+    p = _cpoe_team_diff_to_home_prob(-5.0, epa_pred_diff=0.0)
+    assert p < 0.5
+    # Zero everything → 0.5
+    p = _cpoe_team_diff_to_home_prob(0.0, epa_pred_diff=0.0)
+    assert abs(p - 0.5) < 1e-6
+
+
+def test_ngs_connector_handles_offline(monkeypatch):
+    """Both NGS-direct and pbp-fallback unreachable → empty list, no raise."""
+    from flashcat.sources.nfl_nflverse_epa import NFLNextGenCPOE
+
+    src = NFLNextGenCPOE()
+    monkeypatch.setattr(src, "_try_ngs_direct", lambda seasons: {})
+    monkeypatch.setattr(src, "_team_cpoe_from_pbp", lambda seasons: {})
+    out = src.fetch_events(date(2024, 9, 1), date(2024, 9, 30))
+    assert out == []
+
+
+def test_ngs_connector_other_sport():
+    from flashcat.sources.nfl_nflverse_epa import NFLNextGenCPOE
+
+    src = NFLNextGenCPOE()
+    assert src.fetch_events(date(2024, 9, 1), date(2024, 9, 30), sport="mlb") == []
+
+
+def test_ngs_connector_emits_events_with_pbp_fallback(monkeypatch):
+    """When pbp CPOE rolls up cleanly + schedule loads, emit per-game probs."""
+    from flashcat.sources.nfl_nflverse_epa import NFLNextGenCPOE
+
+    src = NFLNextGenCPOE()
+    monkeypatch.setattr(src, "_try_ngs_direct", lambda seasons: {})
+    monkeypatch.setattr(src, "_team_cpoe_from_pbp", lambda seasons: {"KC": 4.5, "DET": -1.2})
+    monkeypatch.setattr(src, "_load_schedules", lambda seasons: [
+        {"date": date(2024, 9, 15), "home": "KC", "away": "DET"},
+    ])
+    monkeypatch.setattr(src, "_team_epa_baseline", lambda seasons: {})
+    out = src.fetch_events(date(2024, 9, 1), date(2024, 9, 30))
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.sport == "nfl"
+    assert ev.home == "KC"
+    assert ev.away == "DET"
+    # KC has higher CPOE → home prob > 0.5
+    assert ev.source_probs[0].home_win_prob > 0.5
+    assert ev.source_probs[0].source == "nfl-nextgen-cpoe"
+
+
+def test_ngs_connector_is_marked_live():
+    """The connector flips from stub to live so weights pick it up."""
+    from flashcat.sources.nfl_nflverse_epa import NFLNextGenCPOE
+
+    assert NFLNextGenCPOE.is_live is True
+    assert NFLNextGenCPOE.version != "stub"

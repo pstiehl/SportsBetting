@@ -78,6 +78,43 @@ def kelly_fraction() -> float:
         return 0.25
 
 
+def live_roi_floor() -> float:
+    """Per-sport minimum blended ROI required for LIVE mode.
+
+    A 1pp safety buffer above 0 by default. A sport whose blended backtest
+    ROI is below this floor stays in RESEARCH mode and no $ stakes are
+    recommended for it. Configurable via ``FLASHCAT_LIVE_ROI_FLOOR``.
+    """
+    try:
+        return float(os.getenv("FLASHCAT_LIVE_ROI_FLOOR", "0.01"))
+    except Exception:
+        return 0.01
+
+
+def live_marginal_roi_ceiling() -> float:
+    """Upper bound of the *marginal* LIVE band.
+
+    A sport whose ROI is in ``[live_roi_floor, live_marginal_roi_ceiling)``
+    is LIVE but flagged as ``marginal`` so the UI can tint it yellow.
+    """
+    try:
+        return float(os.getenv("FLASHCAT_LIVE_MARGINAL_ROI_CEILING", "0.025"))
+    except Exception:
+        return 0.025
+
+
+def live_min_bets() -> int:
+    """Minimum backtested *scored bets* before a sport can go LIVE.
+
+    Default 200. Below this, sample size is too small to trust the ROI.
+    Configurable via ``FLASHCAT_LIVE_MIN_BETS``.
+    """
+    try:
+        return int(os.getenv("FLASHCAT_LIVE_MIN_BETS", "200"))
+    except Exception:
+        return 200
+
+
 def backtest_start() -> str:
     """Default backtest window start. Configurable via FLASHCAT_BACKTEST_START.
 
