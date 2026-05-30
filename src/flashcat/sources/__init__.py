@@ -2,6 +2,9 @@
 
 from .base import SourceConnector
 from .bovada import Bovada
+from .cfb_cfbfastr_epa import CFBCfbfastREPA
+from .cfb_espn_fpi import CFBESPNFPI
+from .cfb_market_consensus import CFBMarketConsensus
 from .espn import ESPNScoreboard
 from .espn_predictor import ESPNPredictor
 from .fanduel import FanDuel
@@ -58,6 +61,9 @@ ALL_CONNECTORS: list[type[SourceConnector]] = [
     NBARAPMStub,
     NFLNflfastREPA,
     NFLNextGenCPOE,
+    CFBCfbfastREPA,
+    CFBESPNFPI,
+    CFBMarketConsensus,
     FanGraphsMLB,
     DimersMLB,
     PinnacleMoneyline,
@@ -99,6 +105,9 @@ __all__ = [
     "NBARAPMStub",
     "NFLNflfastREPA",
     "NFLNextGenCPOE",
+    "CFBCfbfastREPA",
+    "CFBESPNFPI",
+    "CFBMarketConsensus",
     "FanGraphsMLB",
     "DimersMLB",
     "PinnacleMoneyline",

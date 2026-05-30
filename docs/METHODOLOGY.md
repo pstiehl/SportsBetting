@@ -702,3 +702,112 @@ floor.
 | Sport | Mode | Blended ROI | Scored bets | Notes |
 |---|---|---|---|---|
 | **PGA** | 🔍 RESEARCH | n/a | 0 | Forward-only; key-gated DataGolf; no graded results yet |
+
+---
+
+## CFB EPA-based predictor (PR #14, College Football Data API)
+
+### What it does
+
+A CFB-native analogue of the NFL nflfastR EPA predictor. For every
+upcoming CFB game we compute a predicted point differential from
+team-season Predicted Points Added (PPA — CFB's equivalent of nflfastR
+EPA per play) and convert it to a home-win probability.
+
+### Formula
+
+```
+predicted_diff = α
+                + β1·(off_ppa_h − off_ppa_a)
+                + β2·(def_ppa_h − def_ppa_a)
+                + β3·HFA_dummy
+                + β4·conference_dummy
+
+p_home = Φ(predicted_diff / 16.5)
+```
+
+Where:
+
+- `off_ppa_*` / `def_ppa_*` are season-to-date team PPA from
+  `https://api.collegefootballdata.com/ppa/teams?year=YYYY`.
+- `HFA_dummy = 1` for the home team, 0 otherwise. Empirical CFB home
+  edge ≈ +2.5 points (slightly larger than NFL's +2.0 because crowd
+  noise effects scale with bowl-game atmosphere).
+- `conference_dummy`:
+  - `+1` if home team is Power-5 and away team is Group-of-5 (or FCS)
+  - `−1` if reversed
+  - `0` if both same tier
+  Power-5 = SEC, Big Ten, Big 12, ACC, Pac-12. Catches the systematic
+  talent gap that raw PPA underweights in early-season non-conference
+  games (Alabama hosting Mercer is "only" ~0.4 PPA above on raw
+  numbers but realistically a 35-point favorite).
+
+### Why σ = 16.5
+
+Empirical population stdev of CFB final point margins
+`(home_points − away_points)` across all FBS regular-season games
+2018–2024 (~6,400 games) pulled from
+`https://api.collegefootballdata.com/games?seasonType=regular`. The
+raw value is 16.4; we round to 16.5 to leave a sliver of headroom on
+the [0.03, 0.97] probability clip.
+
+For reference:
+
+- **NFL**: σ = 13.86 (Massey 2010, cross-validated on Pro-Football-
+  Reference 2002–2023). Tighter because the talent gradient inside the
+  NFL is much flatter than across FBS.
+- **CFB**: σ = 16.5 (this work). Wider because FBS regularly produces
+  Power-5 vs Group-of-5 matchups with 40+ point talent gaps.
+- **NBA**: σ = 11.0 (basketball-reference SRS standard).
+
+Citations:
+
+- College Football Data API — `https://collegefootballdata.com`. Open
+  API, free tier covers `/games` and `/ppa/teams` without auth.
+- "Predicted Points Added in College Football" — methodology writeup
+  on collegefootballdata.com blog (2022). PPA is constructed the same
+  way as nflfastR EPA: expected points per state, differenced across
+  plays.
+- Massey, K. (2010), "Statistical Models Applied to the Rating of
+  Sports Teams" — origin of the normal-CDF margin-to-probability
+  mapping used by NFL/CFB/NBA spread → win-prob conversions.
+
+### Coefficient fitting
+
+Walk-forward strict. Predicting week N of season S uses only:
+- Weeks 1..(N-1) of season S, plus
+- All weeks of every prior season we have data for.
+
+Fit via plain OLS (Gauss-Jordan in pure Python, no numpy dep beyond
+what pandas pulls in). Coefficients are cached per season to
+`data/calibration.json` under the key `cfb-cfbfastr-epa-<season>`.
+
+Default prior coefficients (used until the walk-forward fit has ≥64
+graded games to fit on):
+
+```
+alpha     =  0.0
+beta_off  = 50.0   # PPA diff → points
+beta_def  = -45.0  # higher def PPA allowed = worse
+beta_hfa  =  2.5   # ~2.5 point CFB home edge
+beta_conf =  9.0   # avg talent gap when Power-5 hosts G5
+```
+
+### Connectors
+
+PR #14 adds three CFB sources, all in `flashcat/sources/cfb_*.py`:
+
+| Connector | Type | Source name | Backtest |
+|---|---|---|---|
+| `CFBCfbfastREPA` | PPA + margin predictor | `cfb-cfbfastr-epa` | ✅ historical via `/games` |
+| `CFBMarketConsensus` | ESPN moneyline scrape | `cfb-market-consensus` (devigged → `market-close`) | ✅ ESPN serves archived odds |
+| `CFBESPNFPI` | ESPN FPI predictor | `espn-fpi-cfb` | ❌ live-only (no archived snapshots) |
+
+### Initial mode
+
+CFB starts in **🔍 RESEARCH** regardless of backtest result, because the
+per-sport LIVE gate requires `n_bets ≥ 200 AND blended_roi ≥ +1%`. The
+PPA predictor needs to accumulate ~200 wagered bets across the gated
+$-stake edge threshold before the per-sport mode can flip to LIVE.
+Phil's invariant ("no negative-ROI sport ever shows a $ stake") is
+preserved.

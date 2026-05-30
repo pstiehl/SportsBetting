@@ -32,6 +32,9 @@ from .signals.favlong import detect as detect_favlong
 from .signals.sharp import detect as detect_sharp
 from .sources import (
     Bovada,
+    CFBCfbfastREPA,
+    CFBESPNFPI,
+    CFBMarketConsensus,
     ESPNScoreboard,
     FanDuel,
     MLBStatcastLineup,
@@ -175,6 +178,11 @@ def build(
         PGADatagolf(),
         PGAESPNScoreboard(),
         PGAMarketConsensus(),
+        # CFB connectors (PR #14). EPA + market consensus + FPI predictor.
+        # All return [] outside CFB season so they're cheap to wire in year-round.
+        CFBCfbfastREPA(),
+        CFBMarketConsensus(),
+        CFBESPNFPI(),
     ]
 
     active = _active_sports(connectors)
