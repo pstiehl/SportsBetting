@@ -245,9 +245,14 @@ def _group_by_pick_quality(
 ) -> dict[str, list[dict]]:
     """Bucket views into RECOMMENDED / RESEARCH / NO-EDGE using per-sport modes.
 
-    - RECOMMENDED: edge clears the threshold AND the event's sport is LIVE.
-    - RESEARCH: edge clears the threshold but the event's sport is RESEARCH.
-    - NO-EDGE: edge below threshold (coin-flip / market-aligned).
+    - RECOMMENDED: POSITIVE edge clears the threshold AND the event's sport
+      is LIVE.
+    - RESEARCH: POSITIVE edge clears the threshold but the event's sport is
+      RESEARCH.
+    - NO-EDGE: edge below threshold (any sign), OR edge is negative (which
+      should be impossible after the pick-side fix, but is kept here as
+      defense in depth so a regression can never silently route a negative
+      pick into a recommended/research card).
     """
     recommended: list[dict] = []
     research: list[dict] = []
@@ -257,7 +262,11 @@ def _group_by_pick_quality(
         if edge is None or v["pick_label"] == "—":
             no_edge.append(v)
             continue
-        if abs(edge) < edge_min:
+        # Only POSITIVE edges that clear the threshold are eligible for
+        # recommended/research. A negative edge means the picker disagrees
+        # with itself (would mean the OTHER side beats the market) and
+        # belongs in No Edge.
+        if edge < edge_min:
             no_edge.append(v)
             continue
         sport = v.get("sport")
@@ -353,6 +362,22 @@ def _layout(env: Environment, page_title: str, active: str, content_html: str, a
     layout = env.get_template("_layout.html")
     mode = stake_mode()
     rm = _research_mode_state()
+    sport_modes = rm.get("sport_modes") or {}
+    # Per-sport pills replace the misleading cross-sport headline ROI. Each
+    # pill carries that sport's own blended ROI so a viewer can see at a
+    # glance which sports actually have a defensible track record. We do not
+    # show a single aggregate number; the pre-fix aggregate was a weighted
+    # cross-sport blend that did not reflect per-sport reality.
+    pills = []
+    for sport in sorted(sport_modes.keys()):
+        m = sport_modes[sport]
+        pills.append({
+            "sport_upper": sport.upper(),
+            "roi_str": m.get("roi_str", "n/a"),
+            "label": m.get("badge_label", ""),
+            "cls": m.get("badge_cls", "research"),
+            "title": m.get("reason", ""),
+        })
     return layout.render(
         page_title=page_title,
         active=active,
@@ -364,6 +389,7 @@ def _layout(env: Environment, page_title: str, active: str, content_html: str, a
         site_status_badge_cls=rm["badge_cls"],
         site_status_research=rm["research_mode"],
         site_status_roi_str=rm["roi_str"],
+        site_status_sport_pills=pills,
     )
 
 
