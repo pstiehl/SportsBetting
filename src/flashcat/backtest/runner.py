@@ -27,6 +27,7 @@ from ..signals.favlong import detect as detect_favlong
 from ..signals.sharp import detect as detect_sharp
 from ..sources.nflverse import NFLverseHistorical
 from ..sources.nfl_nflverse_epa import NFLNflfastREPA
+from ..sources.cfb_cfbfastr_epa import CFBCfbfastREPA
 from ..sources.tennis_history import TennisDataHistorical
 from ..sources.nba_history import FiveThirtyEightNBAHistorical
 from ..sources.nba_brefer import NBABasketballReferenceSRS
@@ -54,6 +55,9 @@ log = logging.getLogger(__name__)
 # multiple connectors; we merge their events on (date, home, away).
 SPORT_LOADERS: dict[str, list] = {
     "nfl": [NFLverseHistorical, FiveThirtyEightNFLElo, NFLNflfastREPA],
+    # CFB: PPA-based predictor with conference dummy + ESPN consensus market
+    # close (RESEARCH mode until backtest ROI ≥ +1% AND n_bets ≥ 200).
+    "cfb": [CFBCfbfastREPA],
     "atp": [
         lambda: TennisDataHistorical(tour="atp"),
         SackmannATPElo,
@@ -264,7 +268,7 @@ def run_multi_sport_backtest(
     The top-level ``sources`` block is keyed by ``"<sport>:<source>"`` so the
     site can show per-sport ROI per source.
     """
-    sports = sports or ["nfl", "nba", "mlb", "atp", "wta", "pga"]
+    sports = sports or ["nfl", "cfb", "nba", "mlb", "atp", "wta", "pga"]
     log.info("Multi-sport backtest %s — %s, sports=%s", start, end, sports)
 
     weights = load_weights()
