@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nao Hibino @ Vendula Valdmannova — Flashcat Betting</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" href="../assets/favicon.png">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <div class="brand">
+      <img src="../assets/flashcat-logo.svg" alt="Flashcat">
+      <div>
+        <h1><a href="../index.html"><span class="accent">Flashcat</span> Betting</a></h1>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 19:20 UTC</div>
+        
+        <div class="site-status-pills" title="Per-sport blended backtest ROI. Only sports with ROI ≥ floor and sufficient sample size go LIVE.">
+          <span class="mode-pill research" title="blended ROI -15.2% below +2.0% floor">🔍 RESEARCH ATP -15.2%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH CFB n/a</span><span class="mode-pill live-marginal" title="marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)">🟡 LIVE (marginal) MLB +2.8%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH NBA n/a</span><span class="mode-pill live" title="LIVE — ROI +18.3%, 635 scored bets">🟢 LIVE NFL +18.3%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH PGA n/a</span><span class="mode-pill research" title="blended ROI -15.3% below +2.0% floor">🔍 RESEARCH WTA -15.3%</span>
+        </div>
+        
+      </div>
+    </div>
+    <nav>
+      <a href="../index.html" class="active">Today</a>
+      <a href="../backtest.html" >Backtest</a>
+      <a href="../source-scoreboard.html" >Sources</a>
+      <a href="../methodology.html" >Methodology</a>
+    </nav>
+  </div>
+</header>
+<div class="container narrow">
+
+<h2>Nao Hibino <span style="color:var(--muted);font-weight:500">@</span> Vendula Valdmannova</h2>
+<p class="lede">WTA &middot; <time datetime="2026-05-31T09:30:00Z" data-local="show">Sun May 31 · 09:30 UTC</time></p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="num">—</div><div class="label">Model Pick</div></div>
+  <div class="kpi"><div class="num">0.0%</div><div class="label">Blended Prob (Pick)</div></div>
+  <div class="kpi"><div class="num"><span class="">—</span></div><div class="label">Model Edge</div></div>
+  <div class="kpi"><div class="num">—</div><div class="label">Avg Book Price</div></div>
+</div>
+
+<div class="card">
+  <h3>Recommended bet</h3>
+  <p style="font-size:18px;margin:6px 0"><strong>🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</strong></p>
+  <p class="lede" style="margin:0">Expected value at recommended stake: <strong class="">—</strong></p>
+</div>
+
+
+
+
+
+<h3>Per-source probabilities (home win)</h3>
+<table>
+  <thead><tr><th>Source</th><th class="num">P(home wins)</th><th class="num">Weight</th><th>Captured</th></tr></thead>
+  <tbody>
+  
+  <tr style="font-weight:700"><td>Blended</td><td class="num">0.0%</td><td class="num">—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+
+
+<p style="margin-top:24px"><a href="../index.html">← back to slate</a></p>
+
+</div>
+<footer>
+  Flashcat Betting &middot; Research only. Not investment or gambling advice. &middot;
+  <a href="https://github.com/pstiehl/SportsBetting">source</a>
+</footer>
+<script>
+// Convert UTC timestamps to the visitor's local time. CSP-friendly: no eval, no
+// external dependencies. Falls back to the rendered UTC string for no-JS users.
+(function () {
+  function localize() {
+    var nodes = document.querySelectorAll('time[data-local="show"]');
+    var opts = {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    };
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var iso = el.getAttribute('datetime');
+      if (!iso) continue;
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) continue;
+      try {
+        el.textContent = d.toLocaleString(undefined, opts);
+        el.setAttribute('title', iso);
+      } catch (e) { /* keep UTC fallback */ }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', localize);
+  } else {
+    localize();
+  }
+})();
+</script>
+</body>
+</html>

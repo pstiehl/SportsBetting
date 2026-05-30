@@ -15,9 +15,11 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 12:57 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 19:20 UTC</div>
         
-        <div class="site-status research" title="Blended backtest ROI: -0.7%">🟡 RESEARCH MODE &middot; backtest ROI -0.7%</div>
+        <div class="site-status-pills" title="Per-sport blended backtest ROI. Only sports with ROI ≥ floor and sufficient sample size go LIVE.">
+          <span class="mode-pill research" title="blended ROI -15.2% below +2.0% floor">🔍 RESEARCH ATP -15.2%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH CFB n/a</span><span class="mode-pill live-marginal" title="marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)">🟡 LIVE (marginal) MLB +2.8%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH NBA n/a</span><span class="mode-pill live" title="LIVE — ROI +18.3%, 635 scored bets">🟢 LIVE NFL +18.3%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH PGA n/a</span><span class="mode-pill research" title="blended ROI -15.3% below +2.0% floor">🔍 RESEARCH WTA -15.3%</span>
+        </div>
         
       </div>
     </div>
@@ -31,607 +33,2687 @@
 </header>
 <div class="container">
 
+<section class="research-mode-banner">
+  <details open>
+    <summary>
+      <span class="research-mode-badge">🔍&thinsp;RESEARCH MODE</span>
+      &mdash; model has <strong>NOT</strong> demonstrated profitability on out-of-sample data.
+      <span class="research-mode-collapse-hint">(click to expand / collapse)</span>
+    </summary>
+    <div class="research-mode-body">
+      <p>Walk-forward hold-out validation (2022–23 train → 2024 held-out) shows no sport with credible positive edge:</p>
+      <ul>
+        <li><strong>MLB:</strong> train +5.15% → held-out −2.25% <em>(overfit, −7.4&thinsp;pp)</em></li>
+        <li><strong>NFL:</strong> train −3.29% → held-out +3.63% <em>(n=285, within standard error)</em></li>
+        <li><strong>ATP:</strong> train −3.82% → held-out −2.17% <em>(consistently losing)</em></li>
+        <li><strong>WTA:</strong> train −3.84% → held-out −4.62% <em>(consistently losing)</em></li>
+      </ul>
+      <p>No live $ recommendations until at least one sport shows positive ROI on a 365-day rolling hold-out window.
+      See <a href="https://github.com/pstiehl/SportsBetting/pull/21">PR&nbsp;#21</a> for full backtest methodology.</p>
+    </div>
+  </details>
+</section>
+
+
+<section class="backtest-profitability">
+  <h2>Backtest <span class="accent">Profitability</span></h2>
+  <p class="lede">Flat $100 on every prediction the blended model would have taken (gated by a 3.0&thinsp;pp edge vs market close), backtested against ``data/source_history.db``. This is the headline answer to “is the model profitable” — the per-event Recommended Plays section below uses Kelly sizing instead.</p>
+  <table class="flat-stake-table">
+    <thead>
+      <tr>
+        <th>Sport</th>
+        <th class="num">Bets</th>
+        <th class="num">Stake</th>
+        <th class="num">Profit</th>
+        <th class="num">ROI</th>
+        <th>Mode</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr class="mode-research">
+        <td><strong>ATP</strong> <span class="synth-flag" title="Synthetic blended ROI — weighted average of per-source meta rows">✱</span></td>
+        <td class="num">8,025</td>
+        <td class="num">$802,500</td>
+        <td class="num neg">$-26,332</td>
+        <td class="num neg">-3.28%</td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+      </tr>
+      
+      <tr class="mode-research">
+        <td><strong>WTA</strong> <span class="synth-flag" title="Synthetic blended ROI — weighted average of per-source meta rows">✱</span></td>
+        <td class="num">7,339</td>
+        <td class="num">$733,900</td>
+        <td class="num neg">$-30,551</td>
+        <td class="num neg">-4.16%</td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+      </tr>
+      
+      <tr class="mode-live-marginal">
+        <td><strong>MLB</strong> <span class="synth-flag" title="Synthetic blended ROI — weighted average of per-source meta rows">✱</span></td>
+        <td class="num">7,135</td>
+        <td class="num">$713,500</td>
+        <td class="num pos">$19,782</td>
+        <td class="num pos">+2.77%</td>
+        <td><span class="mode-pill live-marginal">🟡 LIVE (marginal)</span></td>
+      </tr>
+      
+      <tr class="mode-live">
+        <td><strong>NFL</strong> <span class="synth-flag" title="Synthetic blended ROI — weighted average of per-source meta rows">✱</span></td>
+        <td class="num">809</td>
+        <td class="num">$80,900</td>
+        <td class="num neg">$-1,850</td>
+        <td class="num neg">-2.29%</td>
+        <td><span class="mode-pill live">🟢 LIVE</span></td>
+      </tr>
+      
+      
+      <tr class="flat-stake-totals">
+        <td><strong>TOTAL</strong></td>
+        <td class="num">69,674</td>
+        <td class="num">$6,967,400</td>
+        <td class="num neg">$-207,205</td>
+        <td class="num neg">-2.97%</td>
+        <td></td>
+      </tr>
+      
+    </tbody>
+  </table>
+</section>
+
+
 <h2>Today's <span class="accent">Slate</span></h2>
 <p class="lede">Live events from in-season sports. The model blends multiple publicly-available probability sources and picks the higher-blended-probability side, with a Kelly-fractional stake gated by a configurable edge threshold. Coin-flip events get skipped instead of bet &mdash; that's the difference between $100-on-everything and a research-grade ROI engine.</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">45</div><div class="label">Events Today</div></div>
-  <div class="kpi"><div class="num">16</div><div class="label">With Live Odds</div></div>
+  <div class="kpi"><div class="num">160</div><div class="label">Events Today</div></div>
+  <div class="kpi"><div class="num">89</div><div class="label">With Live Odds</div></div>
   <div class="kpi"><div class="num">0</div><div class="label">Recommended Plays</div></div>
   <div class="kpi"><div class="num">$0.00</div><div class="label">Total Stake (¼ Kelly)</div></div>
 </div>
+
+
+<section class="sport-mode-summary">
+  <h3>Per-Sport Mode <span class="section-count">(2 LIVE · 5 RESEARCH)</span></h3>
+  <p class="lede" style="margin-top:-4px">Each sport gates its own LIVE/RESEARCH state on its blended backtest ROI &amp; sample size. A sport goes LIVE only if blended ROI ≥ +2.0% with at least 200 scored bets.</p>
+  <table class="sport-mode-table">
+    <thead>
+      <tr><th>Sport</th><th>Mode</th><th class="num">Blended ROI</th><th class="num">Scored bets</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      
+      <tr class="mode-research">
+        <td><strong>ATP</strong></td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+        <td class="num">-15.2%</td>
+        <td class="num">14129</td>
+        <td class="reason">blended ROI -15.2% below +2.0% floor</td>
+      </tr>
+      
+      <tr class="mode-research">
+        <td><strong>CFB</strong></td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+        <td class="num">n/a</td>
+        <td class="num">1843</td>
+        <td class="reason">insufficient backtest — no scored bets</td>
+      </tr>
+      
+      <tr class="mode-live-marginal">
+        <td><strong>MLB</strong></td>
+        <td><span class="mode-pill live-marginal">🟡 LIVE (marginal)</span></td>
+        <td class="num">+2.8%</td>
+        <td class="num">7135</td>
+        <td class="reason">marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)</td>
+      </tr>
+      
+      <tr class="mode-research">
+        <td><strong>NBA</strong></td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+        <td class="num">n/a</td>
+        <td class="num">2116</td>
+        <td class="reason">insufficient backtest — no scored bets</td>
+      </tr>
+      
+      <tr class="mode-live">
+        <td><strong>NFL</strong></td>
+        <td><span class="mode-pill live">🟢 LIVE</span></td>
+        <td class="num">+18.3%</td>
+        <td class="num">635</td>
+        <td class="reason">LIVE — ROI +18.3%, 635 scored bets</td>
+      </tr>
+      
+      <tr class="mode-research">
+        <td><strong>PGA</strong></td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+        <td class="num">n/a</td>
+        <td class="num">0</td>
+        <td class="reason">insufficient backtest — no scored bets</td>
+      </tr>
+      
+      <tr class="mode-research">
+        <td><strong>WTA</strong></td>
+        <td><span class="mode-pill research">🔍 RESEARCH</span></td>
+        <td class="num">-15.3%</td>
+        <td class="num">12736</td>
+        <td class="reason">blended ROI -15.3% below +2.0% floor</td>
+      </tr>
+      
+    </tbody>
+  </table>
+</section>
+
 
 
 
 <div class="recommended-plays">
   <h3>Recommended Plays Today</h3>
   
-  <div class="callout research"><strong>Backtested ROI is currently -0.7% &mdash; model is in research mode. No live recommendations shown.</strong> The probability blend is still computed and displayed on each event card for transparency, but no stake suggestions are provided until the blended backtest clears 0% ROI on out-of-sample data.</div>
+  <p class="lede" style="margin-top:-4px">Bankroll $10,000 &middot; ¼ Kelly &middot; edge threshold 3.0&thinsp;pp &middot; staking only on LIVE-mode sports</p>
+  
+  <div class="callout"><strong>No edge plays today &mdash; model sitting out.</strong> Either no event cleared the 3.0&thinsp;pp edge threshold, or live odds haven't published yet.</div>
+  
   
 </div>
 
 
 
+
+
 <section class="scoreboard-section recommended">
   <h3>⭐ Recommended Plays <span class="section-count">(0)</span></h3>
-  <p class="lede" style="margin-top:-4px">Edge clears the 3.0&thinsp;pp threshold AND per-sport blended ROI is positive.</p>
+  <p class="lede" style="margin-top:-4px">Edge clears the 3.0&thinsp;pp threshold AND the event's sport is in LIVE mode.</p>
   
-  <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a positive-ROI sport, or the per-sport ROI gate has temporarily disabled every in-season league.</div>
+  <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a LIVE-mode sport, or no LIVE-mode sport has games on today's slate.</div>
   
 </section>
 
 <section class="scoreboard-section research">
-  <h3>🔍 Research-Mode Picks <span class="section-count">(0)</span></h3>
-  <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the per-sport ROI gate is negative — no stake recommendation.</p>
+  <h3>🔍 Research-Mode Picks <span class="section-count">(14)</span></h3>
+  <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the event's sport is in RESEARCH mode — no stake recommendation.</p>
   
-  <div class="callout">No research-mode picks today.</div>
+  <div class="event-grid-sort" data-target="grid-research">
+  <label for="grid-research-sort">Sort by</label>
+  <select id="grid-research-sort" data-sort-target="grid-research">
+    <option value="edge" selected>Edge (desc)</option>
+    <option value="stake">Kelly stake (desc)</option>
+    <option value="time">Game start time</option>
+  </select>
+</div>
+  <div class="event-grid" id="grid-research"><a href="event/2026-05-31-pablo-carreno-busta-at-rafael-jodar-205917.html" class="event-card mode-research"
+   data-sort-edge="0.05540213056984733"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T10:10:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-31T10:10:00Z" data-local="show">Sun May 31 · 10:10 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Pablo Carreno-Busta <span class="vs">@</span> Rafael Jodar</div>
+  
+  <div class="pick">
+    <span class="side">PICK: RAFAEL JODAR</span>
+    <span class="prob">-450</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.5 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">84.2%</span>
+    <span class="label">Market implied (devig)</span><span class="val">78.6%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 79%, blended model 84% — +5.5pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-yan-cheng-chen-at-tianhui-zhang-234707.html" class="event-card mode-research"
+   data-sort-edge="0.05540202654473725"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T02:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-31T02:00:00Z" data-local="show">Sun May 31 · 02:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Yan Cheng Chen <span class="vs">@</span> Tianhui Zhang</div>
+  
+  <div class="pick">
+    <span class="side">PICK: TIANHUI ZHANG</span>
+    <span class="prob">-550</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.5 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">84.2%</span>
+    <span class="label">Market implied (devig)</span><span class="val">78.6%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 79%, blended model 84% — +5.5pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-06-01-naomi-osaka-at-aryna-sabalenka-249520.html" class="event-card mode-research"
+   data-sort-edge="0.05473455255584392"
+   data-sort-stake="0"
+   data-sort-time="2026-06-01T09:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-06-01T09:00:00Z" data-local="show">Mon Jun 01 · 09:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Naomi Osaka <span class="vs">@</span> Aryna Sabalenka</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ARYNA SABALENKA</span>
+    <span class="prob">-450</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.5 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">84.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">78.6%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 79%, blended model 84% — +5.5pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-xiyu-wang-at-sorana-cirstea-203308.html" class="event-card mode-research"
+   data-sort-edge="0.05449817822091352"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T09:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T09:00:00Z" data-local="show">Sun May 31 · 09:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Xiyu Wang <span class="vs">@</span> Sorana Cirstea</div>
+  
+  <div class="pick">
+    <span class="side">PICK: SORANA CIRSTEA</span>
+    <span class="prob">-500</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.4 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">85.3%</span>
+    <span class="label">Market implied (devig)</span><span class="val">79.8%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 80%, blended model 85% — +5.4pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-06-01-zachary-svajda-at-flavio-cobolli-247719.html" class="event-card mode-research"
+   data-sort-edge="0.05340454170622344"
+   data-sort-stake="0"
+   data-sort-time="2026-06-01T09:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-06-01T09:00:00Z" data-local="show">Mon Jun 01 · 09:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Zachary Svajda <span class="vs">@</span> Flavio Cobolli</div>
+  
+  <div class="pick">
+    <span class="side">PICK: FLAVIO COBOLLI</span>
+    <span class="prob">-700</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.3 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">88.8%</span>
+    <span class="label">Market implied (devig)</span><span class="val">83.4%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 83%, blended model 89% — +5.3pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-brandon-nakashima-at-felix-auger-aliassime-172731.html" class="event-card mode-research"
+   data-sort-edge="0.05229614005138539"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T18:15:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-30T18:15:00Z" data-local="show">Sat May 30 · 18:15 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Brandon Nakashima <span class="vs">@</span> Felix Auger-Aliassime</div>
+  
+  <div class="pick">
+    <span class="side">PICK: FELIX AUGER-ALIASSIME</span>
+    <span class="prob">-310</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.2 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">77.8%</span>
+    <span class="label">Market implied (devig)</span><span class="val">72.6%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 73%, blended model 78% — +5.2pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-hina-inoue-at-alexandra-shubladze-242323.html" class="event-card mode-research"
+   data-sort-edge="0.05191101000590259"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T03:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T03:00:00Z" data-local="show">Sun May 31 · 03:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Hina Inoue <span class="vs">@</span> Alexandra Shubladze</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ALEXANDRA SHUBLADZE</span>
+    <span class="prob">-900</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+5.2 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">89.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">83.8%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 84%, blended model 89% — +5.2pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-jil-teichmann-at-mirra-andreeva-203309.html" class="event-card mode-research"
+   data-sort-edge="0.04709881387486614"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T11:50:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T11:50:00Z" data-local="show">Sun May 31 · 11:50 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Jil Teichmann <span class="vs">@</span> Mirra Andreeva</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MIRRA ANDREEVA</span>
+    <span class="prob">-1100</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+4.7 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">92.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">87.3%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 87%, blended model 92% — +4.7pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-natsuki-yoshimoto-at-hiromi-abe-242324.html" class="event-card mode-research"
+   data-sort-edge="0.03830379413076512"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T02:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T02:00:00Z" data-local="show">Sun May 31 · 02:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Natsuki Yoshimoto <span class="vs">@</span> Hiromi Abe</div>
+  
+  <div class="pick">
+    <span class="side">PICK: HIROMI ABE</span>
+    <span class="prob">-205</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.8 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">66.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">62.2%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 62%, blended model 66% — +3.8pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-matthew-dellavedova-at-kim-dong-ju-236501.html" class="event-card mode-research"
+   data-sort-edge="0.03800317869175884"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T02:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-31T02:00:00Z" data-local="show">Sun May 31 · 02:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Matthew Dellavedova <span class="vs">@</span> Kim Dong Ju</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MATTHEW DELLAVEDOVA</span>
+    <span class="prob">-290</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.8 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">27.5%</span>
+    <span class="label">Market implied (devig)</span><span class="val">31.3%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 69%, blended model 72% — +3.8pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-tatum-evans-at-mayu-crossley-216099.html" class="event-card mode-research"
+   data-sort-edge="0.03701532658918272"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-30T17:00:00Z" data-local="show">Sat May 30 · 17:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Tatum Evans <span class="vs">@</span> Mayu Crossley</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MAYU CROSSLEY</span>
+    <span class="prob">-200</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.7 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">65.2%</span>
+    <span class="label">Market implied (devig)</span><span class="val">61.5%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 62%, blended model 65% — +3.7pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-alexander-zverev-at-jesper-de-jong-220111.html" class="event-card mode-research"
+   data-sort-edge="0.03527769277909254"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T13:30:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-31T13:30:00Z" data-local="show">Sun May 31 · 13:30 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Alexander Zverev <span class="vs">@</span> Jesper de Jong</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ALEXANDER ZVEREV</span>
+    <span class="prob">-2500</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.5 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">4.4%</span>
+    <span class="label">Market implied (devig)</span><span class="val">8.0%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 92%, blended model 96% — +3.5pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-belinda-bencic-at-elina-svitolina-215901.html" class="event-card mode-research"
+   data-sort-edge="0.03274440536606904"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T10:10:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T10:10:00Z" data-local="show">Sun May 31 · 10:10 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Belinda Bencic <span class="vs">@</span> Elina Svitolina</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ELINA SVITOLINA</span>
+    <span class="prob">-165</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.3 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">62.7%</span>
+    <span class="label">Market implied (devig)</span><span class="val">59.4%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 59%, blended model 63% — +3.3pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-31-iga-swiatek-at-marta-kostyuk-197916.html" class="event-card mode-research"
+   data-sort-edge="0.03153328163465008"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T09:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-31T09:00:00Z" data-local="show">Sun May 31 · 09:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Iga Swiatek <span class="vs">@</span> Marta Kostyuk</div>
+  
+  <div class="pick">
+    <span class="side">PICK: IGA SWIATEK</span>
+    <span class="prob">-260</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+3.2 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">27.7%</span>
+    <span class="label">Market implied (devig)</span><span class="val">30.9%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 69%, blended model 72% — +3.2pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a></div>
   
 </section>
 
 <section class="scoreboard-section no-edge">
   <details>
-    <summary><h3 style="display:inline">⏸️ No Edge <span class="section-count">(45)</span></h3> — show 45 coin-flip events</summary>
-    <div class="event-grid"><a href="event/2026-05-30-zachary-svajda-at-francisco-cerundolo-160507.html" class="event-card" style="text-decoration:none;color:inherit">
+    <summary><h3 style="display:inline">⏸️ No Edge <span class="section-count">(74)</span></h3> — show 74 coin-flip events</summary>
+    
+    <div class="event-grid-sort" data-target="grid-no-edge">
+  <label for="grid-no-edge-sort">Sort by</label>
+  <select id="grid-no-edge-sort" data-sort-target="grid-no-edge">
+    <option value="edge" selected>Edge (desc)</option>
+    <option value="stake">Kelly stake (desc)</option>
+    <option value="time">Game start time</option>
+  </select>
+</div>
+    <div class="event-grid" id="grid-no-edge"><a href="event/2026-05-28-mac-meissner-at-eric-cole-issner.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T09:00:00Z" data-local="show">Sat May 30 · 09:00 UTC</time></span>
-    <span>2 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Zachary Svajda <span class="vs">@</span> Francisco Cerundolo</div>
+  <div class="matchup">Mac Meissner <span class="vs">@</span> Eric Cole</div>
   
   <div class="pick">
-    <span class="side">PICK: FRANCISCO CERUNDOLO</span>
-    <span class="prob">-1200</span>
+    <span class="side">PICK: ERIC COLE</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">88.0%</span>
-    <span class="label">Market implied (devig)</span><span class="val">88.1%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 88%, blended model 88% — -0.0pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-naomi-osaka-at-iva-jovic-154150.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-ryan-gerard-at-russell-henley-gerard.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T09:00:00Z" data-local="show">Sat May 30 · 09:00 UTC</time></span>
-    <span>2 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Naomi Osaka <span class="vs">@</span> Iva Jovic</div>
+  <div class="matchup">Ryan Gerard <span class="vs">@</span> Russell Henley</div>
   
   <div class="pick">
-    <span class="side">PICK: NAOMI OSAKA</span>
-    <span class="prob">-120</span>
+    <span class="side">PICK: RUSSELL HENLEY</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">47.2%</span>
-    <span class="label">Market implied (devig)</span><span class="val">47.8%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 52%, blended model 53% — +0.7pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-maja-chwalinska-at-maria-sakkari-162741.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-alex-smalley-at-akshay-bhatia-malley.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T09:00:00Z" data-local="show">Sat May 30 · 09:00 UTC</time></span>
-    <span>2 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Maja Chwalinska <span class="vs">@</span> Maria Sakkari</div>
+  <div class="matchup">Alex Smalley <span class="vs">@</span> Akshay Bhatia</div>
   
   <div class="pick">
-    <span class="side">PICK: MAJA CHWALINSKA</span>
-    <span class="prob">-130</span>
+    <span class="side">PICK: AKSHAY BHATIA</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">45.0%</span>
-    <span class="label">Market implied (devig)</span><span class="val">45.7%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 54%, blended model 55% — +0.8pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-maria-sakkari-at-maja-chwalinska-175527.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-nico-echavarria-at-j-j-spaun-varria.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T09:05:00Z" data-local="show">Sat May 30 · 09:05 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Maria Sakkari <span class="vs">@</span> Maja Chwalinska</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-francisco-cerundolo-at-zachary-svajda-175715.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T09:05:00Z" data-local="show">Sat May 30 · 09:05 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Francisco Cerundolo <span class="vs">@</span> Zachary Svajda</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-iva-jovic-at-naomi-osaka-175580.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T09:10:00Z" data-local="show">Sat May 30 · 09:10 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Iva Jovic <span class="vs">@</span> Naomi Osaka</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-ashlyn-krueger-at-hannah-klugman-178569.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T09:50:00Z" data-local="show">Sat May 30 · 09:50 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Ashlyn Krueger <span class="vs">@</span> Hannah Klugman</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-learner-tien-at-flavio-cobolli-158716.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T10:00:00Z" data-local="show">Sat May 30 · 10:00 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Learner Tien <span class="vs">@</span> Flavio Cobolli</div>
+  <div class="matchup">Nico Echavarria <span class="vs">@</span> J.J. Spaun</div>
   
   <div class="pick">
-    <span class="side">PICK: FLAVIO COBOLLI</span>
-    <span class="prob">-210</span>
+    <span class="side">PICK: J.J. SPAUN</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">64.9%</span>
-    <span class="label">Market implied (devig)</span><span class="val">64.7%</span>
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 65%, blended model 65% — +0.2pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-oleksandra-oliynykova-at-diana-shnaider-158909.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-gary-woodland-at-doug-ghim-odland.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:00:00Z" data-local="show">Sat May 30 · 10:00 UTC</time></span>
-    <span>2 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Oleksandra Oliynykova <span class="vs">@</span> Diana Shnaider</div>
+  <div class="matchup">Gary Woodland <span class="vs">@</span> Doug Ghim</div>
   
   <div class="pick">
-    <span class="side">PICK: DIANA SHNAIDER</span>
-    <span class="prob">-300</span>
+    <span class="side">PICK: DOUG GHIM</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">72.2%</span>
-    <span class="label">Market implied (devig)</span><span class="val">71.8%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 72%, blended model 72% — +0.4pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-diana-shnaider-at-oleksandra-oliynykova-175578.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-michael-brennan-at-hideki-matsuyama-rennan.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T10:05:00Z" data-local="show">Sat May 30 · 10:05 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Diana Shnaider <span class="vs">@</span> Oleksandra Oliynykova</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-flavio-cobolli-at-learner-tien-175712.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:05:00Z" data-local="show">Sat May 30 · 10:05 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Flavio Cobolli <span class="vs">@</span> Learner Tien</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-daria-kasatkina-at-aryna-sabalenka-166906.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:10:00Z" data-local="show">Sat May 30 · 10:10 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Daria Kasatkina <span class="vs">@</span> Aryna Sabalenka</div>
+  <div class="matchup">Michael Brennan <span class="vs">@</span> Hideki Matsuyama</div>
   
   <div class="pick">
-    <span class="side">PICK: ARYNA SABALENKA</span>
-    <span class="prob">-1000</span>
+    <span class="side">PICK: HIDEKI MATSUYAMA</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">87.5%</span>
-    <span class="label">Market implied (devig)</span><span class="val">86.8%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 87%, blended model 87% — +0.7pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-mingge-xu-at-kayla-cross-178562.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-justin-thomas-at-christiaan-bezuidenhout-thomas.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:10:00Z" data-local="show">Sat May 30 · 10:10 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Mingge Xu <span class="vs">@</span> Kayla Cross</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-rebeka-masarova-at-emily-appleton-178568.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:10:00Z" data-local="show">Sat May 30 · 10:10 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Rebeka Masarova <span class="vs">@</span> Emily Appleton</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-sayaka-ishii-at-vendula-valdmannova-178564.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:35:00Z" data-local="show">Sat May 30 · 10:35 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Sayaka Ishii <span class="vs">@</span> Vendula Valdmannova</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-maria-camila-osorio-at-anna-kalinskaya-162733.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:40:00Z" data-local="show">Sat May 30 · 10:40 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Maria Camila Osorio <span class="vs">@</span> Anna Kalinskaya</div>
+  <div class="matchup">Justin Thomas <span class="vs">@</span> Christiaan Bezuidenhout</div>
   
   <div class="pick">
-    <span class="side">PICK: MARIA CAMILA OSORIO</span>
-    <span class="prob">+100</span>
+    <span class="side">PICK: CHRISTIAAN BEZUIDENHOUT</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">51.7%</span>
-    <span class="label">Market implied (devig)</span><span class="val">52.2%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 48%, blended model 48% — +0.5pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-anouck-vrancken-peeters-at-gabriela-knutson-178558.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-ben-griffin-at-andrew-putnam-riffin.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T10:40:00Z" data-local="show">Sat May 30 · 10:40 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Anouck Vrancken Peeters <span class="vs">@</span> Gabriela Knutson</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-francisco-comesana-at-matteo-berrettini-171326.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T11:00:00Z" data-local="show">Sat May 30 · 11:00 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Francisco Comesana <span class="vs">@</span> Matteo Berrettini</div>
+  <div class="matchup">Ben Griffin <span class="vs">@</span> Andrew Putnam</div>
   
   <div class="pick">
-    <span class="side">PICK: MATTEO BERRETTINI</span>
-    <span class="prob">-230</span>
+    <span class="side">PICK: ANDREW PUTNAM</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">67.1%</span>
-    <span class="label">Market implied (devig)</span><span class="val">66.9%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 67%, blended model 67% — +0.2pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-greet-minnen-at-jodie-burrage-178559.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-mackenzie-hughes-at-brice-garnett-hughes.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T11:15:00Z" data-local="show">Sat May 30 · 11:15 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Greet Minnen <span class="vs">@</span> Jodie Burrage</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-alejandro-tabilo-at-moise-kouame-160299.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T11:20:00Z" data-local="show">Sat May 30 · 11:20 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Alejandro Tabilo <span class="vs">@</span> Moise Kouame</div>
+  <div class="matchup">Mackenzie Hughes <span class="vs">@</span> Brice Garnett</div>
   
   <div class="pick">
-    <span class="side">PICK: ALEJANDRO TABILO</span>
-    <span class="prob">-550</span>
+    <span class="side">PICK: BRICE GARNETT</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">19.6%</span>
-    <span class="label">Market implied (devig)</span><span class="val">19.1%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 81%, blended model 80% — -0.5pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-martin-landaluce-at-juan-manuel-cerundolo-162742.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-michael-thorbjornsen-at-brian-harman-ornsen.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T11:30:00Z" data-local="show">Sat May 30 · 11:30 UTC</time></span>
-    <span>2 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Martin Landaluce <span class="vs">@</span> Juan Manuel Cerundolo</div>
+  <div class="matchup">Michael Thorbjornsen <span class="vs">@</span> Brian Harman</div>
   
   <div class="pick">
-    <span class="side">PICK: JUAN MANUEL CERUNDOLO</span>
-    <span class="prob">-155</span>
+    <span class="side">PICK: BRIAN HARMAN</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">58.6%</span>
-    <span class="label">Market implied (devig)</span><span class="val">58.3%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 58%, blended model 59% — +0.3pp edge on the HOME side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-mananchaya-sawangkaew-at-yuriko-lily-miyazaki-178565.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-jordan-smith-at-chandler-blanchet-smith.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T11:35:00Z" data-local="show">Sat May 30 · 11:35 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Mananchaya Sawangkaew <span class="vs">@</span> Yuriko Lily Miyazaki</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-amanda-anisimova-at-diane-parry-162734.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T11:40:00Z" data-local="show">Sat May 30 · 11:40 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Amanda Anisimova <span class="vs">@</span> Diane Parry</div>
+  <div class="matchup">Jordan Smith <span class="vs">@</span> Chandler Blanchet</div>
   
   <div class="pick">
-    <span class="side">PICK: AMANDA ANISIMOVA</span>
-    <span class="prob">-500</span>
+    <span class="side">PICK: JORDAN SMITH</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">18.9%</span>
-    <span class="label">Market implied (devig)</span><span class="val">20.2%</span>
+    <span class="label">Blended home prob</span><span class="val">40.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 80%, blended model 81% — +1.3pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-matteo-berrettini-at-francisco-comesana-175720.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-lee-hodges-at-keita-nakajima-hodges.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T11:40:00Z" data-local="show">Sat May 30 · 11:40 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Matteo Berrettini <span class="vs">@</span> Francisco Comesana</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-raphael-collignon-at-matteo-arnaldi-171577.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T11:50:00Z" data-local="show">Sat May 30 · 11:50 UTC</time></span>
-    <span>2 sources</span>
-  </div>
-  <div class="matchup">Raphael Collignon <span class="vs">@</span> Matteo Arnaldi</div>
+  <div class="matchup">Lee Hodges <span class="vs">@</span> Keita Nakajima</div>
   
   <div class="pick">
-    <span class="side">PICK: RAPHAEL COLLIGNON</span>
-    <span class="prob">-195</span>
+    <span class="side">PICK: KEITA NAKAJIMA</span>
+    <span class="prob">—</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">37.3%</span>
-    <span class="label">Market implied (devig)</span><span class="val">36.8%</span>
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
   
-  <details class="why-this-pick">
-    <summary>Why this pick</summary>
-    <ul><li>Market consensus 63%, blended model 63% — -0.5pp edge on the AWAY side.</li></ul>
-  </details>
   
   
-  
-</a><a href="event/2026-05-30-heather-watson-at-viktoria-hruncakova-178560.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-28-andrew-novak-at-a-j-ewart-novak.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T12:10:00Z" data-local="show">Sat May 30 · 12:10 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Heather Watson <span class="vs">@</span> Viktoria Hruncakova</div>
+  <div class="matchup">Andrew Novak <span class="vs">@</span> A.J. Ewart</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-juan-manuel-cerundolo-at-martin-landaluce-175727.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T12:15:00Z" data-local="show">Sat May 30 · 12:15 UTC</time></span>
-    <span>0 sources</span>
+  <div class="pick">
+    <span class="side">PICK: A.J. EWART</span>
+    <span class="prob">—</span>
   </div>
-  <div class="matchup">Juan Manuel Cerundolo <span class="vs">@</span> Martin Landaluce</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-diane-parry-at-amanda-anisimova-175530.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T12:20:00Z" data-local="show">Sat May 30 · 12:20 UTC</time></span>
-    <span>0 sources</span>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
   </div>
-  <div class="matchup">Diane Parry <span class="vs">@</span> Amanda Anisimova</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-aryna-sabalenka-at-daria-kasatkina-175585.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T12:30:00Z" data-local="show">Sat May 30 · 12:30 UTC</time></span>
-    <span>0 sources</span>
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
   </div>
-  <div class="matchup">Aryna Sabalenka <span class="vs">@</span> Daria Kasatkina</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
   
   
-</a><a href="event/2026-05-30-anna-kalinskaya-at-camila-osorio-175533.html" class="event-card" style="text-decoration:none;color:inherit">
+  
+</a><a href="event/2026-05-28-tom-kim-at-johnny-keefer-om-kim.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T12:35:00Z" data-local="show">Sat May 30 · 12:35 UTC</time></span>
-    <span>0 sources</span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
   </div>
-  <div class="matchup">Anna Kalinskaya <span class="vs">@</span> Camila Osorio</div>
+  <div class="matchup">Tom Kim <span class="vs">@</span> Johnny Keefer</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-anna-kalinskaya-at-camila-osorio-175533.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T12:35:00Z" data-local="show">Sat May 30 · 12:35 UTC</time></span>
-    <span>0 sources</span>
+  <div class="pick">
+    <span class="side">PICK: JOHNNY KEEFER</span>
+    <span class="prob">—</span>
   </div>
-  <div class="matchup">Anna Kalinskaya <span class="vs">@</span> Camila Osorio</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
   
   
-</a><a href="event/2026-05-30-madison-keys-at-victoria-mboko-171327.html" class="event-card" style="text-decoration:none;color:inherit">
+  
+</a><a href="event/2026-05-28-pierceson-coody-at-ludvig-berg-coody.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T12:40:00Z" data-local="show">Sat May 30 · 12:40 UTC</time></span>
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Pierceson Coody <span class="vs">@</span> Ludvig Åberg</div>
+  
+  <div class="pick">
+    <span class="side">PICK: LUDVIG ÅBERG</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-zach-bauchou-at-michael-kim-auchou.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Zach Bauchou <span class="vs">@</span> Michael Kim</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MICHAEL KIM</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-steven-fisk-at-robert-macintyre-n-fisk.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Steven Fisk <span class="vs">@</span> Robert MacIntyre</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ROBERT MACINTYRE</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-matt-kuchar-at-billy-horschel-kuchar.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Matt Kuchar <span class="vs">@</span> Billy Horschel</div>
+  
+  <div class="pick">
+    <span class="side">PICK: BILLY HORSCHEL</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-ricky-castillo-at-keegan-bradley-stillo.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Ricky Castillo <span class="vs">@</span> Keegan Bradley</div>
+  
+  <div class="pick">
+    <span class="side">PICK: KEEGAN BRADLEY</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-rasmus-neergaard-petersen-at-austin-smotherman-tersen.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Rasmus Neergaard-Petersen <span class="vs">@</span> Austin Smotherman</div>
+  
+  <div class="pick">
+    <span class="side">PICK: RASMUS NEERGAARD-PETERSEN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">40.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-sam-stevens-at-austin-eckroat-tevens.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Sam Stevens <span class="vs">@</span> Austin Eckroat</div>
+  
+  <div class="pick">
+    <span class="side">PICK: AUSTIN ECKROAT</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-max-mcgreevy-at-adam-schenk-greevy.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Max McGreevy <span class="vs">@</span> Adam Schenk</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ADAM SCHENK</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-kevin-yu-at-davis-thompson-vin-yu.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Kevin Yu <span class="vs">@</span> Davis Thompson</div>
+  
+  <div class="pick">
+    <span class="side">PICK: DAVIS THOMPSON</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-joel-dahmen-at-brandt-snedeker-dahmen.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Joel Dahmen <span class="vs">@</span> Brandt Snedeker</div>
+  
+  <div class="pick">
+    <span class="side">PICK: JOEL DAHMEN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">40.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-taylor-moore-at-jackson-suber-moore.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Taylor Moore <span class="vs">@</span> Jackson Suber</div>
+  
+  <div class="pick">
+    <span class="side">PICK: JACKSON SUBER</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-rico-hoey-at-jeffrey-kang-o-hoey.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Rico Hoey <span class="vs">@</span> Jeffrey Kang</div>
+  
+  <div class="pick">
+    <span class="side">PICK: JEFFREY KANG</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-sahith-theegala-at-max-homa-eegala.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Sahith Theegala <span class="vs">@</span> Max Homa</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MAX HOMA</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-matt-mccarty-at-adrien-saddier-ccarty.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Matt McCarty <span class="vs">@</span> Adrien Saddier</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ADRIEN SADDIER</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-patrick-fishburn-at-garrick-higgo-shburn.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Patrick Fishburn <span class="vs">@</span> Garrick Higgo</div>
+  
+  <div class="pick">
+    <span class="side">PICK: GARRICK HIGGO</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-j-t-poston-at-emiliano-grillo-poston.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">J.T. Poston <span class="vs">@</span> Emiliano Grillo</div>
+  
+  <div class="pick">
+    <span class="side">PICK: EMILIANO GRILLO</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-matthieu-pavon-at-luke-clanton-pavon.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Matthieu Pavon <span class="vs">@</span> Luke Clanton</div>
+  
+  <div class="pick">
+    <span class="side">PICK: LUKE CLANTON</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-zac-blair-at-sudarshan-yellamaraju-blair.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Zac Blair <span class="vs">@</span> Sudarshan Yellamaraju</div>
+  
+  <div class="pick">
+    <span class="side">PICK: SUDARSHAN YELLAMARAJU</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-william-mouw-at-marcelo-rozo-m-mouw.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">William Mouw <span class="vs">@</span> Marcelo Rozo</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MARCELO ROZO</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-kris-ventura-at-chad-ramey-entura.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Kris Ventura <span class="vs">@</span> Chad Ramey</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CHAD RAMEY</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-kevin-kisner-at-john-vanderlaan-kisner.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Kevin Kisner <span class="vs">@</span> John VanDerLaan</div>
+  
+  <div class="pick">
+    <span class="side">PICK: JOHN VANDERLAAN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-nick-dunlap-at-lanto-griffin-dunlap.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Nick Dunlap <span class="vs">@</span> Lanto Griffin</div>
+  
+  <div class="pick">
+    <span class="side">PICK: LANTO GRIFFIN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-kevin-roy-at-davis-riley-in-roy.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Kevin Roy <span class="vs">@</span> Davis Riley</div>
+  
+  <div class="pick">
+    <span class="side">PICK: DAVIS RILEY</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-tom-hoge-at-cam-davis-m-hoge.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Tom Hoge <span class="vs">@</span> Cam Davis</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CAM DAVIS</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-neal-shipley-at-keith-mitchell-hipley.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Neal Shipley <span class="vs">@</span> Keith Mitchell</div>
+  
+  <div class="pick">
+    <span class="side">PICK: KEITH MITCHELL</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-tony-finau-at-pontus-nyholm-finau.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Tony Finau <span class="vs">@</span> Pontus Nyholm</div>
+  
+  <div class="pick">
+    <span class="side">PICK: PONTUS NYHOLM</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-danny-walker-at-adam-svensson-walker.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Danny Walker <span class="vs">@</span> Adam Svensson</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ADAM SVENSSON</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-camilo-villegas-at-beau-hossler-llegas.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Camilo Villegas <span class="vs">@</span> Beau Hossler</div>
+  
+  <div class="pick">
+    <span class="side">PICK: BEAU HOSSLER</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-sam-ryder-at-ben-kohles-ryder.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Sam Ryder <span class="vs">@</span> Ben Kohles</div>
+  
+  <div class="pick">
+    <span class="side">PICK: BEN KOHLES</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-patrick-rodgers-at-adrien-dumont-de-chassart-odgers.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Patrick Rodgers <span class="vs">@</span> Adrien Dumont de Chassart</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ADRIEN DUMONT DE CHASSART</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-takumi-kanaya-at-kevin-streelman-kanaya.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Takumi Kanaya <span class="vs">@</span> Kevin Streelman</div>
+  
+  <div class="pick">
+    <span class="side">PICK: KEVIN STREELMAN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-mark-hubbard-at-erik-van-rooyen-ubbard.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Mark Hubbard <span class="vs">@</span> Erik van Rooyen</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ERIK VAN ROOYEN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-zecheng-dou-at-ryo-hisatsune-ng-dou.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Zecheng Dou <span class="vs">@</span> Ryo Hisatsune</div>
+  
+  <div class="pick">
+    <span class="side">PICK: RYO HISATSUNE</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-nick-hardy-at-mason-howell-hardy.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Nick Hardy <span class="vs">@</span> Mason Howell</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MASON HOWELL</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-haotong-li-at-christo-lamprecht-ong-li.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Haotong Li <span class="vs">@</span> Christo Lamprecht</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CHRISTO LAMPRECHT</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-paul-peterson-at-davis-chatfield-terson.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Paul Peterson <span class="vs">@</span> Davis Chatfield</div>
+  
+  <div class="pick">
+    <span class="side">PICK: DAVIS CHATFIELD</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-s-amus-power-at-kensei-hirata-power.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Séamus Power <span class="vs">@</span> Kensei Hirata</div>
+  
+  <div class="pick">
+    <span class="side">PICK: KENSEI HIRATA</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-webb-simpson-at-alejandro-tosti-impson.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Webb Simpson <span class="vs">@</span> Alejandro Tosti</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ALEJANDRO TOSTI</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-hayden-springer-at-charley-hoffman-ringer.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Hayden Springer <span class="vs">@</span> Charley Hoffman</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CHARLEY HOFFMAN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-dylan-wu-at-brian-campbell-lan-wu.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Dylan Wu <span class="vs">@</span> Brian Campbell</div>
+  
+  <div class="pick">
+    <span class="side">PICK: BRIAN CAMPBELL</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-jimmy-stanger-at-hank-lebioda-tanger.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Jimmy Stanger <span class="vs">@</span> Hank Lebioda</div>
+  
+  <div class="pick">
+    <span class="side">PICK: HANK LEBIODA</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-lucas-glover-at-harry-hall-glover.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Lucas Glover <span class="vs">@</span> Harry Hall</div>
+  
+  <div class="pick">
+    <span class="side">PICK: HARRY HALL</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">59.9%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-vince-whaley-at-trace-crowe-whaley.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Vince Whaley <span class="vs">@</span> Trace Crowe</div>
+  
+  <div class="pick">
+    <span class="side">PICK: TRACE CROWE</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-rickie-fowler-at-joe-highsmith-fowler.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Rickie Fowler <span class="vs">@</span> Joe Highsmith</div>
+  
+  <div class="pick">
+    <span class="side">PICK: RICKIE FOWLER</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">40.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-rasmus-h-jgaard-at-chandler-phillips-jgaard.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Rasmus Højgaard <span class="vs">@</span> Chandler Phillips</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CHANDLER PHILLIPS</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-david-skinns-at-daniel-brown-skinns.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">David Skinns <span class="vs">@</span> Daniel Brown</div>
+  
+  <div class="pick">
+    <span class="side">PICK: DANIEL BROWN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-thorbj-rn-olesen-at-max-greyserman-olesen.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Thorbjørn Olesen <span class="vs">@</span> Max Greyserman</div>
+  
+  <div class="pick">
+    <span class="side">PICK: MAX GREYSERMAN</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-david-lipsky-at-chris-kirk-lipsky.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">David Lipsky <span class="vs">@</span> Chris Kirk</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CHRIS KIRK</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-sungjae-im-at-albert-hansson-jae-im.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Sungjae Im <span class="vs">@</span> Albert Hansson</div>
+  
+  <div class="pick">
+    <span class="side">PICK: SUNGJAE IM</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">40.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-28-stephan-jaeger-at-patton-kizzire-jaeger.html" class="event-card mode-research"
+   data-sort-edge="-999"
+   data-sort-stake="0"
+   data-sort-time="2026-05-28T04:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>PGA &middot; <time datetime="2026-05-28T04:00:00Z" data-local="show">Thu May 28 · 04:00 UTC</time> <span class="mode-pill research" title="PGA blended backtest ROI n/a">🔍 RESEARCH</span></span>
+    <span>1 sources</span>
+  </div>
+  <div class="matchup">Stephan Jaeger <span class="vs">@</span> Patton Kizzire</div>
+  
+  <div class="pick">
+    <span class="side">PICK: PATTON KIZZIRE</span>
+    <span class="prob">—</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — PGA sample too small</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val ">—</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">50.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">—</span>
+  </div>
+  
+  
+  
+</a><a href="event/2026-05-30-madison-keys-at-victoria-mboko-171327.html" class="event-card mode-research"
+   data-sort-edge="0.01117283448564832"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T16:40:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-30T16:40:00Z" data-local="show">Sat May 30 · 16:40 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
     <span>2 sources</span>
   </div>
   <div class="matchup">Madison Keys <span class="vs">@</span> Victoria Mboko</div>
   
   <div class="pick">
-    <span class="side">PICK: MADISON KEYS</span>
-    <span class="prob">+100</span>
+    <span class="side">PICK: VICTORIA MBOKO</span>
+    <span class="prob">-110</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.1 pp</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">51.7%</span>
-    <span class="label">Market implied (devig)</span><span class="val">52.2%</span>
+    <span class="label">Blended home prob</span><span class="val">51.1%</span>
+    <span class="label">Market implied (devig)</span><span class="val">50.0%</span>
   </div>
   
   <details class="why-this-pick">
     <summary>Why this pick</summary>
-    <ul><li>Market consensus 48%, blended model 48% — +0.5pp edge on the AWAY side.</li></ul>
+    <ul><li>Market consensus 50%, blended model 51% — +1.1pp edge on the HOME side.</li></ul>
   </details>
   
   
   
-</a><a href="event/2026-05-30-nao-hibino-at-mariam-bolkvadze-178563.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-30-spencer-johnson-at-amit-vales-217722.html" class="event-card mode-research"
+   data-sort-edge="0.019444509136699484"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T12:50:00Z" data-local="show">Sat May 30 · 12:50 UTC</time></span>
-    <span>0 sources</span>
+    <span>ATP &middot; <time datetime="2026-05-30T17:00:00Z" data-local="show">Sat May 30 · 17:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
   </div>
-  <div class="matchup">Nao Hibino <span class="vs">@</span> Mariam Bolkvadze</div>
+  <div class="matchup">Spencer Johnson <span class="vs">@</span> Amit Vales</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
+  <div class="pick">
+    <span class="side">PICK: SPENCER JOHNSON</span>
+    <span class="prob">-185</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.9 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">38.2%</span>
+    <span class="label">Market implied (devig)</span><span class="val">40.1%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 60%, blended model 62% — +1.9pp edge on the AWAY side.</li></ul>
+  </details>
   
   
-</a><a href="event/2026-05-30-frances-tiafoe-at-jaime-faria-164110.html" class="event-card" style="text-decoration:none;color:inherit">
+  
+</a><a href="event/2026-05-30-lucas-marionneau-at-kaylan-bigun-217723.html" class="event-card mode-research"
+   data-sort-edge="0.011041249189530866"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T13:00:00Z" data-local="show">Sat May 30 · 13:00 UTC</time></span>
+    <span>ATP &middot; <time datetime="2026-05-30T17:00:00Z" data-local="show">Sat May 30 · 17:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Lucas Marionneau <span class="vs">@</span> Kaylan Bigun</div>
+  
+  <div class="pick">
+    <span class="side">PICK: KAYLAN BIGUN</span>
+    <span class="prob">-130</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.1 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">53.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">51.9%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 52%, blended model 53% — +1.1pp edge on the HOME side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-anne-christine-lutkemeyer-obregon-at-allison-wang-222908.html" class="event-card mode-research"
+   data-sort-edge="0.012729003078746803"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:00:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-30T17:00:00Z" data-local="show">Sat May 30 · 17:00 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Anne Christine Lutkemeyer Obregon <span class="vs">@</span> Allison Wang</div>
+  
+  <div class="pick">
+    <span class="side">PICK: ANNE CHRISTINE LUTKEMEYER OBREGON</span>
+    <span class="prob">-185</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.3 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">38.8%</span>
+    <span class="label">Market implied (devig)</span><span class="val">40.1%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 60%, blended model 61% — +1.3pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-clervie-ngounoue-at-reese-brantmeier-217135.html" class="event-card mode-research"
+   data-sort-edge="0.019786547892575945"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:06:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-30T17:06:00Z" data-local="show">Sat May 30 · 17:06 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Clervie Ngounoue <span class="vs">@</span> Reese Brantmeier</div>
+  
+  <div class="pick">
+    <span class="side">PICK: CLERVIE NGOUNOUE</span>
+    <span class="prob">-215</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+2.0 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">35.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">37.0%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 63%, blended model 65% — +2.0pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-lea-ma-at-dana-guzman-217134.html" class="event-card mode-research"
+   data-sort-edge="0.016476108971974046"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:12:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>WTA &middot; <time datetime="2026-05-30T17:12:00Z" data-local="show">Sat May 30 · 17:12 UTC</time> <span class="mode-pill research" title="WTA blended backtest ROI -15.3%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
+  </div>
+  <div class="matchup">Lea Ma <span class="vs">@</span> Dana Guzman</div>
+  
+  <div class="pick">
+    <span class="side">PICK: LEA MA</span>
+    <span class="prob">-200</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — WTA backtest -15.3%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.6 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">36.8%</span>
+    <span class="label">Market implied (devig)</span><span class="val">38.5%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 62%, blended model 63% — +1.6pp edge on the AWAY side.</li></ul>
+  </details>
+  
+  
+  
+</a><a href="event/2026-05-30-frances-tiafoe-at-jaime-faria-164110.html" class="event-card mode-research"
+   data-sort-edge="0.025200598660856555"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:15:00Z"
+   style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>ATP &middot; <time datetime="2026-05-30T17:15:00Z" data-local="show">Sat May 30 · 17:15 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
     <span>2 sources</span>
   </div>
   <div class="matchup">Frances Tiafoe <span class="vs">@</span> Jaime Faria</div>
@@ -641,174 +2723,178 @@
     <span class="prob">-185</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+2.5 pp</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">38.2%</span>
+    <span class="label">Blended home prob</span><span class="val">35.1%</span>
     <span class="label">Market implied (devig)</span><span class="val">37.7%</span>
   </div>
   
   <details class="why-this-pick">
     <summary>Why this pick</summary>
-    <ul><li>Market consensus 62%, blended model 62% — -0.5pp edge on the AWAY side.</li></ul>
+    <ul><li>Market consensus 62%, blended model 65% — +2.5pp edge on the AWAY side.</li></ul>
   </details>
   
   
   
-</a><a href="event/2026-05-30-victoria-allen-at-tereza-martincova-178561.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-30-sebastian-sorger-at-oliver-crawford-213709.html" class="event-card mode-research"
+   data-sort-edge="0.016080102741750868"
+   data-sort-stake="0"
+   data-sort-time="2026-05-30T17:30:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T13:00:00Z" data-local="show">Sat May 30 · 13:00 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Victoria Allen <span class="vs">@</span> Tereza Martincova</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-carol-zhao-at-celine-naef-178567.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T13:15:00Z" data-local="show">Sat May 30 · 13:15 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Carol Zhao <span class="vs">@</span> Celine Naef</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-amelia-rajecki-at-aoi-ito-178566.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T13:30:00Z" data-local="show">Sat May 30 · 13:30 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Amelia Rajecki <span class="vs">@</span> Aoi Ito</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-moise-kouame-at-alejandro-tabilo-175744.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T13:45:00Z" data-local="show">Sat May 30 · 13:45 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Moise Kouame <span class="vs">@</span> Alejandro Tabilo</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-anastasia-potapova-at-coco-gauff-170502.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T14:00:00Z" data-local="show">Sat May 30 · 14:00 UTC</time></span>
+    <span>ATP &middot; <time datetime="2026-05-30T17:30:00Z" data-local="show">Sat May 30 · 17:30 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
     <span>2 sources</span>
   </div>
-  <div class="matchup">Anastasia Potapova <span class="vs">@</span> Coco Gauff</div>
+  <div class="matchup">Sebastian Sorger <span class="vs">@</span> Oliver Crawford</div>
   
   <div class="pick">
-    <span class="side">PICK: COCO GAUFF</span>
-    <span class="prob">-375</span>
+    <span class="side">PICK: OLIVER CRAWFORD</span>
+    <span class="prob">-140</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+1.6 pp</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">76.0%</span>
-    <span class="label">Market implied (devig)</span><span class="val">75.5%</span>
+    <span class="label">Blended home prob</span><span class="val">55.5%</span>
+    <span class="label">Market implied (devig)</span><span class="val">53.8%</span>
   </div>
   
   <details class="why-this-pick">
     <summary>Why this pick</summary>
-    <ul><li>Market consensus 75%, blended model 76% — +0.5pp edge on the HOME side.</li></ul>
+    <ul><li>Market consensus 54%, blended model 55% — +1.6pp edge on the HOME side.</li></ul>
   </details>
   
   
   
-</a><a href="event/2026-05-30-coco-gauff-at-anastasia-potapova-175526.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-31-evan-zhu-at-jake-delaney-243305.html" class="event-card mode-research"
+   data-sort-edge="0.021701744484491248"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T02:00:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T14:00:00Z" data-local="show">Sat May 30 · 14:00 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Coco Gauff <span class="vs">@</span> Anastasia Potapova</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-victoria-mboko-at-madison-keys-175583.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T14:00:00Z" data-local="show">Sat May 30 · 14:00 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Victoria Mboko <span class="vs">@</span> Madison Keys</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-matteo-arnaldi-at-raphael-collignon-175740.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T14:00:00Z" data-local="show">Sat May 30 · 14:00 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Matteo Arnaldi <span class="vs">@</span> Raphael Collignon</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-jaime-faria-at-frances-tiafoe-175737.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T16:00:00Z" data-local="show">Sat May 30 · 16:00 UTC</time></span>
-    <span>0 sources</span>
-  </div>
-  <div class="matchup">Jaime Faria <span class="vs">@</span> Frances Tiafoe</div>
-  
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-  
-  
-</a><a href="event/2026-05-30-brandon-nakashima-at-felix-auger-aliassime-172731.html" class="event-card" style="text-decoration:none;color:inherit">
-  <div class="top">
-    <span>ATP &middot; <time datetime="2026-05-30T18:15:00Z" data-local="show">Sat May 30 · 18:15 UTC</time></span>
+    <span>ATP &middot; <time datetime="2026-05-31T02:00:00Z" data-local="show">Sun May 31 · 02:00 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
     <span>2 sources</span>
   </div>
-  <div class="matchup">Brandon Nakashima <span class="vs">@</span> Felix Auger-Aliassime</div>
+  <div class="matchup">Evan Zhu <span class="vs">@</span> Jake Delaney</div>
   
   <div class="pick">
-    <span class="side">PICK: FELIX AUGER-ALIASSIME</span>
-    <span class="prob">-285</span>
+    <span class="side">PICK: JAKE DELANEY</span>
+    <span class="prob">-155</span>
   </div>
   
-  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+2.2 pp</span></div>
+  </div>
   
   <div class="probs">
-    <span class="label">Blended home prob</span><span class="val">70.8%</span>
-    <span class="label">Market implied (devig)</span><span class="val">70.6%</span>
+    <span class="label">Blended home prob</span><span class="val">58.2%</span>
+    <span class="label">Market implied (devig)</span><span class="val">56.1%</span>
   </div>
   
   <details class="why-this-pick">
     <summary>Why this pick</summary>
-    <ul><li>Market consensus 71%, blended model 71% — +0.2pp edge on the HOME side.</li></ul>
+    <ul><li>Market consensus 56%, blended model 58% — +2.2pp edge on the HOME side.</li></ul>
   </details>
   
   
   
-</a><a href="event/2026-05-30-felix-auger-aliassime-at-brandon-nakashima-175749.html" class="event-card" style="text-decoration:none;color:inherit">
+</a><a href="event/2026-05-31-joao-fonseca-at-casper-ruud-216332.html" class="event-card mode-research"
+   data-sort-edge="0.02710681922768987"
+   data-sort-stake="0"
+   data-sort-time="2026-05-31T18:15:00Z"
+   style="text-decoration:none;color:inherit">
   <div class="top">
-    <span>WTA &middot; <time datetime="2026-05-30T18:15:00Z" data-local="show">Sat May 30 · 18:15 UTC</time></span>
-    <span>0 sources</span>
+    <span>ATP &middot; <time datetime="2026-05-31T18:15:00Z" data-local="show">Sun May 31 · 18:15 UTC</time> <span class="mode-pill research" title="ATP blended backtest ROI -15.2%">🔍 RESEARCH</span></span>
+    <span>2 sources</span>
   </div>
-  <div class="matchup">Felix Auger-Aliassime <span class="vs">@</span> Brandon Nakashima</div>
+  <div class="matchup">Joao Fonseca <span class="vs">@</span> Casper Ruud</div>
   
-  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
-  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
+  <div class="pick">
+    <span class="side">PICK: CASPER RUUD</span>
+    <span class="prob">-155</span>
+  </div>
+  
+  <div class="research-banner">🔍 Research only — ATP backtest -15.2%, needs +2.0% to go live</div>
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val pos">+2.7 pp</span></div>
+  </div>
+  
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">61.0%</span>
+    <span class="label">Market implied (devig)</span><span class="val">58.3%</span>
+  </div>
+  
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul><li>Market consensus 58%, blended model 61% — +2.7pp edge on the HOME side.</li></ul>
+  </details>
+  
   
   
 </a></div>
+    
   </details>
 </section>
+
+<script>
+(function () {
+  // Client-side scoreboard sort. No backend re-render: we only re-order
+  // DOM children of <div class="event-grid" id="..."> based on the
+  // data-sort-* attributes the server already wrote on each card.
+  function reorder(gridId, key) {
+    var grid = document.getElementById(gridId);
+    if (!grid) return;
+    var cards = Array.prototype.slice.call(
+      grid.querySelectorAll(".event-card")
+    );
+    if (cards.length < 2) return;
+    var attr, descending;
+    if (key === "stake") {
+      attr = "data-sort-stake"; descending = true;
+    } else if (key === "time") {
+      attr = "data-sort-time"; descending = false;
+    } else {
+      attr = "data-sort-edge"; descending = true;
+    }
+    cards.sort(function (a, b) {
+      var av = a.getAttribute(attr) || "";
+      var bv = b.getAttribute(attr) || "";
+      if (key === "time") {
+        // ISO 8601 sorts lexicographically. Empty strings sink to the bottom.
+        if (av === "" && bv === "") return 0;
+        if (av === "") return 1;
+        if (bv === "") return -1;
+        return av < bv ? -1 : (av > bv ? 1 : 0);
+      }
+      var an = parseFloat(av);
+      var bn = parseFloat(bv);
+      if (isNaN(an)) an = -Infinity;
+      if (isNaN(bn)) bn = -Infinity;
+      return descending ? (bn - an) : (an - bn);
+    });
+    cards.forEach(function (c) { grid.appendChild(c); });
+  }
+  var selects = document.querySelectorAll("select[data-sort-target]");
+  for (var i = 0; i < selects.length; i++) {
+    (function (sel) {
+      sel.addEventListener("change", function () {
+        reorder(sel.getAttribute("data-sort-target"), sel.value);
+      });
+      // Apply the default sort once on page load so the order is
+      // deterministic even if the server-rendered order differs.
+      reorder(sel.getAttribute("data-sort-target"), sel.value);
+    })(selects[i]);
+  }
+})();
+</script>
 
 </div>
 <footer>

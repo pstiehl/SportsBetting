@@ -15,9 +15,11 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 12:57 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 19:20 UTC</div>
         
-        <div class="site-status research" title="Blended backtest ROI: -0.7%">🟡 RESEARCH MODE &middot; backtest ROI -0.7%</div>
+        <div class="site-status-pills" title="Per-sport blended backtest ROI. Only sports with ROI ≥ floor and sufficient sample size go LIVE.">
+          <span class="mode-pill research" title="blended ROI -15.2% below +2.0% floor">🔍 RESEARCH ATP -15.2%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH CFB n/a</span><span class="mode-pill live-marginal" title="marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)">🟡 LIVE (marginal) MLB +2.8%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH NBA n/a</span><span class="mode-pill live" title="LIVE — ROI +18.3%, 635 scored bets">🟢 LIVE NFL +18.3%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH PGA n/a</span><span class="mode-pill research" title="blended ROI -15.3% below +2.0% floor">🔍 RESEARCH WTA -15.3%</span>
+        </div>
         
       </div>
     </div>
@@ -43,10 +45,10 @@
 </p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">33104</div><div class="label">Events graded</div></div>
-  <div class="kpi"><div class="num neg">-0.7%</div><div class="label">Blended ROI</div></div>
+  <div class="kpi"><div class="num">34947</div><div class="label">Events graded</div></div>
+  <div class="kpi"><div class="num neg">-13.1%</div><div class="label">Blended ROI</div></div>
   <div class="kpi"><div class="num">—</div><div class="label">Blended Brier ↓</div></div>
-  <div class="kpi"><div class="num neg">$-1,080</div><div class="label">Total Profit</div></div>
+  <div class="kpi"><div class="num neg">$-145,061</div><div class="label">Total Profit</div></div>
 </div>
 
 
@@ -59,10 +61,19 @@
 <tr>
   <td><strong>NFL</strong></td>
   <td class="num">635</td>
-  <td class="num">125</td>
-  <td class="num">$21,790</td>
-  <td class="num">$+2,542</td>
-  <td class="num pos">+11.67%</td>
+  <td class="num">388</td>
+  <td class="num">$70,400</td>
+  <td class="num">$+12,862</td>
+  <td class="num pos">+18.27%</td>
+</tr>
+
+<tr>
+  <td><strong>CFB</strong></td>
+  <td class="num">1843</td>
+  <td class="num">0</td>
+  <td class="num">$0</td>
+  <td class="num">$+0</td>
+  <td class="num ">—</td>
 </tr>
 
 <tr>
@@ -76,29 +87,38 @@
 
 <tr>
   <td><strong>MLB</strong></td>
-  <td class="num">3488</td>
+  <td class="num">7135</td>
   <td class="num">0</td>
   <td class="num">$0</td>
   <td class="num">$+0</td>
-  <td class="num ">—</td>
+  <td class="num pos">+2.77%</td>
 </tr>
 
 <tr>
   <td><strong>ATP</strong></td>
   <td class="num">14129</td>
-  <td class="num">439</td>
-  <td class="num">$70,215</td>
-  <td class="num">$-4,786</td>
-  <td class="num neg">-6.82%</td>
+  <td class="num">3453</td>
+  <td class="num">$561,255</td>
+  <td class="num">$-85,575</td>
+  <td class="num neg">-15.25%</td>
 </tr>
 
 <tr>
   <td><strong>WTA</strong></td>
   <td class="num">12736</td>
-  <td class="num">461</td>
-  <td class="num">$73,095</td>
-  <td class="num">$+1,164</td>
-  <td class="num pos">+1.59%</td>
+  <td class="num">2981</td>
+  <td class="num">$474,270</td>
+  <td class="num">$-72,348</td>
+  <td class="num neg">-15.25%</td>
+</tr>
+
+<tr>
+  <td><strong>PGA</strong></td>
+  <td class="num">0</td>
+  <td class="num">0</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num ">—</td>
 </tr>
 
 </tbody>

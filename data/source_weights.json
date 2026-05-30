@@ -67,6 +67,7 @@
     "wta:tennis-rank-bt": 0.04155619254774454
   },
   "lambda": 0.5,
+  "min_bets_for_exclusion": 50,
   "min_events": {
     "atp": 50,
     "cfb": 50,
@@ -78,5 +79,6 @@
     "wta": 50
   },
   "mode": "brier_roi_hybrid",
+  "roi_floor": -1.0,
   "schema": "v2"
 }
