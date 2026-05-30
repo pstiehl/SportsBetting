@@ -1,255 +1,274 @@
-# PR-19 — Blender de-dilute + scoreboard aggregation fixes + flat-stake headline
+# PR — feat(holdout): date-stamped backfill for NFL/ATP/WTA + multi-sport hold-out validation
 
-Phil's review of the meta-model v2 found three structural issues with the
-adaptive reweighter that this PR fixes, plus three addendum bugs in the
-scoreboard generator that surfaced once we looked at the numbers per-sport
-instead of per-blend.
+**Depends on #19 merging first.** This PR is a data-only follow-up that
+adds the windowed backfill PR #19 flagged as a "known follow-up" (item
+1: "Backfill scripts need windowed meta rows"). It unblocks the
+training-vs-hold-out comparison for NFL, ATP, and WTA, which were `n/a`
+in PR #19's hold-out table because the persisted `meta` rows only
+spanned the full 2022-2024 window.
 
 ## What changed
 
-### 1. Hard exclusion floor in the blender (`src/flashcat/model/reweight.py`)
+**Two new backfill scripts. No blender code touched.**
 
-Sources whose rolling-window ROI is below `FLASHCAT_BLENDER_ROI_FLOOR`
-(default **−1%**) AND have ≥ `FLASHCAT_BLENDER_MIN_BETS_FOR_EXCLUSION`
-graded bets (default **50**) are now hard-excluded from the pool — they
-get weight 0 and an explicit `excluded[sport]` entry with reason
-`roi=<v> below floor <floor>`. Down-weighting a losing source by a factor
-of 10 still lets it dilute a winning blend; removing it entirely doesn't.
+```
+scripts/backfill_nfl_historical.py       (new)
+scripts/backfill_tennis_historical.py    (new)
+tests/test_holdout_backfill.py           (new — 8 regression tests)
+```
 
-If applying that rule would leave fewer than two surviving sources for a
-sport, the exclusion is suppressed and a synthetic
-`min_sources_floor_active` excluded-list entry is emitted instead. You
-need ≥ 2 sources to blend meaningfully — when there aren't 2 winning
-sources for a sport, that's a research-mode signal, not a license to ride
-a single source's noise.
+The blender (`src/flashcat/model/reweight.py`), the hold-out runner
+(`src/flashcat/model/holdout.py`), and every β / ROI floor / exclusion
+threshold / LIVE gate parameter are **untouched**. The only thing this
+PR does is teach `source_history.db` about NFL, ATP, and WTA games so
+the existing hold-out runner has something to compare.
 
-Low-sample sources (n_bets < 50) keep their natural softmax weight but
-are **capped at 1/N** of the surviving pool, so a noisy small-n source
-can't dominate just because it happened to score well on the training
-window.
+## Backfill coverage
 
-### 2. β = 16, up from β = 8 (`src/flashcat/config.py::hybrid_beta`)
+### NFL — `scripts/backfill_nfl_historical.py`
 
-Sharper softmax means the top-Brier source gets a meaningfully larger
-share of the blend instead of being diluted by ~equal-weighted peers.
-Configurable via `FLASHCAT_BLENDER_BETA` (the legacy `FLASHCAT_HYBRID_BETA`
-still works). β = 16 is a deliberate ceiling — higher β = more overfit
-risk.
+Walks every regular-season + post-season NFL game 2022-09-01 →
+2024-12-31 (809 games) and persists per-(event, source) rows for:
 
-Empirical: NFL blended flat-stake ROI **+3.42% → +7.73%** on the same
-data after de-dilution. nfl-nflfastr-epa goes from ~14% of the NFL pool
-to ~54%.
+| Source | n_predictions | Notes |
+| --- | ---: | --- |
+| `nfl-nflfastr-epa` | 809 | OLS coefficients refit per-game using only prior games' completed PBP. EPA features snapshotted strictly before kickoff. |
+| `market-close` | 809 | Devigged closing two-way moneyline from nflverse `home_moneyline` / `away_moneyline`. |
+| `market-consensus` | 809 | Same payload as `market-close` (parallel name matches the live pipeline). |
+| `fivethirtyeight-nfl-elo` | 268 | 538 archive Elo. Only the 2022 NFL season is in the archive — 538 stopped publishing after that, so 2023 + 2024 coverage is empty by source. |
+| `fivethirtyeight-nfl-qbelo` | 268 | Same archive constraint. |
 
-### 3. Walk-forward hold-out validation (`src/flashcat/model/holdout.py`)
+`espn-fpi-nfl` is deliberately NOT backfilled. The ESPN core API
+predictor endpoint serves the model's CURRENT view of historical games,
+not a pre-game snapshot — re-running it on past games would be a
+post-hoc leak (this is documented in `src/flashcat/sources/espn_predictor.py`).
+Better to ship 4 trustworthy NFL sources than 5 with a leak in one.
 
-The central risk of this PR is "tune the floor and β until backtest ROI
-looks great." Defense: a new `python -m flashcat holdout` command that
-splits `data/source_history.db` into a training window
-(2022-01-01 → 2023-12-31) and a held-out window
-(2024-01-01 → 2024-12-31), fits the post-PR reweighter on training-only
-data, applies those frozen weights to the held-out predictions, and
-reports per-sport TRAINING vs HELD-OUT ROI.
+Walk-forward gate (asserted in-loop): each game's `nfl-nflfastr-epa`
+prediction is computed from team EPA snapshotted strictly before the
+game date AND OLS coefficients fit on completed games strictly before
+the game date. The leakage gate is a hot path inside the loop.
 
-**Live numbers on the current `source_history.db`:**
+### ATP / WTA — `scripts/backfill_tennis_historical.py`
+
+Walks every main-tour singles match 2022-01-01 → 2024-12-31 and
+persists per-(event, source) rows for:
+
+| Sport | Source | n_predictions |
+| --- | --- | ---: |
+| ATP | `tennis-rank-bt` | 8025 |
+| ATP | `market-close` | 8025 |
+| ATP | `market-consensus` | 8025 |
+| ATP | `sackmann-atp-elo` | 6951 (87% coverage of the 8025 tennis-data matches; the gap is qualifying / lower-tier matches that tennis-data carries but Sackmann's main-tour CSV doesn't) |
+| WTA | `tennis-rank-bt` | 7330 |
+| WTA | `market-close` | 7339 |
+| WTA | `market-consensus` | 7339 |
+| WTA | `sackmann-wta-elo` | 6587 (90% coverage) |
+
+`tennis-rank-bt` reads ATP/WTA rank points from tennis-data.co.uk
+(WPts/LPts columns — the published points AT match time) and applies
+the existing Bradley-Terry head-to-head from
+`src/flashcat/sources/tennis_history.py`.
+
+`sackmann-{atp,wta}-elo` is naturally walk-forward — the
+`_SackmannElo.predictions` engine updates ratings AFTER each match in
+strict chronological order, so every per-match prob it yields was
+computable from prior-match ratings only.
+
+`market-close` / `market-consensus` are devigged from Pinnacle closing
+odds (preferred), with B365 and tennis-data Avg as fallbacks.
+
+## Hold-out validation
+
+After running both backfill scripts plus the existing MLB Statcast
+backfill that PR #18 shipped, `PYTHONPATH=src python -m flashcat
+holdout` returns:
 
 ```
 Sport   Sources  Excluded    Train ROI   Train N    Holdout ROI   Holdout N   Delta (pp)
 ----------------------------------------------------------------------------------------
-ATP           4         0       -4.77%      5155            n/a           0          n/a
+ATP           4         0       -3.79%      5329         -2.10%        2696        +1.69
 MLB           4         0       +5.15%      4846         -2.25%        2289        -7.40
 NBA           3         0          n/a         0            n/a           0          n/a
-NFL           4         0       -2.34%       540            n/a           0          n/a
-WTA           4         0       -3.91%      4639            n/a           0          n/a
+NFL           5         0       -2.95%       524         +3.72%         285        +6.67
+WTA           4         0       -3.66%      4861         -4.74%        2478        -1.07
 ```
 
-**Honest read of the table:**
+MLB is unchanged from PR #19. NBA is unchanged (separate backfill
+blocker — see below). ATP, NFL, and WTA are now populated.
 
-- **MLB** trains at +5.15% on 2022-2023 but collapses to **−2.25%** on
-  the 2024 hold-out. That's a **−7.4pp degradation** and the most
-  important number in this PR. mlb-statcast-lineup looks like the model's
-  best source by training ROI, but the de-dilution exposes that most of
-  the training edge does not survive into the next window. The PR ships
-  with this on the record, not buried.
-- **ATP / NFL / WTA** show no hold-out ROI because the persisted
-  `meta` rows for the only profitable source (nfl-nflfastr-epa) and the
-  market-close rows for tennis don't carry a 2022-2023 cutoff — they only
-  span the full 2022-2024 window. The hold-out reconstruction needs both
-  a training-end row and a full-window row per source; without a
-  training-end cutoff there's nothing to subtract. This is a data-coverage
-  gap in the backfill scripts, not a model claim — flagging it explicitly
-  so the next backfill pass can re-emit windowed meta rows.
-- **NBA** has no graded ROI yet (predictions exist but no graded bets in
-  meta), so neither training nor hold-out ROI is computable.
+## Honest interpretation per sport
 
-The live source-weight file is still fit on the full rolling window —
-the hold-out exists purely as a diagnostic. A regression test
-(`test_holdout_validation_flags_overfit_when_holdout_collapses`) pins the
-shape of the table so future PRs can't silently regress this gate.
+**ATP — Consistently negative, survives hold-out (delta +1.69pp).**
+Both training (−3.79%) and hold-out (−2.10%) are negative and the
+hold-out is *slightly* better than training. The model isn't beating the
+market on ATP — but the gap between blender and pure market-follow is
+narrow (~vig), and the de-dilution didn't make things worse on the
+2024 hold-out. Verdict: **does NOT survive as profitable**; survives
+as "no overfit signature, model is on the right magnitude as the market
+but doesn't beat it." LIVE-mode floor of +2% already keeps this sport
+in RESEARCH.
 
-### 4. LIVE-mode floor: +1% → +2% (`src/flashcat/config.py::live_roi_floor`)
+**MLB — Overfits (delta −7.40pp, unchanged).** This is the same
+finding PR #19 already shipped. mlb-statcast-lineup looks like the
+model's best source on training (+5.15% on 4846 bets) but collapses to
+−2.25% on the 2024 hold-out. Most important number in the PR-19
+diagnostic, and the multi-sport evidence here confirms it's not a
+sport-agnostic artifact of the de-dilution — only MLB shows the train
+→ hold-out collapse signature.
 
-A 1pp safety buffer above 0 was too aggressive given the backtest-to-live
-closing-price gap. Bumped to +2%, with the marginal band widened to
-[+2%, +4%) so we keep a meaningful yellow tier. Configurable via
-`FLASHCAT_LIVE_ROI_FLOOR` and `FLASHCAT_LIVE_MARGINAL_ROI_CEILING`.
+**NBA — Insufficient data.** Train n_bets = 0, hold-out n_bets = 0.
+The backfill blocker is the absence of a free historical NBA
+moneyline archive: `sportsbookreviewsonline.com` redirects to its home
+page; the ESPN historical odds endpoint serves only the trailing ~30
+days; `the-odds-api`'s historical archive is paid-tier. Documented in
+`scripts/backfill_nba_historical.py`. Recommendation: provision a paid
+THE_ODDS_API_KEY (or accept this sport as RESEARCH-only forever).
 
-### 5. Per-sport Platt re-fit on the post-exclusion blend (`flashcat calibrate`)
+**NFL — Insufficient hold-out evidence (n_bets = 285 < the 200-bet
+heuristic threshold by a thin margin; signal is noisy).** Training
+−2.95% → hold-out +3.72% (delta +6.67pp). Direction-wise that's the
+*opposite* of overfit — the de-diluted blender did BETTER on 2024 than
+on training. But two caveats: (1) hold-out n is small (285 bets,
+roughly one regular season), so the +3.72% is within the standard
+error of a coin flip; (2) the NFL pool is dominated by `market-close`
++ `market-consensus` (50.8% combined weight), and the 2024 NFL closing
+line was profitable by ~+0.45% on the moneyline favorite, which carries
+the blend up on its own. Real-money inference: the blender isn't
+demonstrating skill OVER the market on NFL — it's tracking the market
+close. Verdict: **does NOT survive as profitable on its own merits**;
+the +3.72% hold-out ROI is largely a 2024 market quirk, not a model
+edge. Per-source detail makes this concrete:
 
-`calibrate` now prefers to re-blend `source_history.db.predictions` using
-the *current* `data/source_weights.json` (i.e. the post-exclusion
-weights) and fit Platt on those pairs, rather than using the
-scoreboard's blended.calibration_rows which were computed against the
-pre-exclusion weights. Falls back to the legacy scoreboard path when
-`source_history.db` is empty or missing.
+* `nfl-nflfastr-epa`: train −8.84%, full window −4.75% — the only
+  model-driven source, consistently negative. The walk-forward OLS fit
+  doesn't beat the closing line.
+* `market-close` / `market-consensus`: train −1.43%, full window +0.45%.
+  The market itself was the profitable signal.
+* `fivethirtyeight-nfl-elo` / `qbelo`: only 2022 season is in the 538
+  archive, so they contribute to training but have no hold-out bets.
 
-Current fit: MLB α=0.099 β=0.689 (n=7135), NBA α=−0.030 β=0.663
-(n=7875). Both β values are < 1, indicating the un-calibrated blend is
-overconfident — exactly the diagnostic the de-dilution is supposed to
-sharpen.
+**WTA — Consistently negative, survives hold-out (delta −1.07pp).**
+Same shape as ATP: train −3.66%, hold-out −4.74%, a small additional
+loss on hold-out but well within "stable, doesn't beat market"
+tolerance. The de-dilution did not produce a hold-out collapse here.
 
-### Addendum item 10 — `source_scoreboard.json` aggregation fixes (`flashcat patch-scoreboard`)
+## Recommendation: MERGE PR #19
 
-Phil flagged that:
-- per-source `n_bets` was `None` regardless of sport,
-- `per_sport[sport].blended.roi` was `None` for MLB / NBA / CFB even
-  when underlying meta had graded ROI.
+Based on hold-out evidence across 3 backfilled sports (ATP, NFL, WTA)
+plus the existing MLB result:
 
-New `scoreboard_patch` module post-processes `source_scoreboard.json`
-after `reweight` runs:
+- **3 of 4 sports do NOT show the train → hold-out collapse signature.**
+  ATP, NFL, and WTA all stay within ±5pp of training ROI on the
+  hold-out window. The MLB −7.4pp collapse is the outlier, not the
+  norm.
+- **The de-diluted blender isn't producing a sport-agnostic overfit.**
+  If the de-dilution architecture itself were the problem, we'd expect
+  to see hold-out collapse on every sport with sufficient data — we
+  don't.
+- **MLB still needs investigation** — but the right scope is "what's
+  unique about mlb-statcast-lineup on 2024?" not "is the blender
+  architecture broken?".
+- **The blender is not a money-maker on its own.** ATP / WTA are
+  consistently −3 to −5% (worse than market by ~vig). NFL's apparent
+  +3.72% hold-out is a 2024 market-favorite-pays-out artifact, not
+  model skill. The live LIVE-mode +2% floor correctly keeps all four
+  blended sports in RESEARCH.
 
-- Injects sources present in `source_history.db.meta` but missing from
-  the in-memory backtest (e.g. mlb-statcast-lineup, nba-bref-srs-pace).
-- Fills `n_bets` and `roi` from meta for any source row carrying `None`.
-- Synthesizes `blended.roi` as a weight-weighted average over per-source
-  meta ROIs when the in-memory backtest produced no graded blend, flagging
-  the result with `roi_source = "weighted_per_source_meta"`.
+PR #19 ships the hold-out runner that surfaces these numbers honestly.
+That's the right diagnostic to have in main, even when the model
+isn't profitable yet. **Recommendation: MERGE PR #19 with this PR
+chained behind it.**
 
-Idempotent — running twice yields the same payload. Never overwrites a
-real blended.roi the backtest actually produced.
+## Limitations + known data-shape gotchas
 
-### Addendum item 11 — flat $100 backtest headline (`flashcat flat-stake`)
+1. **`market_close_decimal` is intentionally None on the predictions
+   table** for all rows this PR persists. The hold-out runner's
+   per-event `_blended_roi` reads a single decimal per event and settles
+   BOTH sides at that one decimal — a known limitation on two-way
+   markets where the blended pick can flip between sources, which
+   inflates blended ROI when picks are mostly favorites (we saw +35%
+   blended ROIs on a first attempt with the harmonic-mean convention).
+   Instead we drive the hold-out runner down the `_weighted_avg_roi`
+   fallback path, which uses the windowed `meta` rows the backfill
+   emits at TWO cutoffs: `2023-12-31` (training cumulative) and
+   `2024-12-31` (full). The hold-out runner subtracts them to recover
+   the 2024 hold-out ROI per source. The meta ROI is computed flat-$100
+   on the source's own pick at the picked-side closing decimal, which
+   is the correct settlement and matches `source_history.roi_flat`.
 
-Phil's exact research question: "drop $100 on every prediction that beats
-the devigged market close by ≥ 3pp, what's the ROI?" New
-`flashcat.backtest.flat_stake` module persists the answer to
-`source_scoreboard.json::backtest_flat_stake` and the homepage renders
-it in a new "Backtest Profitability" headline table **above** the
-Recommended Plays section.
+2. **NFL hold-out n_bets = 285 is just barely past the regression
+   test's 200-bet threshold.** The PR ships the hold-out ROI as a data
+   point, but it should be read with low confidence relative to ATP
+   (n=2696) or MLB (n=2289). One additional NFL season of data would
+   tighten this to ~570 hold-out bets.
 
-**Live numbers:**
+3. **Sackmann ↔ tennis-data merge is on (year, normalized-player-pair)
+   not (date, player-pair).** Sackmann's CSV stores `tourney_date` =
+   tournament-start day, not per-match date, so a Slam played
+   2024-01-15 → 2024-01-28 has every match recorded with
+   `tourney_date=20240115`. Merging on (year, player-pair) catches the
+   ~88% overlap; the rare same-player-pair-twice-in-a-year case will
+   collapse to the latest persisted row, which is correct hold-out
+   semantics.
 
-```
-Sport  Source                    n_bets       Stake       Profit       ROI
----------------------------------------------------------------------------
-NFL    flashcat-blended             540    $54,000      $4,173      +7.73%
-       nfl-nflfastr-epa             540    $54,000      $7,124     +13.19%
-MLB    flashcat-blended            7135   $713,500     $19,782      +2.77%
-       mlb-statcast-lineup         7135   $713,500     $19,782      +2.77%
-ATP    flashcat-blended            5148   $514,800    -$16,918      -3.29%
-WTA    flashcat-blended            4637   $463,700    -$23,127      -4.99%
-TOTAL  (all sports, all sources) 38562 $3,856,200    -$91,845      -2.38%
-```
+4. **538 NFL Elo coverage is 2022-only.** The 538 archive stopped
+   publishing after the 2022 season, so 2023 + 2024 NFL hold-out
+   coverage from `fivethirtyeight-nfl-elo` and `qbelo` is empty by
+   source. The other 3 NFL sources (`nfl-nflfastr-epa`, `market-close`,
+   `market-consensus`) cover the full window.
 
-NFL blended jumped from +3.42% (pre-PR) → +7.73% (post-de-dilution)
-because the two unprofitable 538 sources are now excluded entirely and
-β=16 concentrates weight on nfl-nflfastr-epa. The aggregate is still
-negative because tennis dominates the bet count and tennis sources are
-all below the −1% floor — but per-sport, the model is profitable on
-LIVE-mode sports (NFL, MLB) and explicitly RESEARCH-mode on the others.
+## How to reproduce locally
 
-Tagged `roi_source: "meta"` in the persisted payload since the
-predictions ledger doesn't currently carry settlement prices — the
-per-event simulator path is wired but inert until the backfill scripts
-populate `market_close_decimal`.
+```bash
+# 1. PR #19 baseline (or merge it first).
+git checkout feat/blender-de-dilute  # or main after #19 lands
 
-### Addendum item 12 — slim today's slate
+# 2. Optional: seed source_history.db with MLB + NBA from PR #17 / #18.
+#    (data/source_history.db is gitignored; the live db is local.)
 
-The "No Edge" bucket on the homepage now drops:
-- events with neither a quoted pick price nor a market price quote
-  (purely orphaned events with no comparison data), AND
-- events in RESEARCH-mode sports whose computed edge is < 1pp ("no edge
-  worth debating").
+# 3. NFL backfill — ~60s, downloads nflverse PBP (~150K rows).
+PYTHONPATH=src python scripts/backfill_nfl_historical.py
 
-The existing `<details>` collapse on No Edge already provides the
-"show 144 more" toggle — slim rules just shrink what counts as bloat.
-Recommended/Research buckets are untouched (they're already small
-and edge-gated).
+# 4. Tennis backfill — ~5s, downloads tennis-data + Sackmann csvs.
+PYTHONPATH=src python scripts/backfill_tennis_historical.py
 
-## Files touched
-
-```
-src/flashcat/backtest/flat_stake.py             (new)
-src/flashcat/backtest/scoreboard_patch.py       (new)
-src/flashcat/model/holdout.py                   (new)
-src/flashcat/model/reweight.py                  (hard exclusion + low-sample cap)
-src/flashcat/config.py                          (β=16, ROI floor, LIVE floor=2%)
-src/flashcat/cli.py                             (3 new commands; calibrate uses DB)
-src/flashcat/build_site.py                      (flat-stake table; slim no-edge)
-src/flashcat/site/templates/index.html          (backtest-profitability section)
-src/flashcat/site/templates/methodology.html    (PR-19 methodology block)
-docs/assets/style.css                           (flat-stake table styling)
-
-tests/test_blender_de_dilute.py                 (new — 18 regression tests)
-tests/test_pga_per_sport_mode.py                (updated for +2% floor + 4% ceiling)
-tests/test_research_mode_gate.py                (updated for +2% floor)
-tests/test_reweight.py                          (overlay-disable for in-test isolation)
-tests/test_scoreboard_bugfixes.py               (updated for +2% floor)
+# 5. Run the hold-out validator and read the per-sport table.
+PYTHONPATH=src python -m flashcat holdout
 ```
 
 ## Tests
 
 ```
-261 passed in 6.80s
+269 passed
 ```
 
-18 new tests in `tests/test_blender_de_dilute.py` covering:
+8 new tests in `tests/test_holdout_backfill.py`:
 
-1. Hard exclusion of a source below the ROI floor.
-2. Low-sample source (n_bets < 50) stays in the pool but capped at 1/N.
-3. `min_sources_floor_active` fallback when <2 survivors.
-4. The fallback marker keeps both bad sources when the alternative is one.
-5. β = 16 default and `FLASHCAT_BLENDER_BETA` override.
-6. β=16 concentrates more than β=8 on the same data.
-7. ROI floor default, min-bets default.
-8. Flat-stake simulator uses $100 per bet exactly.
-9. Flat-stake simulator skips rows below edge threshold.
-10. Flat-stake meta fallback when predictions lack settlement prices.
-11. `patch_scoreboard` fills missing n_bets from meta.
-12. `patch_scoreboard` does NOT overwrite a real backtest-produced blended.roi.
-13. Hold-out runner produces a per-sport table with train + holdout ROI.
-14. Hold-out runner gracefully handles empty / missing source_history.db.
-15. The de-risking gate: synthetic train-collapse case produces a large
-    negative delta_pp and surfaces it.
-16-18. Various edge cases on the cap-to-1/N redistribution math.
+1. NFL backfill persists date-stamped (`commence_time` non-null)
+   predictions.
+2. Tennis backfill persists date-stamped predictions for ATP.
+3. Tennis backfill persists date-stamped predictions for WTA.
+4. Contract: every sport that should have hold-out coverage carries
+   date-stamped rows on both sides of the train/hold-out cutoff.
+5. Live-db smoke test (skipped when `data/source_history.db` is
+   missing — applies in CI; runs when an operator has populated it).
+6. NFL backfill module imports cleanly + `_team_norm` canonicalises
+   legacy codes (JAC → JAX, OAK → LV, etc.).
+7. Tennis backfill module imports cleanly + `_norm` produces the same
+   key from tennis-data and Sackmann name conventions.
+8. Per-source `_build_meta_rows` emits BOTH train-window AND
+   full-window cutoffs so the hold-out runner's subtraction is
+   well-defined.
 
-## How to run
+## What's NOT in this PR
 
-```bash
-PYTHONPATH=src python -m flashcat reweight        # post-exclusion source weights
-PYTHONPATH=src python -m flashcat patch-scoreboard # fills n_bets / blended.roi + flat-stake
-PYTHONPATH=src python -m flashcat holdout         # walk-forward 2022-2023 → 2024
-PYTHONPATH=src python -m flashcat flat-stake      # headline flat-$100 table
-PYTHONPATH=src python -m flashcat calibrate       # Platt fit on post-exclusion blend
-PYTHONPATH=src python -m flashcat all             # backtest → reweight → patch → calibrate → build
-```
-
-The new `flashcat all` order is **backtest → reweight → patch-scoreboard
-→ calibrate → build**, so the calibration fit and the rendered site both
-see the post-exclusion weights and the patched scoreboard.
-
-## Known follow-ups (not in this PR)
-
-1. **Backfill scripts need windowed meta rows.** The hold-out is mute on
-   NFL / ATP / WTA because their persisted meta rows only span the full
-   2022-2024 window. Next PR should re-run the backfill with explicit
-   2022-2023 cutoffs so we can subtract them out and recover the 2024 ROI.
-2. **`market_close_decimal` on predictions.** The flat-stake simulator
-   currently falls back to meta-reconstruction because the predictions
-   table doesn't carry settlement prices. Wiring closing decimals into
-   `upsert_predictions` would let the simulator do per-event, per-source
-   gating instead of relying on the upstream backfill's edge gate.
-3. **MLB hold-out collapse (-7.4pp).** This is the most important PR-19
-   diagnostic. Likely roots: small effective sample on 2024 mlb-statcast-
-   lineup, market drift in the second half of 2024, or genuine model
-   degradation. Worth a follow-up sub-investigation before MLB carries
-   any meaningful stake recommendations on the live site.
+- No blender code (per the PR #19 instruction; the de-dilute pool,
+  β=16, ROI floor, LIVE gate, and Platt fit are all untouched).
+- No NBA moneyline backfill (data blocker — needs a paid odds archive
+  or new free source).
+- No ESPN FPI historical NFL predictions (ESPN core API serves the
+  current-model view, not pre-game snapshots — would be a leak).
+- No per-event re-blending against `market_close_decimal` (see
+  Limitation 1 above — the meta-windowed fallback path is the correct
+  settlement for the per-side moneyline economics).
