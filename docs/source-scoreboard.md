@@ -1,7 +1,7 @@
 # Source Scoreboard
 Window: **2022-01-01 → 2024-12-31** (multi)
 
-Events graded: **34428**
+Events graded: **36974**
 
 | Source | Events | Brier ↓ | ROI | Wins/Losses | Profit |
 |---|---:|---:|---:|---:|---:|
@@ -10,6 +10,7 @@ Events graded: **34428**
 | nfl:market-consensus | 540 | 0.2048 | +1.2% | 370/170 | $+633 |
 | nfl:fivethirtyeight-nfl-elo | 329 | 0.2242 | -3.5% | 148/86 | $-817 |
 | nfl:fivethirtyeight-nfl-qbelo | 329 | 0.2166 | -4.5% | 150/84 | $-1,042 |
+| cfb:cfb-cfbfastr-epa | 1843 | 0.1749 | — | 0/0 | $+0 |
 | nba:fivethirtyeight-nba-elo-modern | 2116 | 0.2271 | — | 0/0 | $+0 |
 | nba:fivethirtyeight-nba-raptor | 2116 | 0.2183 | — | 0/0 | $+0 |
 | mlb:fivethirtyeight-mlb-elo | 3569 | 0.2418 | — | 0/0 | $+0 |

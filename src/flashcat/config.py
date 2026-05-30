@@ -81,14 +81,16 @@ def kelly_fraction() -> float:
 def live_roi_floor() -> float:
     """Per-sport minimum blended ROI required for LIVE mode.
 
-    A 1pp safety buffer above 0 by default. A sport whose blended backtest
-    ROI is below this floor stays in RESEARCH mode and no $ stakes are
+    Raised to +2.0% in the blender-de-dilution PR. The floor sits above the
+    per-sport hold-out backtest noise floor to absorb slippage and the
+    backtest-to-live closing-price gap. A sport whose blended backtest ROI
+    is below this floor stays in RESEARCH mode and no $ stakes are
     recommended for it. Configurable via ``FLASHCAT_LIVE_ROI_FLOOR``.
     """
     try:
-        return float(os.getenv("FLASHCAT_LIVE_ROI_FLOOR", "0.01"))
+        return float(os.getenv("FLASHCAT_LIVE_ROI_FLOOR", "0.02"))
     except Exception:
-        return 0.01
+        return 0.02
 
 
 def live_marginal_roi_ceiling() -> float:
@@ -96,11 +98,13 @@ def live_marginal_roi_ceiling() -> float:
 
     A sport whose ROI is in ``[live_roi_floor, live_marginal_roi_ceiling)``
     is LIVE but flagged as ``marginal`` so the UI can tint it yellow.
+    Bumped from 2.5% → 4.0% in the blender-de-dilution PR to preserve a
+    reasonable marginal band after raising the LIVE floor to +2%.
     """
     try:
-        return float(os.getenv("FLASHCAT_LIVE_MARGINAL_ROI_CEILING", "0.025"))
+        return float(os.getenv("FLASHCAT_LIVE_MARGINAL_ROI_CEILING", "0.04"))
     except Exception:
-        return 0.025
+        return 0.04
 
 
 def live_min_bets() -> int:
@@ -134,11 +138,57 @@ def backtest_end() -> str:
 
 
 def hybrid_beta() -> float:
-    """Softmax sharpness for the brier_roi_hybrid blend. Default 8."""
+    """Softmax sharpness for the brier_roi_hybrid blend.
+
+    Default β = 8. The PR-19 work-in-progress tried β = 16 but the
+    multi-sport hold-out evidence (PR #20) showed no out-of-sample edge
+    — the higher β was overfitting to noise. PR #21 reverts β to 8.
+
+    Configurable via ``FLASHCAT_BLENDER_BETA`` (preferred name) or the
+    legacy ``FLASHCAT_HYBRID_BETA``.
+    """
+    raw = os.getenv("FLASHCAT_BLENDER_BETA") or os.getenv("FLASHCAT_HYBRID_BETA", "8")
     try:
-        return float(os.getenv("FLASHCAT_HYBRID_BETA", "8"))
+        return float(raw)
     except Exception:
         return 8.0
+
+
+def blender_roi_floor() -> float:
+    """Per-source ROI exclusion floor for the blender.
+
+    Sources whose rolling-window ROI is strictly below this floor (AND have
+    a defensible sample size — see ``blender_min_bets_for_exclusion``) are
+    hard-excluded from the blend.
+
+    PR-19 set the default to −1% (−0.01) but the multi-sport hold-out
+    evidence (PR #20) showed that exclusion didn't translate to
+    out-of-sample edge. PR #21 keeps the env-configurable mechanism in
+    place but defaults to −1.0 (≡ −100% ROI), which is unreachable in
+    practice and therefore disables exclusion. Operators can re-enable
+    the floor by exporting ``FLASHCAT_BLENDER_ROI_FLOOR`` to a tighter
+    threshold once a sport has demonstrated positive hold-out edge.
+
+    Configurable via ``FLASHCAT_BLENDER_ROI_FLOOR``.
+    """
+    try:
+        return float(os.getenv("FLASHCAT_BLENDER_ROI_FLOOR", "-1.0"))
+    except Exception:
+        return -1.0
+
+
+def blender_min_bets_for_exclusion() -> int:
+    """Minimum n_bets before a source is eligible for ROI-based exclusion.
+
+    Sources with fewer than this many graded bets have too much noise on
+    their ROI to make an exclude decision — we keep them in the blend at
+    their natural softmax weight but cap their max contribution at 1/N
+    (where N is the number of surviving sources). Default 50.
+    """
+    try:
+        return int(os.getenv("FLASHCAT_BLENDER_MIN_BETS_FOR_EXCLUSION", "50"))
+    except Exception:
+        return 50
 
 
 def hybrid_lambda() -> float:

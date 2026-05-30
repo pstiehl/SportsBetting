@@ -228,11 +228,15 @@ def test_resolve_sport_modes_research_sport_no_edge_goes_to_no_edge():
 
 
 def test_marginal_live_band_flagged():
-    """0% < ROI < 2.5% with adequate n_bets → LIVE but marginal."""
+    """floor <= ROI < marginal_ceiling with adequate n_bets → LIVE but marginal.
+
+    After the blender-de-dilution PR the LIVE floor is +2% and the marginal
+    ceiling is +4%, so a sport at +3% ROI sits in the marginal band.
+    """
     from flashcat.build_site import resolve_sport_modes
 
     sb = _make_sb({
-        "wta": {"n_events": 4639, "sources": {}, "blended": {"n_events": 4639, "roi": 0.016, "brier": 0.219, "wins": 200, "losses": 261}},
+        "wta": {"n_events": 4639, "sources": {}, "blended": {"n_events": 4639, "roi": 0.03, "brier": 0.219, "wins": 200, "losses": 261}},
     })
     modes = resolve_sport_modes(sb)
     assert modes["wta"]["mode"] == "live"

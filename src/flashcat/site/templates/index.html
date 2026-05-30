@@ -1,5 +1,67 @@
 <div class="container">
 
+<section class="research-mode-banner">
+  <details open>
+    <summary>
+      <span class="research-mode-badge">🔍&thinsp;RESEARCH MODE</span>
+      &mdash; model has <strong>NOT</strong> demonstrated profitability on out-of-sample data.
+      <span class="research-mode-collapse-hint">(click to expand / collapse)</span>
+    </summary>
+    <div class="research-mode-body">
+      <p>Walk-forward hold-out validation (2022–23 train → 2024 held-out) shows no sport with credible positive edge:</p>
+      <ul>
+        <li><strong>MLB:</strong> train +5.15% → held-out −2.25% <em>(overfit, −7.4&thinsp;pp)</em></li>
+        <li><strong>NFL:</strong> train −3.29% → held-out +3.63% <em>(n=285, within standard error)</em></li>
+        <li><strong>ATP:</strong> train −3.82% → held-out −2.17% <em>(consistently losing)</em></li>
+        <li><strong>WTA:</strong> train −3.84% → held-out −4.62% <em>(consistently losing)</em></li>
+      </ul>
+      <p>No live $ recommendations until at least one sport shows positive ROI on a 365-day rolling hold-out window.
+      See <a href="https://github.com/pstiehl/SportsBetting/pull/21">PR&nbsp;#21</a> for full backtest methodology.</p>
+    </div>
+  </details>
+</section>
+
+{% if flat_stake_rows %}
+<section class="backtest-profitability">
+  <h2>Backtest <span class="accent">Profitability</span></h2>
+  <p class="lede">Flat $100 on every prediction the blended model would have taken (gated by a {{ flat_stake_totals.edge_threshold_pp }}&thinsp;pp edge vs market close), backtested against ``data/source_history.db``. This is the headline answer to “is the model profitable” — the per-event Recommended Plays section below uses Kelly sizing instead.</p>
+  <table class="flat-stake-table">
+    <thead>
+      <tr>
+        <th>Sport</th>
+        <th class="num">Bets</th>
+        <th class="num">Stake</th>
+        <th class="num">Profit</th>
+        <th class="num">ROI</th>
+        <th>Mode</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in flat_stake_rows %}
+      <tr class="mode-{{ r.badge_cls }}">
+        <td><strong>{{ r.sport_upper }}</strong>{% if r.roi_synth %} <span class="synth-flag" title="Synthetic blended ROI — weighted average of per-source meta rows">✱</span>{% endif %}</td>
+        <td class="num">{{ "{:,}".format(r.n_bets) }}</td>
+        <td class="num">{{ r.stake_str }}</td>
+        <td class="num {% if r.profit_value > 0 %}pos{% elif r.profit_value < 0 %}neg{% endif %}">{{ r.profit_str }}</td>
+        <td class="num {% if r.roi_value is not none and r.roi_value > 0 %}pos{% elif r.roi_value is not none and r.roi_value < 0 %}neg{% endif %}">{{ r.roi_str }}</td>
+        <td><span class="mode-pill {{ r.badge_cls }}">{{ r.badge_label }}</span></td>
+      </tr>
+      {% endfor %}
+      {% if flat_stake_totals.n_bets %}
+      <tr class="flat-stake-totals">
+        <td><strong>TOTAL</strong></td>
+        <td class="num">{{ "{:,}".format(flat_stake_totals.n_bets) }}</td>
+        <td class="num">{{ flat_stake_totals.stake_str }}</td>
+        <td class="num {% if flat_stake_totals.profit_value > 0 %}pos{% elif flat_stake_totals.profit_value < 0 %}neg{% endif %}">{{ flat_stake_totals.profit_str }}</td>
+        <td class="num {% if flat_stake_totals.roi_value is not none and flat_stake_totals.roi_value > 0 %}pos{% elif flat_stake_totals.roi_value is not none and flat_stake_totals.roi_value < 0 %}neg{% endif %}">{{ flat_stake_totals.roi_str }}</td>
+        <td></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
 <h2>Today's <span class="accent">Slate</span></h2>
 <p class="lede">Live events from in-season sports. The model blends multiple publicly-available probability sources and picks the higher-blended-probability side, with a Kelly-fractional stake gated by a configurable edge threshold. Coin-flip events get skipped instead of bet &mdash; that's the difference between $100-on-everything and a research-grade ROI engine.</p>
 

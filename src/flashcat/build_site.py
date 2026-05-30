@@ -278,7 +278,43 @@ def _group_by_pick_quality(
     recommended.sort(key=lambda v: (v["edge_value"], v["recommended_stake"]), reverse=True)
     research.sort(key=lambda v: v["edge_value"], reverse=True)
     no_edge.sort(key=lambda v: v.get("commence_iso") or "")
+    # Slim today's slate (PR-19 addendum item 12). Drop the noisiest entries
+    # from no_edge so the homepage isn't drowned in coin-flip cards. We only
+    # touch the rendered view — underlying data is intact.
+    no_edge = _slim_no_edge_bucket(no_edge, sport_modes)
     return {"recommended": recommended, "research": research, "no_edge": no_edge}
+
+
+def _slim_no_edge_bucket(
+    no_edge: list[dict],
+    sport_modes: dict[str, dict],
+) -> list[dict]:
+    """Drop events the homepage shouldn't even bother showing in 'No Edge'.
+
+    1. No devigged market price AND no pick → nothing to compare to.
+       (We keep events with a pick but no price; those are still
+       informative for a researcher.)
+    2. Research-mode sport AND blended deviates from market by < 1pp →
+       no edge worth debating; pure noise.
+    """
+    out: list[dict] = []
+    for v in no_edge:
+        # Skip purely-noise events: no pick AND no market price quoted.
+        no_price = v.get("pick_price") is None and v.get("market_home_str") in (None, "—", "")
+        no_pick = v.get("pick_label") in (None, "—", "")
+        if no_price and no_pick:
+            continue
+        sport = (v.get("sport") or "")
+        mode = (sport_modes.get(sport) or {}).get("mode")
+        edge = v.get("edge_value")
+        # Only drop research-mode events when we actually have a computed
+        # edge and it's below 1pp — "no edge worth debating". Events whose
+        # edge couldn't be computed (no blended prob yet, missing devigged
+        # market, etc.) stay in no_edge so they're still visible.
+        if mode == "research" and edge is not None and abs(edge) < 0.01:
+            continue
+        out.append(v)
+    return out
 
 
 def _research_mode_state(scoreboard: dict | None = None) -> dict:
@@ -692,6 +728,62 @@ def _calibration_chart(calibration: list[dict], out_path: Path) -> None:
     plt.close(fig)
 
 
+def _flat_stake_rows(scoreboard: dict | None = None) -> list[dict]:
+    """Pull the headline flat-stake table out of the scoreboard for the home page.
+
+    Returns a list of per-sport rows shaped for the index template. Each row
+    carries blended n_bets / stake / profit / roi so the homepage can show
+    Phil's "is the model profitable" answer above the slate.
+    """
+    sb = _load_scoreboard(scoreboard)
+    fs = sb.get("backtest_flat_stake") if isinstance(sb, dict) else None
+    if not isinstance(fs, dict):
+        return []
+    per_sport = fs.get("per_sport") or {}
+    sport_modes = resolve_sport_modes(sb)
+    rows: list[dict] = []
+    for sport in sorted(per_sport.keys()):
+        block = per_sport[sport] or {}
+        bm = block.get("blended")
+        if not isinstance(bm, dict) or (bm.get("n_bets") or 0) <= 0:
+            continue
+        roi = bm.get("roi")
+        mode = sport_modes.get(sport, {})
+        rows.append({
+            "sport_upper": sport.upper(),
+            "n_bets": bm.get("n_bets") or 0,
+            "stake_str": f"${bm.get('stake', 0):,.0f}",
+            "profit_str": f"${bm.get('profit', 0):,.0f}",
+            "profit_value": bm.get("profit") or 0,
+            "roi_str": f"{roi*100:+.2f}%" if roi is not None else "n/a",
+            "roi_value": roi,
+            "badge_label": mode.get("badge_label", ""),
+            "badge_cls": mode.get("badge_cls", "research"),
+            "roi_synth": bm.get("roi_source") == "weighted_per_source_meta",
+        })
+    rows.sort(key=lambda r: -(r.get("n_bets") or 0))
+    return rows
+
+
+def _flat_stake_totals(scoreboard: dict | None = None) -> dict:
+    sb = _load_scoreboard(scoreboard)
+    fs = sb.get("backtest_flat_stake") if isinstance(sb, dict) else None
+    if not isinstance(fs, dict):
+        return {}
+    totals = fs.get("totals") or {}
+    roi = totals.get("roi")
+    return {
+        "n_bets": totals.get("n_bets") or 0,
+        "stake_str": f"${totals.get('stake', 0):,.0f}",
+        "profit_str": f"${totals.get('profit', 0):,.0f}",
+        "profit_value": totals.get("profit") or 0,
+        "roi_str": f"{roi*100:+.2f}%" if roi is not None else "n/a",
+        "roi_value": roi,
+        "edge_threshold_pp": f"{(fs.get('edge_threshold') or 0)*100:.1f}",
+        "stake_per_bet": fs.get("stake") or 100,
+    }
+
+
 def render_index(env: Environment, events: list[Event], weights: dict[str, float]) -> str:
     # Render every live event, including those without a market line yet —
     # users want to see today's slate even when lines haven't published.
@@ -759,6 +851,8 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
         n_grouped_recommended=len(grouped["recommended"]),
         n_grouped_research=len(grouped["research"]),
         n_grouped_no_edge=len(grouped["no_edge"]),
+        flat_stake_rows=_flat_stake_rows(),
+        flat_stake_totals=_flat_stake_totals(),
     )
     return _layout(env, "Today's Slate", "home", content, asset_root="")
 
