@@ -72,12 +72,12 @@ STATCAST_CACHE = CACHE_DIR / "statcast"
 def _season_to_date_xwoba(statcast_df, asof: date) -> dict[str, float]:
     """Per-batter season-to-date xwOBA strictly before ``asof``.
 
-    ``statcast_df`` is a pybaseball.statcast() frame with at least
-    ``game_date``, ``batter`` (id), ``estimated_woba_using_speedangle``.
+    ``statcast_df`` is a slimmed frame with already-converted
+    ``game_date`` (python ``date``), ``batter``, and
+    ``estimated_woba_using_speedangle``.
     """
-    import pandas as pd  # type: ignore
-
-    prior = statcast_df[pd.to_datetime(statcast_df["game_date"]).dt.date < asof]
+    mask = statcast_df["game_date"] < asof
+    prior = statcast_df.loc[mask, ["batter", "estimated_woba_using_speedangle"]]
     if len(prior) == 0:
         return {}
     grouped = (
@@ -90,9 +90,8 @@ def _season_to_date_xwoba(statcast_df, asof: date) -> dict[str, float]:
 
 def _season_to_date_pitcher_xwoba_allowed(statcast_df, asof: date) -> dict[str, float]:
     """Per-pitcher season-to-date xwOBA-allowed strictly before ``asof``."""
-    import pandas as pd  # type: ignore
-
-    prior = statcast_df[pd.to_datetime(statcast_df["game_date"]).dt.date < asof]
+    mask = statcast_df["game_date"] < asof
+    prior = statcast_df.loc[mask, ["pitcher", "estimated_woba_using_speedangle"]]
     if len(prior) == 0:
         return {}
     grouped = (
@@ -178,10 +177,27 @@ def _pull_season_statcast(season: int):
     if not frames:
         return None
     try:
-        return pd.concat(frames, ignore_index=True)
+        df = pd.concat(frames, ignore_index=True)
     except Exception as e:  # noqa: BLE001
         log.warning("concat statcast frames failed: %s", e)
         return None
+    # Slim down to just the columns the backfill actually reads. pybaseball
+    # returns ~95 columns / ~700 MB per season; we only need 4.
+    keep = [c for c in ("game_date", "batter", "pitcher", "estimated_woba_using_speedangle") if c in df.columns]
+    df = df[keep].copy()
+    # Pre-convert game_date to a python date column once so the per-day
+    # filter is just a cheap vector comparison, not a per-call datetime
+    # parse + .dt.date materialization (which created a fresh Series each
+    # call and was the dominant memory-allocator in this script).
+    try:
+        df["game_date"] = pd.to_datetime(df["game_date"]).dt.date
+    except Exception:
+        pass
+    # Free the per-chunk frames now that we have a single slim copy.
+    frames.clear()
+    import gc
+    gc.collect()
+    return df
 
 
 def _fetch_game_schedule(season: int) -> list[dict]:
@@ -248,13 +264,31 @@ def _fetch_game_schedule(season: int) -> list[dict]:
     return out
 
 
+_LINEUP_CACHE_DIR = STATCAST_CACHE / "lineups"
+
+
 def _fetch_lineup_for_game(game_pk: int, when: date) -> tuple[list[int], list[int], int | None, int | None]:
     """Return ``(home_batter_ids, away_batter_ids, home_pitcher_id, away_pitcher_id)``.
 
     ``when`` is the game date — used to spot-check that statsapi is returning
     that game's historical lineup, not today's. Returns empties on failure.
+    Results are cached on disk so repeated runs do not re-hit statsapi.
     """
     import statsapi  # type: ignore
+
+    _LINEUP_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_path = _LINEUP_CACHE_DIR / f"{when.year}_{game_pk}.json"
+    if cache_path.exists():
+        try:
+            data = json.loads(cache_path.read_text())
+            return (
+                [int(x) for x in data.get("hb", [])],
+                [int(x) for x in data.get("ab", [])],
+                int(data["hp"]) if data.get("hp") is not None else None,
+                int(data["ap"]) if data.get("ap") is not None else None,
+            )
+        except Exception:
+            pass  # fall through and refetch
 
     try:
         bs = statsapi.boxscore_data(game_pk)
@@ -274,6 +308,15 @@ def _fetch_lineup_for_game(game_pk: int, when: date) -> tuple[list[int], list[in
         home_pitcher = int(pitchers_home[0])
     if pitchers_away:
         away_pitcher = int(pitchers_away[0])
+    try:
+        cache_path.write_text(json.dumps({
+            "hb": home_batters,
+            "ab": away_batters,
+            "hp": home_pitcher,
+            "ap": away_pitcher,
+        }))
+    except Exception:
+        pass
     return home_batters, away_batters, home_pitcher, away_pitcher
 
 
@@ -394,8 +437,21 @@ def backfill(start_year: int, end_year: int, *, max_minutes: int = 30) -> dict:
         sched_by_date: dict[date, list[dict]] = {}
         for g in schedule:
             sched_by_date.setdefault(g["date"], []).append(g)
-        for asof in sorted(sched_by_date.keys()):
+        sorted_dates = sorted(sched_by_date.keys())
+        last_progress = time.time()
+        for di, asof in enumerate(sorted_dates):
             assert asof.year == season, "leakage gate: asof not in season"
+            if time.time() - last_progress > 30:
+                log.info(
+                    "  Season %d progress: %d/%d days (%.0f%%) records=%d",
+                    season, di, len(sorted_dates),
+                    100.0 * di / max(1, len(sorted_dates)),
+                    len(season_records),
+                )
+                last_progress = time.time()
+            if (time.time() - started) / 60 > max_minutes:
+                log.warning("Time budget exceeded mid-season; breaking out of %d.", season)
+                break
             batter_xwoba = _season_to_date_xwoba(sc, asof)
             pitcher_xwoba_allowed = _season_to_date_pitcher_xwoba_allowed(sc, asof)
             if not batter_xwoba and not pitcher_xwoba_allowed:
@@ -438,6 +494,23 @@ def backfill(start_year: int, end_year: int, *, max_minutes: int = 30) -> dict:
                 "logloss": _logloss(probs, ys),
             }
         all_records.extend(season_records)
+        # Incrementally persist after each season so a mid-run kill still
+        # ships the seasons already collected.
+        try:
+            _persist_to_source_history(list(all_records))
+            log.info("Incrementally persisted %d records after season %d", len(all_records), season)
+        except Exception as e:  # noqa: BLE001
+            log.error("Incremental persist failed after season %d: %s", season, e)
+        # Free per-season working set before moving to the next year. The
+        # statcast frame for a single season is ~800 MB in RAM; holding
+        # multiple seasons + lineup boxscores blows past the 2 GB cgroup
+        # cap and gets the process OOM-killed mid-run.
+        del sc
+        del schedule
+        del sched_by_date
+        del season_records
+        import gc
+        gc.collect()
 
     # Rolling 365-day fit (uses all records collected).
     if len(all_records) >= 200:
