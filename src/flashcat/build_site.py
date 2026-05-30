@@ -38,6 +38,7 @@ from .config import (
     ensure_dirs,
     stake_mode,
 )
+from .explain import explain_event
 from .model.blend import _resolve_weights, load_weights, weights_for_sport
 from .model.staking import StakeDecision, decide_stake
 from .site.logo import cat_face_svg, write_favicon_png, write_logo
@@ -94,6 +95,69 @@ def _env() -> Environment:
 
 def _slugify(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "event"
+
+
+def _per_sport_roi(scoreboard: dict | None = None) -> dict[str, float | None]:
+    """Return ``{sport: blended_roi}`` from the scoreboard, or ``{}`` if absent.
+
+    Used by the grouped scoreboard to push picks for sports with negative
+    blended ROI into the RESEARCH-MODE bucket instead of RECOMMENDED.
+    """
+    if scoreboard is None:
+        if SOURCE_SCOREBOARD_PATH.exists():
+            try:
+                with open(SOURCE_SCOREBOARD_PATH) as f:
+                    scoreboard = json.load(f)
+            except Exception:
+                scoreboard = {}
+        else:
+            scoreboard = {}
+    per_sport = (scoreboard or {}).get("per_sport") if isinstance(scoreboard, dict) else None
+    if not isinstance(per_sport, dict):
+        return {}
+    out: dict[str, float | None] = {}
+    for sport, p in per_sport.items():
+        bm = (p or {}).get("blended") or {}
+        out[sport] = bm.get("roi")
+    return out
+
+
+def _group_by_pick_quality(
+    views: list[dict],
+    rm: dict,
+    per_sport_roi: dict[str, float | None],
+    edge_min: float,
+) -> dict[str, list[dict]]:
+    """Bucket views into RECOMMENDED / RESEARCH / NO-EDGE.
+
+    - RECOMMENDED: edge clears the threshold AND per-sport ROI > 0 (and the
+      site isn't globally in research mode).
+    - RESEARCH: edge clears the threshold but per-sport ROI is ≤0 (or the
+      site is research-mode overall).
+    - NO-EDGE: edge below threshold (coin-flip / market-aligned).
+    """
+    recommended: list[dict] = []
+    research: list[dict] = []
+    no_edge: list[dict] = []
+    for v in views:
+        edge = v.get("edge_value")
+        if edge is None or v["pick_label"] == "—":
+            no_edge.append(v)
+            continue
+        if abs(edge) < edge_min:
+            no_edge.append(v)
+            continue
+        sport = v.get("sport")
+        sport_roi = per_sport_roi.get(sport)
+        sport_positive = sport_roi is not None and sport_roi > 0
+        if rm["research_mode"] or not sport_positive:
+            research.append(v)
+        else:
+            recommended.append(v)
+    recommended.sort(key=lambda v: (v["edge_value"], v["recommended_stake"]), reverse=True)
+    research.sort(key=lambda v: v["edge_value"], reverse=True)
+    no_edge.sort(key=lambda v: v.get("commence_iso") or "")
+    return {"recommended": recommended, "research": research, "no_edge": no_edge}
 
 
 def _research_mode_state(scoreboard: dict | None = None) -> dict:
@@ -286,6 +350,7 @@ def _event_view(ev: Event, weights: dict[str, float]) -> dict:
         ev_at_stake_str = f"${ev_at_stake:+,.2f}" if ev_at_stake is not None else "—"
         is_recommended = stake_value > 0
 
+    rationale = explain_event(ev, top_n=3)
     return {
         "raw": ev,
         "slug": _slugify(f"{ev.commence_time.strftime('%Y-%m-%d')}-{ev.away}-at-{ev.home}-{ev.event_id[-6:]}"),
@@ -311,6 +376,7 @@ def _event_view(ev: Event, weights: dict[str, float]) -> dict:
         "badges": badges,
         "home": ev.home,
         "away": ev.away,
+        "rationale": rationale,
     }
 
 
@@ -452,6 +518,12 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
     n_signals = sum(1 for v in pickable if v["badges"])
     n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
 
+    # Per-sport ROI gate — used to decide RECOMMENDED vs RESEARCH-MODE
+    # buckets in the grouped scoreboard. A sport's blended ROI being
+    # negative means picks for that sport go in the research bucket.
+    per_sport_roi = _per_sport_roi()
+    edge_min = edge_threshold()
+
     # Top recommended plays: positive recommended stake, sorted by edge desc.
     # Suppressed entirely when in research mode.
     if rm["research_mode"]:
@@ -462,6 +534,8 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
     top_recs = recs[:5]
     total_recommended_stake = sum(v["recommended_stake"] for v in recs)
     mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
+
+    grouped = _group_by_pick_quality(views, rm, per_sport_roi, edge_min)
 
     content = env.get_template("index.html").render(
         events=views,
@@ -478,6 +552,12 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
         edge_threshold_pp=f"{edge_threshold()*100:.1f}",
         research_mode=rm["research_mode"],
         backtest_roi_str=rm["roi_str"],
+        grouped_recommended=grouped["recommended"],
+        grouped_research=grouped["research"],
+        grouped_no_edge=grouped["no_edge"],
+        n_grouped_recommended=len(grouped["recommended"]),
+        n_grouped_research=len(grouped["research"]),
+        n_grouped_no_edge=len(grouped["no_edge"]),
     )
     return _layout(env, "Today's Slate", "home", content, asset_root="")
 

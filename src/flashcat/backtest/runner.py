@@ -26,8 +26,10 @@ from .. import source_history as _sh
 from ..signals.favlong import detect as detect_favlong
 from ..signals.sharp import detect as detect_sharp
 from ..sources.nflverse import NFLverseHistorical
+from ..sources.nfl_nflverse_epa import NFLNflfastREPA
 from ..sources.tennis_history import TennisDataHistorical
 from ..sources.nba_history import FiveThirtyEightNBAHistorical
+from ..sources.nba_brefer import NBABasketballReferenceSRS
 from ..sources.fivethirtyeight_archives import (
     FiveThirtyEightMLBElo,
     FiveThirtyEightNBAModern,
@@ -50,7 +52,7 @@ log = logging.getLogger(__name__)
 # Per-sport list of historical connectors. Each backtested sport may have
 # multiple connectors; we merge their events on (date, home, away).
 SPORT_LOADERS: dict[str, list] = {
-    "nfl": [NFLverseHistorical, FiveThirtyEightNFLElo],
+    "nfl": [NFLverseHistorical, FiveThirtyEightNFLElo, NFLNflfastREPA],
     "atp": [
         lambda: TennisDataHistorical(tour="atp"),
         SackmannATPElo,
@@ -59,7 +61,11 @@ SPORT_LOADERS: dict[str, list] = {
         lambda: TennisDataHistorical(tour="wta"),
         SackmannWTAElo,
     ],
-    "nba": [FiveThirtyEightNBAHistorical, FiveThirtyEightNBAModern],
+    "nba": [FiveThirtyEightNBAHistorical, FiveThirtyEightNBAModern, NBABasketballReferenceSRS],
+    # MLB live sources (Statcast lineup, weather) are forward-only — they
+    # require live statsapi + Open-Meteo and don't have historical price
+    # data, so they're omitted from the backtest loader list. They appear
+    # in the live `cli build` path via flashcat.cli._live_mlb_sources().
     "mlb": [FiveThirtyEightMLBElo, MLBPythagorean],
 }
 

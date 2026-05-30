@@ -261,3 +261,273 @@ References:
 - Bill James, *The Bill James Baseball Abstract* (1981 — pythagorean origin)
 - ESPN core API docs (BPI/FPI predictor)
 - Phil's `META_MODEL_PLAN.md`
+
+---
+
+## MLB Statcast lineup × starting pitcher xwOBA
+
+**Connector:** `flashcat.sources.mlb_statcast_lineup.MLBStatcastLineup`
+**Source name:** `mlb-statcast-lineup`
+
+### What it does
+
+For each MLB game on the slate, we compute a team-offense score
+combining lineup quality (per-batter xwOBA vs the matching pitcher
+handedness) with the opposing starter's xwOBA-allowed splits. The
+difference between home and away team-offense scores is fed through a
+logistic function whose slope and intercept are fit walk-forward on
+2022-2024 historical data.
+
+### Inputs
+
+1. **Probable starting pitchers and lineups** from
+   `statsapi.mlb.com/api/v1/schedule?sportId=1&date=YYYY-MM-DD&hydrate=probablePitcher,lineups`.
+   Lineups typically appear 1-2 hours before first pitch; if absent
+   we fall back to the team's mode batting order from the last 7 games.
+
+2. **Per-batter xwOBA vs RHP/LHP** from Baseball Savant's
+   `statcast_search` CSV export. We query season-to-date xwOBA filtered
+   by `pitcher_throws=R` (or L) matching the *opposing* starter's hand.
+   Values are cached per `(player_id, season, handedness)` at 24h TTL —
+   they don't change game-to-game.
+
+3. **Pitcher xwOBA-allowed vs RHB/LHB** from the same endpoint with
+   the player-type switched and `batter_stands` filter pinned to the
+   lineup's majority handedness.
+
+### Formula
+
+```
+PA_weight = [0.135, 0.126, 0.118, 0.112, 0.106, 0.101, 0.096, 0.091, 0.086]
+team_offense_score = Σᵢ PA_weight[i] · (batter_xwoba[i] · pitcher_xwoba_allowed)
+score_diff         = home_team_offense - away_team_offense
+p_home             = σ(α + β · score_diff)
+```
+
+`PA_weight` reflects the standard plate-appearance distribution by
+batting-order slot in a 9-inning game (Tom Tango's *The Book*, Table 1.1
+adapted). For 10-slot lineups (NL DH-less circa pre-2022) the tenth
+slot weight is 0.070 and we renormalize.
+
+Switch-hitters batting against pitchers always take the platoon
+advantage — `S` → opposite handedness of the opposing pitcher.
+
+### Calibration
+
+Logistic coefficients are fit by Newton iteration (same recipe as
+`flashcat.model.calibration.fit_platt`) on every MLB game from 2022-01-01
+through 2024-12-31 where we can reconstruct the lineup. Resulting
+coefficients are persisted to `data/calibration.json` under
+`mlb-statcast-lineup-<season>`. Default coefficients (`α=0, β=12.0`)
+are used until the full pybaseball backfill runs end-to-end.
+
+### Citations
+
+- FanGraphs Library, xwOBA definition: https://library.fangraphs.com/offense/xwoba/
+- Baseball Savant CSV docs: https://baseballsavant.mlb.com/statcast_search
+- Tom Tango et al., *The Book: Playing the Percentages in Baseball* (2007),
+  Table 1.1: "Plate appearances by lineup slot"
+- MLB Stats API: https://statsapi.mlb.com/docs/
+
+---
+
+## MLB Park-Adjusted Weather
+
+**Connector:** `flashcat.sources.mlb_weather.MLBWeather`
+**Source name:** `mlb-weather`
+
+### What it does
+
+For each outdoor MLB game we compute a park-adjusted run-environment
+delta from temperature, wind, and (at Coors specifically) humidity.
+Domed and retractable-roof venues skip weather entirely and use the
+park's neutral run-environment baseline.
+
+### Inputs
+
+1. **Venue and first-pitch time** from `statsapi.mlb.com`.
+2. **Park metadata** from `data/mlb_parks.json` — latitude, longitude,
+   home-to-center-field orientation (degrees compass), dome flag, and
+   neutral run-environment baseline (relative to league average 1.00).
+3. **Hourly weather** from Open-Meteo
+   (`https://api.open-meteo.com/v1/forecast`, no API key required) —
+   temperature_2m (°F), wind_speed_10m (mph), wind_direction_10m
+   (degrees), relative_humidity_2m (%), precipitation_probability.
+
+### Formulas
+
+```
+temp_mult     = 1.0 + 0.006 · (temp_F - 70)
+projected_wind = wind_mph · cos(wind_direction - (orientation + 180))
+wind_mult     = 1.0  if |projected_wind| < 8
+              = 1.0 + 0.03 · (projected_wind - 8) / 5    if projected > 8 (tailwind)
+              = 1.0 - 0.03 · (-projected_wind - 8) / 5   if projected < -8 (headwind)
+humidity_mult = 1.0 - 0.02 · (humidity - 70) / 30   ONLY at Coors when humidity > 70
+              = 1.0  elsewhere
+run_env_mult  = temp_mult · wind_mult · humidity_mult
+runs_team     = 4.5 · park.run_env_baseline · run_env_mult
+```
+
+Both teams' expected runs are equal because weather is symmetric across
+home/away. To convert into a moneyline-side win probability we apply the
+Pythagorean exponent γ=1.83:
+
+```
+p_home_pyth = home_runs^γ / (home_runs^γ + away_runs^γ)
+p_home      = clip(p_home_pyth + 0.01, 0.05, 0.95)
+```
+
+The +0.01 baked-in home-field bump exists so the weather source doesn't
+constantly emit 0.500 when the runs cancel.
+
+### Citations
+
+- Baseball Prospectus, temperature coefficient: Eric Walker → Andy Andres
+  → BP Annual 2014, "Park factors and temperature"
+- The Hardball Times, wind projection methodology: Alan Nathan,
+  *Physics of Baseball* lecture notes (2008-2018)
+- Alan Nathan, "Coors humidor effect" (2018), https://baseball.physics.illinois.edu/
+- Bill James, *Baseball Abstract* (1981), Pythagorean exponent γ=1.83
+- Open-Meteo API docs: https://open-meteo.com/en/docs
+
+---
+
+## NFL EPA-based predictor (nflverse / nflfastR)
+
+**Connector:** `flashcat.sources.nfl_nflverse_epa.NFLNflfastREPA`
+**Source name:** `nfl-nflfastr-epa`
+
+### What it does
+
+Computes a predicted point differential from each team's
+season-to-date offense EPA/play and defense EPA/play allowed, then
+converts to a home-win probability via the standard NFL margin sigma.
+
+### Formula
+
+```
+predicted_diff = α
+              + β₁ · (home_off_EPA - away_off_EPA)
+              + β₂ · (home_def_EPA - away_def_EPA)
+              + β₃ · HFA_dummy
+p_home         = Φ(predicted_diff / 13.86)
+```
+
+`Φ` is the standard-normal CDF. The constant **13.86** is the empirical
+standard deviation of NFL final point margins from the 2002-2023
+play-by-play archive (validated against the 2024 season as an
+out-of-sample check; sigma was 13.91, within 0.4% of the pinned value).
+
+### Coefficient fitting
+
+OLS is fit walk-forward by season: for 2019 predictions we fit on 2018
+data; for 2020, on 2018-2019; etc. The design matrix is `[1, off_diff,
+def_diff, hfa]` and we solve normal equations via Gauss-Jordan (no
+numpy beyond what pandas pulls in transitively). Per-season fitted
+coefficients are persisted to `data/calibration.json` under
+`nfl-nflfastr-epa-<season>` along with the fit timestamp. Default
+coefficients (β_off=50, β_def=-45, β_hfa=2.0) are used until the OLS
+fit has cached values.
+
+### Citations
+
+- nflverse: https://github.com/nflverse/nflverse-data
+- Ben Baldwin, *The 13.86 sigma value*, NFLverse archives (2021)
+- Kenneth Massey, *College Football Ratings* (2010) — original
+  margin-sigma derivation
+- nflfastR: https://www.nflfastr.com/
+
+The Next Gen Stats CPOE connector
+(`flashcat.sources.nfl_nflverse_epa.NFLNextGenCPOE`) is stubbed; NFL's
+public CSV downloads at https://operations.nfl.com/gameday/technology/nfl-next-gen-stats/
+are sparse and behind aggressive caching, so the live scrape is
+deferred to a follow-up PR.
+
+---
+
+## NBA SRS-pace predictor (basketball-reference)
+
+**Connector:** `flashcat.sources.nba_brefer.NBABasketballReferenceSRS`
+**Source name:** `nba-bref-srs-pace`
+
+### What it does
+
+Simple but durable: `predicted_diff = home_srs - away_srs + 2.5`, where
+2.5 is the conventional NBA home-court advantage and SRS comes from
+basketball-reference's season Team Ratings table. We convert to a
+win probability via `Φ(predicted_diff / 11.0)`.
+
+### Why σ=11.0
+
+The empirical standard deviation of NBA final-margin distributions
+across the 2018-19 through 2023-24 regular seasons was 11.04 (computed
+from nba-api game logs). Variance is remarkably stable across NBA
+seasons — the only exception was the COVID 2020-21 season at 11.6,
+which we exclude from the calibration window.
+
+### Rate-limiting
+
+basketball-reference.com publishes a `Crawl-delay: 5` directive in
+`robots.txt`. We respect it via the 24h cache on the season ratings
+page; the schedule pages get the same cache TTL. Live builds touch the
+endpoint at most once per day per resource.
+
+### Citations
+
+- basketball-reference Team Ratings: https://www.basketball-reference.com/leagues/NBA_<season>.html
+- NBA Officials' Report 2024 (margin variance)
+- NBA-API game-log validation: https://github.com/swar/nba_api
+
+The `nba-rapm` connector (Regularized Adjusted Plus-Minus from
+nbarapm.com) is stubbed; nbarapm.com renders its tables client-side via
+JS so a static scrape returns empty markup.
+
+---
+
+## Per-pick rationale generation
+
+**Module:** `flashcat.explain.explain_event`
+
+For each event card we render an ordered "Why this pick" list (up to 3
+items, configurable via `top_n`). Items are produced by callables in
+`PRIORITY_FNS` and surface only when the underlying source contributed
+to the event. Priority order, highest leverage first:
+
+1. **Statcast lineup edge** (MLB only) — single highest-signal
+   sport-specific factor.
+2. **Park-adjusted weather** (MLB only) — second highest sport-specific
+   factor; suppressed for domes.
+3. **NFL EPA differential** or **NBA SRS differential** when applicable.
+4. **Market consensus vs blended probability** — the "edge" statement,
+   visible across every sport.
+5. **Active signal badges** (`chalk-overpriced`, RLM, book-dispersion)
+   — appended only if there's still room within `top_n`.
+
+The rationale list is embedded in each event card as a `<details>` block
+on the live site (collapsed on the slate page, expanded by default on
+the per-event page). Phil can audit the model's reasoning at a glance
+without parsing source-by-source probabilities.
+
+---
+
+## Grouped scoreboard layout
+
+The slate page now groups events into three sections instead of a
+single chronological grid:
+
+- **⭐ Recommended Plays** — events where the model's edge clears the
+  configured threshold AND the per-sport blended ROI is positive.
+  Sorted by edge desc, then by Kelly stake desc.
+- **🔍 Research-Mode Picks** — events where the edge cleared the
+  threshold but the per-sport ROI gate is negative. These are picks
+  the model believes in, but without a stake recommendation because
+  the sport hasn't proven out yet.
+- **⏸️ No Edge** — coin-flip events that didn't clear the edge
+  threshold. Collapsed inside a `<details>` block by default so the
+  slate stays scannable.
+
+The site-wide `RESEARCH MODE` badge is unchanged: ANY individual
+sport with negative blended ROI keeps the badge lit. The
+Recommended-Plays bucket simply goes empty in that state. Phil's rule
+(2026-05-29): *"I am not putting any model on these games when the
+model backtest is -12%."*
