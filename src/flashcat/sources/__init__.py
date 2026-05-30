@@ -19,6 +19,9 @@ from .nba_history import FiveThirtyEightNBAHistorical
 from .nfl_nflverse_epa import NFLNextGenCPOE, NFLNflfastREPA
 from .nflverse import NFLverseHistorical
 from .odds_api import TheOddsAPI
+from .pga_datagolf import PGADatagolf
+from .pga_espn_bpi import PGAESPNScoreboard
+from .pga_market_consensus import PGAMarketConsensus
 from .polymarket import Polymarket
 from .sackmann_elo import SackmannATPElo, SackmannWTAElo
 from .stubs import (
@@ -59,6 +62,9 @@ ALL_CONNECTORS: list[type[SourceConnector]] = [
     DimersMLB,
     PinnacleMoneyline,
     DraftKingsMLB,
+    PGADatagolf,
+    PGAESPNScoreboard,
+    PGAMarketConsensus,
     PinnacleStub,
     DraftKingsStub,
     FanDuelStub,
@@ -97,6 +103,9 @@ __all__ = [
     "DimersMLB",
     "PinnacleMoneyline",
     "DraftKingsMLB",
+    "PGADatagolf",
+    "PGAESPNScoreboard",
+    "PGAMarketConsensus",
     "PinnacleStub",
     "DraftKingsStub",
     "FanDuelStub",

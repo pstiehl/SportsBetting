@@ -37,6 +37,7 @@ from ..sources.fivethirtyeight_archives import (
 )
 from ..sources.sackmann_elo import SackmannATPElo, SackmannWTAElo
 from ..sources.mlb_pythagorean import MLBPythagorean
+from ..sources.pga_datagolf import PGADatagolf
 from ..types import (
     Event,
     HistoricalResult,
@@ -67,6 +68,10 @@ SPORT_LOADERS: dict[str, list] = {
     # data, so they're omitted from the backtest loader list. They appear
     # in the live `cli build` path via flashcat.cli._live_mlb_sources().
     "mlb": [FiveThirtyEightMLBElo, MLBPythagorean],
+    # PGA backfill via DataGolf pre-tournament-archive (key-gated).
+    # Without DATAGOLF_API_KEY the loader returns [] and PGA stays
+    # RESEARCH on n_bets-floor grounds — documented in METHODOLOGY.md.
+    "pga": [PGADatagolf],
 }
 
 
@@ -259,7 +264,7 @@ def run_multi_sport_backtest(
     The top-level ``sources`` block is keyed by ``"<sport>:<source>"`` so the
     site can show per-sport ROI per source.
     """
-    sports = sports or ["nfl", "nba", "mlb", "atp", "wta"]
+    sports = sports or ["nfl", "nba", "mlb", "atp", "wta", "pga"]
     log.info("Multi-sport backtest %s — %s, sports=%s", start, end, sports)
 
     weights = load_weights()

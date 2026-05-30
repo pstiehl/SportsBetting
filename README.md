@@ -60,6 +60,9 @@ flashcat-betting/
 | `tennis-rank-bt` | **live** | Bradley-Terry probability from ATP/WTA rank points |
 | `fivethirtyeight-nba-elo` | **live** | 538 historical NBA Elo-based pre-game forecasts (through 2014-15) |
 | `market-close` (synthetic) | **live** | Devigged consensus probability across book averages |
+| `datagolf-sg` | **live** (key-gated) | DataGolf strokes-gained pre-tournament forecasts → PGA head-to-head matchup probabilities (free-tier endpoints only) |
+| `pga-espn-scoreboard` | **live** | ESPN PGA leaderboard → score-gap logistic for in-progress tournament H2H matchups |
+| `pga-market-consensus` | **live** (key-gated) | Odds API outright winner consensus for the four golf majors |
 | `pinnacle` | stub | Phase 2 |
 | `draftkings`, `fanduel` | stub | Phase 2 (page scrapes) |
 | `kalshi` | stub | Phase 2 |
