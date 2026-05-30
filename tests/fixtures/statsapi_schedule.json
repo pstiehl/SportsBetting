@@ -1,0 +1,56 @@
+{
+  "dates": [
+    {
+      "date": "2026-05-30",
+      "games": [
+        {
+          "gamePk": 123456,
+          "gameDate": "2026-05-30T23:05:00Z",
+          "venue": {"name": "Coors Field"},
+          "teams": {
+            "home": {
+              "team": {"name": "Colorado Rockies"},
+              "probablePitcher": {
+                "id": 671096,
+                "fullName": "Kyle Freeland",
+                "pitchHand": {"code": "L", "description": "Left"}
+              }
+            },
+            "away": {
+              "team": {"name": "Los Angeles Dodgers"},
+              "probablePitcher": {
+                "id": 477132,
+                "fullName": "Clayton Kershaw",
+                "pitchHand": {"code": "L", "description": "Left"}
+              }
+            }
+          },
+          "lineups": {
+            "homePlayers": [
+              {"id": 605141, "batSide": {"code": "R"}},
+              {"id": 605151, "batSide": {"code": "L"}},
+              {"id": 605152, "batSide": {"code": "R"}},
+              {"id": 605153, "batSide": {"code": "S"}},
+              {"id": 605154, "batSide": {"code": "R"}},
+              {"id": 605155, "batSide": {"code": "L"}},
+              {"id": 605156, "batSide": {"code": "R"}},
+              {"id": 605157, "batSide": {"code": "R"}},
+              {"id": 605158, "batSide": {"code": "L"}}
+            ],
+            "awayPlayers": [
+              {"id": 660271, "batSide": {"code": "R"}},
+              {"id": 660272, "batSide": {"code": "L"}},
+              {"id": 660273, "batSide": {"code": "L"}},
+              {"id": 660274, "batSide": {"code": "R"}},
+              {"id": 660275, "batSide": {"code": "R"}},
+              {"id": 660276, "batSide": {"code": "L"}},
+              {"id": 660277, "batSide": {"code": "R"}},
+              {"id": 660278, "batSide": {"code": "L"}},
+              {"id": 660279, "batSide": {"code": "R"}}
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -34,6 +34,8 @@ from .sources import (
     Bovada,
     ESPNScoreboard,
     FanDuel,
+    MLBStatcastLineup,
+    MLBWeather,
     Polymarket,
     TheOddsAPI,
 )
@@ -148,7 +150,15 @@ def build(
     start = date.today()
     end = start + timedelta(days=days_ahead)
     log.info("Building slate for %s → %s", start, end)
-    connectors = [TheOddsAPI(), Bovada(), FanDuel(), ESPNScoreboard(), Polymarket()]
+    connectors = [
+        TheOddsAPI(),
+        Bovada(),
+        FanDuel(),
+        ESPNScoreboard(),
+        Polymarket(),
+        MLBStatcastLineup(),
+        MLBWeather(),
+    ]
 
     active = _active_sports(connectors)
     log.info("Active sports today: %s", active)

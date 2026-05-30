@@ -16,6 +16,15 @@
   <p class="lede" style="margin:0">Expected value at recommended stake: <strong class="{% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</strong></p>
 </div>
 
+{% if ev.rationale %}
+<details class="why-this-pick card" open>
+  <summary><h3 style="display:inline">Why this pick</h3></summary>
+  <ul>
+  {% for line in ev.rationale %}<li>{{ line }}</li>{% endfor %}
+  </ul>
+</details>
+{% endif %}
+
 {% if ev.badges %}
 <div class="card">
   <h3>Active signals</h3>

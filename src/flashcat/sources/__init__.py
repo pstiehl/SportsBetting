@@ -12,7 +12,11 @@ from .fivethirtyeight_archives import (
 )
 from .mlb_live import DimersMLB, DraftKingsMLB, FanGraphsMLB, PinnacleMoneyline
 from .mlb_pythagorean import MLBPythagorean
+from .mlb_statcast_lineup import MLBStatcastLineup
+from .mlb_weather import MLBWeather
+from .nba_brefer import NBABasketballReferenceSRS, NBARAPMStub
 from .nba_history import FiveThirtyEightNBAHistorical
+from .nfl_nflverse_epa import NFLNextGenCPOE, NFLNflfastREPA
 from .nflverse import NFLverseHistorical
 from .odds_api import TheOddsAPI
 from .polymarket import Polymarket
@@ -45,6 +49,12 @@ ALL_CONNECTORS: list[type[SourceConnector]] = [
     FiveThirtyEightNFLElo,
     FiveThirtyEightNBAModern,
     MLBPythagorean,
+    MLBStatcastLineup,
+    MLBWeather,
+    NBABasketballReferenceSRS,
+    NBARAPMStub,
+    NFLNflfastREPA,
+    NFLNextGenCPOE,
     FanGraphsMLB,
     DimersMLB,
     PinnacleMoneyline,
@@ -77,6 +87,12 @@ __all__ = [
     "FiveThirtyEightNFLElo",
     "FiveThirtyEightNBAModern",
     "MLBPythagorean",
+    "MLBStatcastLineup",
+    "MLBWeather",
+    "NBABasketballReferenceSRS",
+    "NBARAPMStub",
+    "NFLNflfastREPA",
+    "NFLNextGenCPOE",
     "FanGraphsMLB",
     "DimersMLB",
     "PinnacleMoneyline",

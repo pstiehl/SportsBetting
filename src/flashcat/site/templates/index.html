@@ -57,55 +57,72 @@
   {% endif %}
 </div>
 
-<div class="event-grid">
-  {% for ev in events %}
-  <a href="event/{{ ev.slug }}.html" class="event-card" style="text-decoration:none;color:inherit">
-    <div class="top">
-      <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time></span>
-      <span>{{ ev.n_sources }} sources</span>
-    </div>
-    <div class="matchup">{{ ev.away }} <span class="vs">@</span> {{ ev.home }}</div>
-    {% if ev.pick_label != "—" %}
-    <div class="pick">
-      <span class="side">PICK: {{ ev.pick_label }}</span>
-      <span class="prob">{{ ev.pick_price_str }}</span>
-    </div>
-    {% if research_mode %}
-    <div class="research-banner">Research only — backtest ROI not yet positive.</div>
-    {% else %}
-    <div class="rec-rows">
-      <div class="rec-row">
-        <span class="label">Model edge</span>
-        <span class="val {{ ev.edge_cls }}">{{ ev.edge_str }}</span>
-      </div>
-      <div class="rec-row">
-        <span class="label">Recommended stake</span>
-        <span class="val {% if ev.is_recommended %}pos{% endif %}">{{ ev.recommended_stake_str }}</span>
-      </div>
-      <div class="rec-row">
-        <span class="label">Expected value</span>
-        <span class="val {% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</span>
-      </div>
-    </div>
-    {% endif %}
-    <div class="probs">
-      <span class="label">Blended home prob</span><span class="val">{{ "{:.1%}".format(ev.blended_home_prob) }}</span>
-      <span class="label">Market implied (devig)</span><span class="val">{{ ev.market_home_str }}</span>
-    </div>
-    {% else %}
-    <div class="pick">
-      <span class="side" style="color:#8b8d96">NO LIVE ODDS</span>
-      <span class="prob">—</span>
-    </div>
-    <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
-    {% endif %}
-    {% if ev.badges %}
-    <div class="badges">
-      {% for badge in ev.badges %}<span class="badge {{ badge.cls }}">{{ badge.label }}</span>{% endfor %}
-    </div>
-    {% endif %}
-  </a>
-  {% endfor %}
-</div>
+{% macro event_card(ev) -%}
+<a href="event/{{ ev.slug }}.html" class="event-card" style="text-decoration:none;color:inherit">
+  <div class="top">
+    <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time></span>
+    <span>{{ ev.n_sources }} sources</span>
+  </div>
+  <div class="matchup">{{ ev.away }} <span class="vs">@</span> {{ ev.home }}</div>
+  {% if ev.pick_label != "—" %}
+  <div class="pick">
+    <span class="side">PICK: {{ ev.pick_label }}</span>
+    <span class="prob">{{ ev.pick_price_str }}</span>
+  </div>
+  {% if research_mode %}
+  <div class="research-banner">Research only — backtest ROI not yet positive.</div>
+  {% else %}
+  <div class="rec-rows">
+    <div class="rec-row"><span class="label">Model edge</span><span class="val {{ ev.edge_cls }}">{{ ev.edge_str }}</span></div>
+    <div class="rec-row"><span class="label">Recommended stake</span><span class="val {% if ev.is_recommended %}pos{% endif %}">{{ ev.recommended_stake_str }}</span></div>
+    <div class="rec-row"><span class="label">Expected value</span><span class="val {% if ev.ev_at_stake is not none and ev.ev_at_stake > 0 %}pos{% endif %}">{{ ev.ev_at_stake_str }}</span></div>
+  </div>
+  {% endif %}
+  <div class="probs">
+    <span class="label">Blended home prob</span><span class="val">{{ "{:.1%}".format(ev.blended_home_prob) }}</span>
+    <span class="label">Market implied (devig)</span><span class="val">{{ ev.market_home_str }}</span>
+  </div>
+  {% if ev.rationale %}
+  <details class="why-this-pick">
+    <summary>Why this pick</summary>
+    <ul>{% for line in ev.rationale %}<li>{{ line }}</li>{% endfor %}</ul>
+  </details>
+  {% endif %}
+  {% else %}
+  <div class="pick"><span class="side" style="color:#8b8d96">NO LIVE ODDS</span><span class="prob">—</span></div>
+  <div class="stake" style="color:#8b8d96">Waiting on a live source to publish moneylines.</div>
+  {% endif %}
+  {% if ev.badges %}
+  <div class="badges">{% for badge in ev.badges %}<span class="badge {{ badge.cls }}">{{ badge.label }}</span>{% endfor %}</div>
+  {% endif %}
+</a>
+{%- endmacro %}
+
+<section class="scoreboard-section recommended">
+  <h3>⭐ Recommended Plays <span class="section-count">({{ n_grouped_recommended }})</span></h3>
+  <p class="lede" style="margin-top:-4px">Edge clears the {{ edge_threshold_pp }}&thinsp;pp threshold AND per-sport blended ROI is positive.</p>
+  {% if grouped_recommended %}
+  <div class="event-grid">{% for ev in grouped_recommended %}{{ event_card(ev) }}{% endfor %}</div>
+  {% else %}
+  <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a positive-ROI sport, or the per-sport ROI gate has temporarily disabled every in-season league.</div>
+  {% endif %}
+</section>
+
+<section class="scoreboard-section research">
+  <h3>🔍 Research-Mode Picks <span class="section-count">({{ n_grouped_research }})</span></h3>
+  <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the per-sport ROI gate is negative — no stake recommendation.</p>
+  {% if grouped_research %}
+  <div class="event-grid">{% for ev in grouped_research %}{{ event_card(ev) }}{% endfor %}</div>
+  {% else %}
+  <div class="callout">No research-mode picks today.</div>
+  {% endif %}
+</section>
+
+<section class="scoreboard-section no-edge">
+  <details>
+    <summary><h3 style="display:inline">⏸️ No Edge <span class="section-count">({{ n_grouped_no_edge }})</span></h3> — show {{ n_grouped_no_edge }} coin-flip events</summary>
+    <div class="event-grid">{% for ev in grouped_no_edge %}{{ event_card(ev) }}{% endfor %}</div>
+  </details>
+</section>
 
 </div>
