@@ -812,9 +812,67 @@ def _source_row(name: str, v: dict, weight: float, all_briers: list[float], *, i
     }
 
 
+def _overlay_source_history_meta(per_sport: dict) -> dict:
+    """Merge ``data/source_history.db`` meta rows into ``per_sport.sources``.
+
+    Connectors whose live ``fetch_events`` path doesn't slot cleanly into the
+    in-memory backtest (key mismatch with 538 archives, missing
+    ``load_results``, etc.) can still publish per-source stats by writing
+    rows to ``source_history.db`` via ``scripts/backfill_*``. This overlay
+    surfaces those rows in the sources page so Brier / accuracy show up
+    instead of "n/a".
+
+    Scoreboard rows always win on key conflicts — they're the freshest,
+    in-memory backtest output. We only fill GAPS with the persisted meta.
+    """
+    try:
+        from .source_history import connect, init_db
+    except Exception:  # pragma: no cover
+        return per_sport
+    try:
+        init_db()
+        with connect() as c:
+            rows = c.execute(
+                "SELECT sport, source, n_events, n_bets, brier, log_loss, "
+                "accuracy, roi, calibration_slope, avg_clv_pp "
+                "FROM meta"
+            ).fetchall()
+    except Exception:  # pragma: no cover
+        return per_sport
+    # Dedupe meta rows by (sport, source) — keep the row with the most n_events.
+    best: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        key = (r["sport"], r["source"])
+        cur = best.get(key)
+        if cur is None or (r["n_events"] or 0) > (cur["n_events"] or 0):
+            best[key] = dict(r)
+    out = dict(per_sport)
+    for (sport, source), row in best.items():
+        if sport not in out:
+            continue
+        srcs = (out[sport].get("sources") or {})
+        if source in srcs:
+            continue  # scoreboard has the canonical row
+        srcs[source] = {
+            "n_events": row.get("n_events") or 0,
+            "brier": row.get("brier"),
+            "log_loss": row.get("log_loss"),
+            "accuracy": row.get("accuracy"),
+            "roi": row.get("roi"),
+            "wins": 0,
+            "losses": 0,
+            "wagered": 0.0,
+            "profit": 0.0,
+            "calibration_slope": row.get("calibration_slope"),
+        }
+        out[sport]["sources"] = srcs
+    return out
+
+
 def render_sources(env: Environment, scoreboard: dict, weights: dict) -> str:
     sources = scoreboard.get("sources", {}) if isinstance(scoreboard, dict) else {}
     per_sport = scoreboard.get("per_sport") or {}
+    per_sport = _overlay_source_history_meta(per_sport)
     # Global pool: v2 layout puts source weights under "global".
     global_pool = (
         weights.get("global", {}) if isinstance(weights, dict) and weights.get("schema") == "v2"

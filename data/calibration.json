@@ -1,5 +1,34 @@
 {
   "fitted_at": "2026-05-30T12:57:28.120011+00:00",
+  "nba": {
+    "fivethirtyeight-nba-elo-modern": {
+      "fitted_at": "2026-05-30T15:03:01.730252+00:00",
+      "method": "logit-Newton",
+      "platt": {
+        "intercept": -0.17011090592894687,
+        "slope": 0.8248542137446812
+      },
+      "window": "2022-01-01..2024-12-31"
+    },
+    "fivethirtyeight-nba-raptor": {
+      "fitted_at": "2026-05-30T15:03:01.730254+00:00",
+      "method": "logit-Newton",
+      "platt": {
+        "intercept": -0.12446726951663827,
+        "slope": 0.8195627700677712
+      },
+      "window": "2022-01-01..2024-12-31"
+    },
+    "nba-bref-srs-pace": {
+      "fitted_at": "2026-05-30T15:03:01.730233+00:00",
+      "method": "logit-Newton",
+      "platt": {
+        "intercept": 0.045641192472780125,
+        "slope": 0.558604019404667
+      },
+      "window": "2022-01-01..2024-12-31"
+    }
+  },
   "per_sport": {
     "atp": {
       "alpha": 0.016378667513540186,

@@ -54,6 +54,54 @@ VALID_MODES = ("brier", "log_loss", "roi", "brier_roi_hybrid")
 NAIVE_BRIER = 0.25  # a 50/50 coin scores Brier 0.25
 ROI_CLIP = 0.20  # clip rolling ROI to ±20% to limit single-source dominance
 
+
+def _overlay_source_history_for_reweight(per_sport: dict) -> dict:
+    """Fold persisted ``source_history.meta`` rows into ``per_sport.sources``.
+
+    Same contract as ``build_site._overlay_source_history_meta`` — scoreboard
+    rows win, persisted rows only fill gaps. Kept inline to avoid an import
+    cycle with ``flashcat.build_site``.
+    """
+    try:
+        from ..source_history import connect, init_db
+    except Exception:  # pragma: no cover
+        return per_sport
+    try:
+        init_db()
+        with connect() as c:
+            rows = c.execute(
+                "SELECT sport, source, n_events, n_bets, brier, log_loss, "
+                "accuracy, roi, calibration_slope FROM meta"
+            ).fetchall()
+    except Exception:  # pragma: no cover
+        return per_sport
+    best: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        key = (r["sport"], r["source"])
+        cur = best.get(key)
+        if cur is None or (r["n_events"] or 0) > (cur["n_events"] or 0):
+            best[key] = dict(r)
+    out = dict(per_sport)
+    for (sport, source), row in best.items():
+        if sport not in out:
+            continue
+        srcs = (out[sport].get("sources") or {})
+        if source in srcs:
+            continue
+        srcs[source] = {
+            "n_events": row.get("n_events") or 0,
+            "brier": row.get("brier"),
+            "log_loss": row.get("log_loss"),
+            "accuracy": row.get("accuracy"),
+            "roi": row.get("roi"),
+            "wins": 0,
+            "losses": 0,
+            "calibration_slope": row.get("calibration_slope"),
+        }
+        out[sport] = dict(out[sport])
+        out[sport]["sources"] = srcs
+    return out
+
 PER_SPORT_MIN_EVENTS: dict[str, int] = {
     "nfl": 30,
     "nba": 50,
@@ -214,10 +262,18 @@ def update_weights(
         sources, mode=mode, beta=beta, lam=lam, min_n=min_events_for(None),
     )
 
+    # Overlay persistent ``source_history.db.meta`` rows onto the in-memory
+    # per-sport sources map. This lets connectors that only publish stats via
+    # the backfill scripts (e.g. ``nba-bref-srs-pace`` via
+    # ``scripts/backfill_nba_historical.py``) contribute weight to the blender.
+    per_sport_overlaid = _overlay_source_history_for_reweight(
+        scoreboard.get("per_sport") or {}
+    )
+
     per_sport_rows: dict[str, dict] = {}
     excluded_by_sport: dict[str, list] = {"global": global_excluded}
     min_events_by_sport: dict[str, int] = {"global": min_events_for(None)}
-    for sport, p in (scoreboard.get("per_sport") or {}).items():
+    for sport, p in per_sport_overlaid.items():
         srcs = (p or {}).get("sources") or {}
         min_n = min_events_for(sport)
         weights, excluded = _compute_pool_weights(
