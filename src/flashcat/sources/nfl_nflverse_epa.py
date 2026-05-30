@@ -342,25 +342,243 @@ class NFLNflfastREPA(SourceConnector):
 
 
 # ---------------------------------------------------------------------------
-# Stub for Next Gen Stats CPOE — connector class only for future iteration.
+# NFL Next Gen Stats — CPOE (Completion Percentage Over Expected)
 # ---------------------------------------------------------------------------
+#
+# The NFL Operations public endpoint at
+#   https://nextgenstats.nfl.com/api/league/leaders?...&statisticCategory=PASSING
+# is *frequently* DC-blocked (403 from GitHub Actions runners and most VPS).
+# nflfastR/nfl_data_py's play-by-play data already exposes a per-play
+# ``cpoe`` column — we roll it up to team-season CPOE which is the same
+# underlying metric NGS publishes. When the direct NGS API is reachable we
+# could prefer it; the pbp fallback works everywhere nfl_data_py works.
+
+
+def _cpoe_team_diff_to_home_prob(
+    cpoe_diff: float,
+    *,
+    epa_pred_diff: float = 0.0,
+    beta_cpoe: float = 0.18,
+) -> float:
+    """Augment the EPA predicted point diff with team CPOE differential.
+
+    The NFL OLS predictor used by ``NFLNflfastREPA`` regresses
+    ``predicted_diff = a + b1*off_epa_diff + b2*def_epa_diff + b3*HFA``.
+    Adding ``b4*cpoe_diff`` (where cpoe is in percentage points) provides
+    a partial-information signal about QB play above team EPA baseline.
+    Default coefficient ``beta_cpoe=0.18`` was hand-set as a placeholder
+    — the production fit lives in ``data/calibration.json`` under
+    ``nfl-nextgen-cpoe`` and is updated by the walk-forward backtest.
+    """
+    diff = epa_pred_diff + beta_cpoe * cpoe_diff
+    return diff_to_home_prob(diff)
 
 
 class NFLNextGenCPOE(SourceConnector):
-    """NFL Next Gen Stats — completion percentage over expected.
+    """NFL Next Gen Stats — team CPOE differential, rolled up from nflfastR pbp.
 
-    TODO: NGS public CSV downloads at
-    https://operations.nfl.com/gameday/technology/nfl-next-gen-stats/
-    are sparse and behind aggressive caching. We've reserved the connector
-    slot but the implementation is deferred — current ``fetch_events``
-    returns ``[]`` so the source contributes nothing yet.
+    Strategy: load nflfastR/nfl_data_py pbp data for the relevant seasons,
+    aggregate ``cpoe`` per team-season, then for each scheduled game emit a
+    home-win probability driven by the CPOE differential (with a light
+    EPA-baseline blend). This way the connector is *non-empty* and
+    contributes a real signal to the meta-model. When the direct NGS public
+    API at ``nextgenstats.nfl.com/api/league/leaders`` is reachable from
+    the runner, we prefer it; the pbp fallback keeps the connector live
+    even when the direct endpoint is DC-blocked.
     """
 
     name = "nfl-nextgen-cpoe"
-    version = "stub"
-    is_live = False
+    version = "1.0"
+    is_live = True
+
+    def __init__(self, timeout: float = 60.0):
+        self.timeout = timeout
 
     def fetch_events(
         self, start: date, end: date, sport: Sport | None = None
     ) -> list[Event]:
-        return []
+        if sport is not None and sport != "nfl":
+            return []
+        seasons = sorted({start.year, end.year})
+
+        # Try direct NGS API first (will usually fail in CI, then fall back).
+        team_cpoe = self._try_ngs_direct(seasons)
+        if not team_cpoe:
+            team_cpoe = self._team_cpoe_from_pbp(seasons)
+        if not team_cpoe:
+            return []
+
+        schedule = self._load_schedules(seasons)
+        if not schedule:
+            return []
+
+        # Build a fast lookup for team EPA baseline so we can blend with CPOE.
+        team_epa = self._team_epa_baseline(seasons)
+
+        events: list[Event] = []
+        for row in schedule:
+            d = row.get("date")
+            if not d or not (start <= d <= end):
+                continue
+            home = row.get("home")
+            away = row.get("away")
+            if not home or not away:
+                continue
+            h_cpoe = team_cpoe.get(home)
+            a_cpoe = team_cpoe.get(away)
+            if h_cpoe is None or a_cpoe is None:
+                continue
+            cpoe_diff = h_cpoe - a_cpoe
+            epa_pred = 0.0
+            if team_epa:
+                h = team_epa.get(home)
+                a = team_epa.get(away)
+                if h and a:
+                    epa_pred = predicted_diff(
+                        h["off_epa"], a["off_epa"],
+                        h["def_epa"], a["def_epa"],
+                        is_home=True,
+                    )
+            p = _cpoe_team_diff_to_home_prob(cpoe_diff, epa_pred_diff=epa_pred)
+            commence = datetime.combine(d, time(20, 0), tzinfo=timezone.utc)
+            events.append(
+                Event(
+                    event_id=f"nfl-nextgen-cpoe:{d.isoformat()}_{away}_{home}",
+                    sport="nfl",
+                    league="NFL",
+                    home=home,
+                    away=away,
+                    commence_time=commence,
+                    source_probs=[
+                        SourceProb(
+                            source=self.name,
+                            home_win_prob=p,
+                            captured_at=datetime.now(timezone.utc),
+                            notes=(
+                                f"cpoe_diff={cpoe_diff:+.2f}pp "
+                                f"h_cpoe={h_cpoe:+.2f} a_cpoe={a_cpoe:+.2f}"
+                            ),
+                        )
+                    ],
+                )
+            )
+        return events
+
+    # ------------------------------------------------------------------
+    # Data loaders
+    # ------------------------------------------------------------------
+
+    def _try_ngs_direct(self, seasons: list[int]) -> dict[str, float]:
+        """Best-effort GET against the public NGS league-leaders endpoint.
+
+        Returns ``{team: cpoe}`` or ``{}`` on any failure (typically 403
+        from data-center IPs). This path is documented but we *expect* it
+        to fail in CI — the pbp fallback is the real workhorse.
+        """
+        try:
+            import httpx  # type: ignore
+        except Exception:
+            return {}
+        out: dict[str, list[float]] = {}
+        for season in seasons:
+            url = (
+                "https://nextgenstats.nfl.com/api/league/leaders?"
+                f"season={season}&seasonType=REG&statisticCategory=PASSING&week=ALL"
+            )
+            try:
+                with httpx.Client(timeout=self.timeout) as client:
+                    r = client.get(
+                        url,
+                        headers={
+                            "User-Agent": (
+                                "Mozilla/5.0 (compatible; flashcat-research/1.0; "
+                                "+https://github.com/pstiehl/SportsBetting)"
+                            ),
+                            "Accept": "application/json",
+                            "Referer": "https://nextgenstats.nfl.com/stats/passing",
+                        },
+                    )
+                    if r.status_code >= 400:
+                        log.info(
+                            "NGS direct API returned %s for season %s; using pbp fallback",
+                            r.status_code,
+                            season,
+                        )
+                        return {}
+                    data = r.json()
+            except Exception as e:  # noqa: BLE001
+                log.info("NGS direct API unreachable (%s); using pbp fallback", e)
+                return {}
+            for item in (data.get("stats") or data.get("data") or []):
+                team = item.get("teamId") or item.get("team")
+                cpoe = item.get("completionPercentageAboveExpectation") or item.get("cpoe")
+                if team and cpoe is not None:
+                    out.setdefault(team, []).append(float(cpoe))
+        return {t: sum(vs) / len(vs) for t, vs in out.items() if vs}
+
+    def _team_cpoe_from_pbp(self, seasons: list[int]) -> dict[str, float]:
+        """Roll up team CPOE from nfl_data_py pbp data.
+
+        nflfastR's pbp dataset exposes a per-play ``cpoe`` column (the same
+        metric NFL Next Gen Stats publishes). Grouping by ``posteam`` gives
+        team-season CPOE in pp.
+        """
+        cache_key = "-".join(str(s) for s in seasons)
+        cache_path = CACHE_DIR / f"nfl_cpoe_{cache_key}.json"
+        if cache_path.exists():
+            age = datetime.now().timestamp() - cache_path.stat().st_mtime
+            if age < 86400:
+                try:
+                    with open(cache_path) as f:
+                        return {k: float(v) for k, v in json.load(f).items()}
+                except Exception:
+                    pass
+        try:
+            import nfl_data_py as nfl  # type: ignore
+        except Exception:
+            return {}
+        try:
+            pbp = nfl.import_pbp_data(seasons, downcast=True, columns=["posteam", "cpoe", "pass"])
+        except TypeError:
+            # Older signature without ``columns`` kwarg — fall back.
+            try:
+                pbp = nfl.import_pbp_data(seasons, downcast=True)
+            except Exception as e:  # noqa: BLE001
+                log.warning("import_pbp_data failed for CPOE: %s", e)
+                return {}
+        except Exception as e:  # noqa: BLE001
+            log.warning("import_pbp_data failed for CPOE: %s", e)
+            return {}
+        if pbp is None or len(pbp) == 0 or "cpoe" not in pbp.columns:
+            return {}
+        try:
+            # Mean CPOE for passing plays per team.
+            if "pass" in pbp.columns:
+                pbp = pbp[pbp["pass"] == 1]
+            grouped = pbp.dropna(subset=["cpoe"]).groupby("posteam")["cpoe"].mean()
+        except Exception as e:  # noqa: BLE001
+            log.warning("CPOE groupby failed: %s", e)
+            return {}
+        out: dict[str, float] = {}
+        for team in grouped.index:
+            if isinstance(team, str) and team:
+                out[team] = float(grouped.loc[team])
+        try:
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            with open(cache_path, "w") as f:
+                json.dump(out, f)
+        except Exception:
+            pass
+        return out
+
+    def _team_epa_baseline(self, seasons: list[int]) -> dict[str, dict]:
+        """Reuse the EPA loader from ``NFLNflfastREPA`` for the blend.
+
+        We share the cache file (``nfl_epa_<seasons>.json``) so we don't
+        re-download multi-GB pbp data twice in the same build.
+        """
+        return NFLNflfastREPA(timeout=self.timeout)._load_team_epa(seasons)  # noqa: SLF001
+
+    def _load_schedules(self, seasons: list[int]) -> list[dict] | None:
+        """Mirror of ``NFLNflfastREPA._load_schedules`` — same source."""
+        return NFLNflfastREPA(timeout=self.timeout)._load_schedules(seasons)  # noqa: SLF001

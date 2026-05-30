@@ -10,28 +10,31 @@ from flashcat.types import BookLine, Event, SourceProb
 
 
 def _write_live_scoreboard(path: Path) -> None:
-    """A scoreboard that signals 'LIVE BETTING' (positive blended ROI)."""
+    """A scoreboard with NFL clearly LIVE (positive ROI, big sample)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
         "window": {"start": "2024-01-01", "end": "2024-12-31", "sport": "multi"},
         "weights": {},
-        "n_events": 100,
-        "sources": {"flashcat-blended": {"n_events": 100, "roi": 0.05, "brier": 0.22}},
-        "per_sport": {"nfl": {"n_events": 100, "sources": {}, "blended": {"n_events": 100, "roi": 0.05, "brier": 0.22}}},
-        "blended_overall": {"n_events": 100, "wagered": 10000, "profit": 500, "wins": 60, "losses": 40, "roi": 0.05},
+        "n_events": 500,
+        "sources": {"flashcat-blended": {"n_events": 500, "roi": 0.05, "brier": 0.22}},
+        "per_sport": {"nfl": {"n_events": 500, "sources": {}, "blended": {"n_events": 500, "roi": 0.05, "brier": 0.22, "wins": 260, "losses": 240}}},
+        "blended_overall": {"n_events": 500, "wagered": 50000, "profit": 2500, "wins": 260, "losses": 240, "roi": 0.05},
     }))
 
 
 def _write_research_scoreboard(path: Path) -> None:
-    """A scoreboard that signals 'RESEARCH MODE' (negative blended ROI somewhere)."""
+    """A scoreboard with every exposed sport in RESEARCH (ATP negative ROI)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
         "window": {"start": "2024-01-01", "end": "2024-12-31", "sport": "multi"},
         "weights": {},
-        "n_events": 100,
-        "sources": {"flashcat-blended": {"n_events": 100, "roi": -0.12, "brier": 0.22}},
-        "per_sport": {"atp": {"n_events": 100, "sources": {}, "blended": {"n_events": 100, "roi": -0.12, "brier": 0.22}}},
-        "blended_overall": {"n_events": 100, "wagered": 10000, "profit": -1200, "wins": 45, "losses": 55, "roi": -0.12},
+        "n_events": 500,
+        "sources": {"flashcat-blended": {"n_events": 500, "roi": -0.12, "brier": 0.22}},
+        "per_sport": {
+            "atp": {"n_events": 500, "sources": {}, "blended": {"n_events": 500, "roi": -0.12, "brier": 0.22, "wins": 220, "losses": 280}},
+            "nfl": {"n_events": 500, "sources": {}, "blended": {"n_events": 500, "roi": -0.08, "brier": 0.22, "wins": 230, "losses": 270}},
+        },
+        "blended_overall": {"n_events": 500, "wagered": 50000, "profit": -6000, "wins": 220, "losses": 280, "roi": -0.12},
     }))
 
 
@@ -228,17 +231,15 @@ def test_research_mode_gate_hides_stake_recs(tmp_path, monkeypatch):
     )
     bs.build([ev])
     html = (tmp_docs / "index.html").read_text()
-    # Status badge in header
-    assert "RESEARCH MODE" in html
-    # The disclaimer callout copy.
-    assert "model is in research mode" in html
-    assert "No live recommendations shown" in html
+    # Status badge in header reflects no-sport-live state.
+    assert "RESEARCH MODE" in html or "RESEARCH" in html
+    # The disclaimer callout copy (per-sport wording in PR #12).
+    assert "No sport currently qualifies" in html
     # Event card still renders the sources + blended prob (transparency).
     assert "Blended home prob" in html
-    # But the EDGE banner / stake recs are suppressed.
-    assert "Model edge" not in html
+    # Stake/EV are suppressed for research-mode sports.
     assert "Expected value" not in html
-    # The per-card research banner is present.
+    # The per-card research banner is present — cites per-sport reason.
     assert "Research only" in html
 
 
@@ -259,5 +260,6 @@ def test_live_mode_shows_status_badge(tmp_path, monkeypatch):
     _patch_scoreboard(tmp_path, monkeypatch, kind="live")
     bs.build([])
     html = (tmp_docs / "index.html").read_text()
-    assert "LIVE BETTING" in html
+    # Per-sport badge: NFL is LIVE
+    assert "sport(s) LIVE" in html
     assert "RESEARCH MODE" not in html

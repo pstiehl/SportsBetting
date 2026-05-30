@@ -36,6 +36,9 @@ from .config import (
     bankroll,
     edge_threshold,
     ensure_dirs,
+    live_marginal_roi_ceiling,
+    live_min_bets,
+    live_roi_floor,
     stake_mode,
 )
 from .explain import explain_event
@@ -97,22 +100,22 @@ def _slugify(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "event"
 
 
-def _per_sport_roi(scoreboard: dict | None = None) -> dict[str, float | None]:
-    """Return ``{sport: blended_roi}`` from the scoreboard, or ``{}`` if absent.
+def _load_scoreboard(scoreboard: dict | None = None) -> dict:
+    if scoreboard is not None:
+        return scoreboard
+    if SOURCE_SCOREBOARD_PATH.exists():
+        try:
+            with open(SOURCE_SCOREBOARD_PATH) as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
 
-    Used by the grouped scoreboard to push picks for sports with negative
-    blended ROI into the RESEARCH-MODE bucket instead of RECOMMENDED.
-    """
-    if scoreboard is None:
-        if SOURCE_SCOREBOARD_PATH.exists():
-            try:
-                with open(SOURCE_SCOREBOARD_PATH) as f:
-                    scoreboard = json.load(f)
-            except Exception:
-                scoreboard = {}
-        else:
-            scoreboard = {}
-    per_sport = (scoreboard or {}).get("per_sport") if isinstance(scoreboard, dict) else None
+
+def _per_sport_roi(scoreboard: dict | None = None) -> dict[str, float | None]:
+    """Return ``{sport: blended_roi}`` from the scoreboard, or ``{}`` if absent."""
+    sb = _load_scoreboard(scoreboard)
+    per_sport = sb.get("per_sport") if isinstance(sb, dict) else None
     if not isinstance(per_sport, dict):
         return {}
     out: dict[str, float | None] = {}
@@ -122,18 +125,128 @@ def _per_sport_roi(scoreboard: dict | None = None) -> dict[str, float | None]:
     return out
 
 
+def resolve_sport_modes(scoreboard: dict | None = None) -> dict[str, dict]:
+    """Per-sport LIVE / marginal-LIVE / RESEARCH classification.
+
+    Returns ``{sport: {mode, roi, n_bets, brier, reason, badge_label,
+    badge_cls, marginal}}``. A sport is LIVE iff:
+
+    * blended ROI >= ``live_roi_floor`` (default +1%), AND
+    * scored bets >= ``live_min_bets`` (default 200).
+
+    Sports in ``[floor, marginal_ceiling)`` are LIVE but flagged ``marginal``
+    so the UI can tint them yellow. Everything else is RESEARCH.
+
+    Preserves Phil's original guarantee: no negative-ROI sport ever shows
+    a $ stake. The only change vs the pre-PR-12 site-wide gate is that
+    POSITIVE-ROI sports can go LIVE independently of other sports.
+    """
+    sb = _load_scoreboard(scoreboard)
+    per_sport = sb.get("per_sport") if isinstance(sb, dict) else None
+    if not isinstance(per_sport, dict):
+        return {}
+
+    floor = live_roi_floor()
+    marginal_ceiling = live_marginal_roi_ceiling()
+    min_bets = live_min_bets()
+
+    out: dict[str, dict] = {}
+    for sport, p in per_sport.items():
+        bm = (p or {}).get("blended") or {}
+        roi = bm.get("roi")
+        wins = int(bm.get("wins", 0) or 0)
+        losses = int(bm.get("losses", 0) or 0)
+        n_wagered_bets = wins + losses
+        # "Scored bets" is sample size for the ROI / win-rate estimate. We
+        # prefer wins+losses (bets actually placed and graded) but fall back
+        # to blended.n_events (graded probabilistic predictions) when the
+        # connector wins/losses tally is missing or low — keeps sports with
+        # heavy edge-gating (NFL: ~640 graded games but only ~125 bets) from
+        # being unfairly forced into RESEARCH on sample-size grounds.
+        n_events_blended = int(bm.get("n_events", 0) or 0)
+        n_bets = max(n_wagered_bets, n_events_blended)
+        brier = bm.get("brier")
+
+        if roi is None or n_bets == 0:
+            reason = "insufficient backtest — no scored bets"
+            mode, marginal = "research", False
+        elif n_bets < min_bets:
+            reason = f"only {n_bets} scored bets (need {min_bets})"
+            mode, marginal = "research", False
+        elif roi < floor:
+            reason = f"blended ROI {roi*100:+.1f}% below +{floor*100:.1f}% floor"
+            mode, marginal = "research", False
+        elif roi < marginal_ceiling:
+            reason = (
+                f"marginal LIVE — ROI {roi*100:+.1f}% in "
+                f"[+{floor*100:.1f}%, +{marginal_ceiling*100:.1f}%)"
+            )
+            mode, marginal = "live", True
+        else:
+            reason = f"LIVE — ROI {roi*100:+.1f}%, {n_bets} scored bets"
+            mode, marginal = "live", False
+
+        if mode == "live":
+            if marginal:
+                badge_label = "🟡 LIVE (marginal)"
+                badge_cls = "live-marginal"
+            else:
+                badge_label = "🟢 LIVE"
+                badge_cls = "live"
+        else:
+            badge_label = "🔍 RESEARCH"
+            badge_cls = "research"
+
+        roi_str = f"{roi*100:+.1f}%" if roi is not None else "n/a"
+        out[sport] = {
+            "sport": sport,
+            "mode": mode,
+            "marginal": marginal,
+            "roi": roi,
+            "roi_str": roi_str,
+            "n_bets": n_bets,
+            "n_wagered_bets": n_wagered_bets,
+            "brier": brier,
+            "reason": reason,
+            "badge_label": badge_label,
+            "badge_cls": badge_cls,
+            "floor": floor,
+            "min_bets": min_bets,
+        }
+    return out
+
+
+def _site_status_summary(sport_modes: dict[str, dict]) -> dict:
+    """Aggregate per-sport modes into the site header badge + summary text."""
+    n_live = sum(1 for m in sport_modes.values() if m["mode"] == "live")
+    n_marginal = sum(1 for m in sport_modes.values() if m["mode"] == "live" and m["marginal"])
+    n_research = sum(1 for m in sport_modes.values() if m["mode"] == "research")
+    any_live = n_live > 0
+    if any_live:
+        badge_label = f"🟢 {n_live} sport(s) LIVE · 🔍 {n_research} RESEARCH"
+        badge_cls = "live"
+    else:
+        badge_label = f"🔍 {n_research} sport(s) RESEARCH — no live picks"
+        badge_cls = "research"
+    return {
+        "badge_label": badge_label,
+        "badge_cls": badge_cls,
+        "n_live": n_live,
+        "n_marginal": n_marginal,
+        "n_research": n_research,
+        "any_live": any_live,
+    }
+
+
 def _group_by_pick_quality(
     views: list[dict],
-    rm: dict,
-    per_sport_roi: dict[str, float | None],
+    sport_modes: dict[str, dict],
     edge_min: float,
 ) -> dict[str, list[dict]]:
-    """Bucket views into RECOMMENDED / RESEARCH / NO-EDGE.
+    """Bucket views into RECOMMENDED / RESEARCH / NO-EDGE using per-sport modes.
 
-    - RECOMMENDED: edge clears the threshold AND per-sport ROI > 0 (and the
-      site isn't globally in research mode).
-    - RESEARCH: edge clears the threshold but per-sport ROI is ≤0 (or the
-      site is research-mode overall).
+    - RECOMMENDED: edge clears the threshold AND the event's sport is LIVE.
+    - RESEARCH: edge clears the threshold but the event's sport is RESEARCH.
     - NO-EDGE: edge below threshold (coin-flip / market-aligned).
     """
     recommended: list[dict] = []
@@ -148,12 +261,11 @@ def _group_by_pick_quality(
             no_edge.append(v)
             continue
         sport = v.get("sport")
-        sport_roi = per_sport_roi.get(sport)
-        sport_positive = sport_roi is not None and sport_roi > 0
-        if rm["research_mode"] or not sport_positive:
-            research.append(v)
-        else:
+        sport_mode = (sport_modes.get(sport) or {}).get("mode")
+        if sport_mode == "live":
             recommended.append(v)
+        else:
+            research.append(v)
     recommended.sort(key=lambda v: (v["edge_value"], v["recommended_stake"]), reverse=True)
     research.sort(key=lambda v: v["edge_value"], reverse=True)
     no_edge.sort(key=lambda v: v.get("commence_iso") or "")
@@ -161,76 +273,79 @@ def _group_by_pick_quality(
 
 
 def _research_mode_state(scoreboard: dict | None = None) -> dict:
-    """Decide whether the site is LIVE BETTING or RESEARCH MODE.
+    """Site-level summary built from the per-sport mode resolver.
 
-    A site is in research mode when:
-      * the blended backtest ROI is missing or non-positive overall, OR
-      * ANY individual sport's blended ROI is negative.
+    Backward-compatible shim retained for the layout header and the
+    regression tests in ``tests/test_research_mode_gate.py``:
 
-    Phil's rule (2026-05-29): *"I am not putting any model on these games
-    when the model backtest is -12%."* Until every sport we expose has a
-    blended backtest ROI ≥ 0, the entire site is research-only.
-
-    Returns dict with keys: ``research_mode`` (bool), ``roi`` (float|None),
-    ``roi_str`` (str), and ``badge_label``/``badge_cls``.
+    * ``research_mode=True`` when NO exposed sport qualifies for LIVE
+      (i.e. ``resolve_sport_modes`` returned zero live sports). This
+      preserves Phil's original guarantee that the site never shows
+      $ stakes when no sport has cleared the bar — but now individual
+      LIVE sports light up independently of the worst-performing one.
+    * ``reason`` cites the worst per-sport ROI when applicable, so
+      callers (and the existing regression tests) can introspect why.
     """
-    if scoreboard is None:
-        if SOURCE_SCOREBOARD_PATH.exists():
-            try:
-                with open(SOURCE_SCOREBOARD_PATH) as f:
-                    scoreboard = json.load(f)
-            except Exception:
-                scoreboard = {}
-        else:
-            scoreboard = {}
-    sources = (scoreboard or {}).get("sources", {}) if isinstance(scoreboard, dict) else {}
+    sb = _load_scoreboard(scoreboard)
+    sources = sb.get("sources", {}) if isinstance(sb, dict) else {}
     fc = sources.get("flashcat-blended", {}) if isinstance(sources, dict) else {}
-    blended_overall = (scoreboard or {}).get("blended_overall") if isinstance(scoreboard, dict) else None
-    per_sport = (scoreboard or {}).get("per_sport") if isinstance(scoreboard, dict) else None
+    blended_overall = sb.get("blended_overall") if isinstance(sb, dict) else None
+    per_sport = sb.get("per_sport") if isinstance(sb, dict) else None
+
     roi = None
     if isinstance(blended_overall, dict) and blended_overall.get("roi") is not None:
         roi = blended_overall["roi"]
     elif isinstance(fc, dict) and fc.get("roi") is not None:
         roi = fc["roi"]
 
-    # Aggregate research-mode triggers.
-    research = False
+    sport_modes = resolve_sport_modes(sb)
+    n_live = sum(1 for m in sport_modes.values() if m["mode"] == "live")
+    n_research = sum(1 for m in sport_modes.values() if m["mode"] == "research")
+    any_live = n_live > 0
+
+    # Build a human reason that calls out the worst-performing sport when
+    # nothing is live — mirrors the pre-PR-12 behavior the gate test pins.
     reason = None
-    if roi is None:
-        research, reason = True, "no backtest ROI available"
-    elif roi <= 0:
-        research, reason = True, f"overall ROI {roi*100:+.1f}%"
-    elif isinstance(per_sport, dict):
-        worst_sport = None
-        worst_roi = None
-        for sport, p in per_sport.items():
-            bm = (p or {}).get("blended") or {}
-            sport_roi = bm.get("roi")
-            if sport_roi is None:
-                continue
-            if worst_roi is None or sport_roi < worst_roi:
-                worst_roi = sport_roi
-                worst_sport = sport
-        if worst_roi is not None and worst_roi < 0:
-            research, reason = True, f"{worst_sport.upper()} blended ROI {worst_roi*100:+.1f}%"
+    if not any_live:
+        if roi is None:
+            reason = "no backtest ROI available"
+        elif isinstance(per_sport, dict):
+            worst_sport = None
+            worst_roi = None
+            for sport, p in per_sport.items():
+                bm = (p or {}).get("blended") or {}
+                sport_roi = bm.get("roi")
+                if sport_roi is None:
+                    continue
+                if worst_roi is None or sport_roi < worst_roi:
+                    worst_roi = sport_roi
+                    worst_sport = sport
+            if worst_roi is not None and worst_roi < 0 and worst_sport is not None:
+                reason = f"{worst_sport.upper()} blended ROI {worst_roi*100:+.1f}%"
+            elif roi is not None and roi <= 0:
+                reason = f"overall ROI {roi*100:+.1f}%"
+            else:
+                reason = "no sport cleared LIVE thresholds"
+        elif roi is not None and roi <= 0:
+            reason = f"overall ROI {roi*100:+.1f}%"
 
     roi_str = f"{roi*100:+.1f}%" if roi is not None else "n/a"
-    if research:
-        return {
-            "research_mode": True,
-            "roi": roi,
-            "roi_str": roi_str,
-            "reason": reason,
-            "badge_label": "🟡 RESEARCH MODE",
-            "badge_cls": "research",
-        }
+    if any_live:
+        badge_label = f"🟢 {n_live} sport(s) LIVE · 🔍 {n_research} RESEARCH"
+        badge_cls = "live"
+    else:
+        badge_label = "🔍 RESEARCH MODE"
+        badge_cls = "research"
     return {
-        "research_mode": False,
+        "research_mode": not any_live,
         "roi": roi,
         "roi_str": roi_str,
-        "reason": None,
-        "badge_label": "🟢 LIVE BETTING",
-        "badge_cls": "live",
+        "reason": reason,
+        "badge_label": badge_label,
+        "badge_cls": badge_cls,
+        "sport_modes": sport_modes,
+        "n_live": n_live,
+        "n_research": n_research,
     }
 
 
@@ -310,7 +425,7 @@ def _stake_decision_for(ev: Event) -> StakeDecision | None:
     )
 
 
-def _event_view(ev: Event, weights: dict[str, float]) -> dict:
+def _event_view(ev: Event, weights: dict[str, float], sport_modes: dict[str, dict] | None = None) -> dict:
     market_p = _market_devigged_home_prob(ev)
     price = _pick_price(ev)
     badges = _badge_blocks(ev.signals)
@@ -319,6 +434,16 @@ def _event_view(ev: Event, weights: dict[str, float]) -> dict:
     bk = bankroll()
     mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
     threshold_pp = edge_threshold() * 100
+
+    sport_modes = sport_modes or {}
+    sport_mode_info = sport_modes.get(ev.sport) or {}
+    sport_mode = sport_mode_info.get("mode", "research")
+    sport_marginal = bool(sport_mode_info.get("marginal"))
+    sport_roi_str = sport_mode_info.get("roi_str", "n/a")
+    sport_roi = sport_mode_info.get("roi")
+    sport_n_bets = sport_mode_info.get("n_bets")
+    sport_badge_label = sport_mode_info.get("badge_label", "🔍 RESEARCH")
+    sport_badge_cls = sport_mode_info.get("badge_cls", "research")
 
     if decision is None:
         stake_value = 0.0
@@ -351,11 +476,56 @@ def _event_view(ev: Event, weights: dict[str, float]) -> dict:
         is_recommended = stake_value > 0
 
     rationale = explain_event(ev, top_n=3)
+    # Per-sport mode applied here — RESEARCH-mode sports never carry a $ stake
+    # on their card even if the decision said is_recommended. This preserves
+    # Phil's gate: no negative-ROI (or undersampled) sport ever shows stake.
+    sport_research_only = sport_mode != "live"
+    if sport_research_only:
+        recommended_stake_value = 0.0
+        if sport_roi is not None:
+            floor = sport_mode_info.get("floor", live_roi_floor())
+            gap_pp = (floor - sport_roi) * 100
+            if sport_roi < 0:
+                recommended_stake_str_view = (
+                    f"🔍 Research only — {ev.sport.upper()} backtest "
+                    f"{sport_roi_str}, needs +{floor*100:.1f}% to go live"
+                )
+            else:
+                recommended_stake_str_view = (
+                    f"🔍 Research only — {ev.sport.upper()} backtest "
+                    f"{sport_roi_str}, needs +{gap_pp:.1f}pp more to go live"
+                )
+        else:
+            recommended_stake_str_view = (
+                f"🔍 Research only — {ev.sport.upper()} sample too small"
+            )
+        ev_at_stake_view = None
+        ev_at_stake_str_view = "—"
+        is_recommended_view = False
+        edge_str_view = edge_str
+        edge_cls_view = edge_cls
+        edge_value_view = edge_value
+    else:
+        recommended_stake_value = stake_value
+        recommended_stake_str_view = recommended_stake_str
+        ev_at_stake_view = ev_at_stake
+        ev_at_stake_str_view = ev_at_stake_str
+        is_recommended_view = is_recommended
+        edge_str_view = edge_str
+        edge_cls_view = edge_cls
+        edge_value_view = edge_value
     return {
         "raw": ev,
         "slug": _slugify(f"{ev.commence_time.strftime('%Y-%m-%d')}-{ev.away}-at-{ev.home}-{ev.event_id[-6:]}"),
         "sport_upper": ev.sport.upper(),
         "sport": ev.sport,
+        "sport_mode": sport_mode,
+        "sport_mode_marginal": sport_marginal,
+        "sport_mode_label": sport_badge_label,
+        "sport_mode_cls": sport_badge_cls,
+        "sport_mode_roi_str": sport_roi_str,
+        "sport_mode_n_bets": sport_n_bets,
+        "sport_research_only": sport_research_only,
         "commence_str": ev.commence_time.strftime("%a %b %d · %H:%M UTC"),
         "commence_iso": ev.commence_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "n_sources": len(ev.source_probs),
@@ -363,14 +533,14 @@ def _event_view(ev: Event, weights: dict[str, float]) -> dict:
         "pick_prob": ev.pick_prob or 0.0,
         "pick_price_str": _american_str(price) if price is not None else "—",
         "pick_price": price,
-        "edge_value": edge_value,
-        "edge_str": edge_str,
-        "edge_cls": edge_cls,
-        "recommended_stake": stake_value,
-        "recommended_stake_str": recommended_stake_str,
-        "ev_at_stake": ev_at_stake,
-        "ev_at_stake_str": ev_at_stake_str,
-        "is_recommended": is_recommended,
+        "edge_value": edge_value_view,
+        "edge_str": edge_str_view,
+        "edge_cls": edge_cls_view,
+        "recommended_stake": recommended_stake_value,
+        "recommended_stake_str": recommended_stake_str_view,
+        "ev_at_stake": ev_at_stake_view,
+        "ev_at_stake_str": ev_at_stake_str_view,
+        "is_recommended": is_recommended_view,
         "blended_home_prob": ev.blended_home_prob or 0.0,
         "market_home_str": f"{market_p:.1%}" if market_p is not None else "—",
         "badges": badges,
@@ -384,8 +554,8 @@ def _american_str(price: int) -> str:
     return f"{price:+d}"
 
 
-def _build_event_page_view(ev: Event, weights: dict) -> dict:
-    view = _event_view(ev, weights)
+def _build_event_page_view(ev: Event, weights: dict, sport_modes: dict[str, dict] | None = None) -> dict:
+    view = _event_view(ev, weights, sport_modes=sport_modes)
     src_names = [p.source for p in ev.source_probs]
     sport_weights = weights_for_sport(weights, ev.sport)
     w_norm = _resolve_weights(src_names, sport_weights) if src_names else {}
@@ -500,42 +670,42 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
     # Render every live event, including those without a market line yet —
     # users want to see today's slate even when lines haven't published.
     rm = _research_mode_state()
-    views = [_event_view(ev, weights) for ev in events]
-    if rm["research_mode"]:
-        # Suppress stake / EV / EDGE banner. Cards still render with sources
-        # and the blended prob — Phil sees provenance, not stake recs.
-        for v in views:
-            v["is_recommended"] = False
-            v["recommended_stake"] = 0.0
-            v["recommended_stake_str"] = "Research only — backtest ROI not yet positive."
-            v["ev_at_stake"] = None
-            v["ev_at_stake_str"] = "—"
-            v["edge_str"] = "—"
-            v["edge_cls"] = ""
-            v["edge_value"] = None
+    sport_modes = rm.get("sport_modes") or resolve_sport_modes()
+    views = [_event_view(ev, weights, sport_modes=sport_modes) for ev in events]
+
     # Pickable events are the subset where we'd actually place a bet.
     pickable = [v for v in views if v["pick_label"] != "—"]
     n_signals = sum(1 for v in pickable if v["badges"])
     n_chalk = sum(1 for v in pickable if any(b["cls"] == "chalk" for b in v["badges"]))
 
-    # Per-sport ROI gate — used to decide RECOMMENDED vs RESEARCH-MODE
-    # buckets in the grouped scoreboard. A sport's blended ROI being
-    # negative means picks for that sport go in the research bucket.
-    per_sport_roi = _per_sport_roi()
     edge_min = edge_threshold()
 
-    # Top recommended plays: positive recommended stake, sorted by edge desc.
-    # Suppressed entirely when in research mode.
-    if rm["research_mode"]:
-        recs = []
-    else:
-        recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
-        recs.sort(key=lambda v: v["edge_value"], reverse=True)
+    # Top recommended plays: positive recommended stake on a LIVE-sport card,
+    # sorted by edge desc. Per-sport mode is applied inside _event_view, so
+    # is_recommended already reflects whether the card carries a stake.
+    recs = [v for v in views if v.get("is_recommended") and v.get("edge_value") is not None]
+    recs.sort(key=lambda v: v["edge_value"], reverse=True)
     top_recs = recs[:5]
     total_recommended_stake = sum(v["recommended_stake"] for v in recs)
     mode_label = STAKE_MODE_LABELS.get(stake_mode(), stake_mode())
 
-    grouped = _group_by_pick_quality(views, rm, per_sport_roi, edge_min)
+    grouped = _group_by_pick_quality(views, sport_modes, edge_min)
+
+    # Per-sport summary table for the headline tile.
+    sport_summary_rows = []
+    for sport in sorted(sport_modes.keys()):
+        m = sport_modes[sport]
+        sport_summary_rows.append({
+            "sport": sport,
+            "sport_upper": sport.upper(),
+            "mode": m["mode"],
+            "marginal": m["marginal"],
+            "badge_label": m["badge_label"],
+            "badge_cls": m["badge_cls"],
+            "roi_str": m["roi_str"],
+            "n_bets": m["n_bets"],
+            "reason": m["reason"],
+        })
 
     content = env.get_template("index.html").render(
         events=views,
@@ -552,6 +722,11 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
         edge_threshold_pp=f"{edge_threshold()*100:.1f}",
         research_mode=rm["research_mode"],
         backtest_roi_str=rm["roi_str"],
+        sport_summary_rows=sport_summary_rows,
+        n_sports_live=rm.get("n_live", 0),
+        n_sports_research=rm.get("n_research", 0),
+        live_roi_floor_pp=f"{live_roi_floor()*100:.1f}",
+        live_min_bets=live_min_bets(),
         grouped_recommended=grouped["recommended"],
         grouped_research=grouped["research"],
         grouped_no_edge=grouped["no_edge"],
@@ -565,10 +740,11 @@ def render_index(env: Environment, events: list[Event], weights: dict[str, float
 def render_event_pages(env: Environment, events: list[Event], weights: dict[str, float]) -> None:
     template = env.get_template("event.html")
     ensure_dirs()
+    sport_modes = resolve_sport_modes()
     for ev in events:
         # Render a page for every event — even ones we don't bet on, so the
         # slate-card click-throughs always resolve.
-        view = _build_event_page_view(ev, weights)
+        view = _build_event_page_view(ev, weights, sport_modes=sport_modes)
         content = template.render(ev=view)
         full = _layout(env, f"{view['away']} @ {view['home']}", "home", content, asset_root="../")
         (EVENT_PAGES_DIR / f"{view['slug']}.html").write_text(full)
