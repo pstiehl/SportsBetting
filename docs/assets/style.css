@@ -252,3 +252,33 @@ tr.acc-bottom td:first-child { border-left: 3px solid #ef4444; }
 .inline-chip.acc-top { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
 .inline-chip.acc-mid { background: rgba(245, 158, 11, 0.16); color: #f59e0b; }
 .inline-chip.acc-bottom { background: rgba(239, 68, 68, 0.16); color: #ef4444; }
+
+/* Backtest profitability headline (PR-19 blender-de-dilute). */
+.backtest-profitability {
+  margin: 18px 0 28px; padding: 16px 20px; border-radius: 10px;
+  background: #16181d; border: 1px solid #2a2d36;
+}
+.backtest-profitability h2 { margin: 0 0 4px; font-size: 22px; }
+.backtest-profitability .lede { color: #8b8d96; font-size: 13px; margin: 0 0 12px; }
+.flat-stake-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.flat-stake-table th, .flat-stake-table td {
+  padding: 8px 12px; border-bottom: 1px solid #2a2d36;
+}
+.flat-stake-table th {
+  color: #8b8d96; font-weight: 600; font-size: 11px;
+  letter-spacing: 0.04em; text-transform: uppercase; text-align: left;
+}
+.flat-stake-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.flat-stake-table td.pos { color: #22c55e; font-weight: 600; }
+.flat-stake-table td.neg { color: #ef4444; font-weight: 600; }
+.flat-stake-table tr.mode-live td:first-child { border-left: 3px solid #22c55e; padding-left: 9px; }
+.flat-stake-table tr.mode-live-marginal td:first-child { border-left: 3px solid #fbbf24; padding-left: 9px; }
+.flat-stake-table tr.mode-research td:first-child { border-left: 3px solid #6b7280; padding-left: 9px; }
+.flat-stake-table tr.flat-stake-totals td { border-top: 2px solid #3a3d46; padding-top: 12px; }
+.flat-stake-table tr.flat-stake-totals { background: rgba(255, 255, 255, 0.03); }
+.synth-flag {
+  color: #f59e0b; cursor: help; font-size: 11px;
+  border-bottom: 1px dotted #f59e0b;
+}

@@ -60,6 +60,9 @@ def test_v2_weights_load_with_per_sport_breakdown(tmp_path, monkeypatch):
     }))
     monkeypatch.setattr(cfg, "SOURCE_WEIGHTS_PATH", weights_path)
     monkeypatch.setattr("flashcat.model.blend.SOURCE_WEIGHTS_PATH", weights_path)
+    # Disable the on-disk source_history overlay so the test sees ONLY the
+    # sources defined in the synthetic scoreboard above.
+    monkeypatch.setattr(rw, "_overlay_source_history_for_reweight", lambda x: x)
 
     payload = rw.update_weights(scoreboard_path=scoreboard, mode="brier")
     assert payload["schema"] == "v2"
@@ -82,12 +85,15 @@ def test_hybrid_mode_blends_brier_and_roi(tmp_path, monkeypatch):
 
     scoreboard = tmp_path / "sb.json"
     weights_path = tmp_path / "w.json"
+    # Both ROIs sit ABOVE the de-dilution PR's roi_floor (-1%) so this test
+    # isolates the softmax-mode ordering, not the exclusion filter (which
+    # has its own dedicated tests below).
     scoreboard.write_text(json.dumps({
         "sources": {},
         "per_sport": {
             "nfl": {"sources": {
-                # source A: better brier, worse ROI
-                "src-a": {"n_events": 100, "brier": 0.20, "roi": -0.05},
+                # source A: better brier, worse ROI (still above floor)
+                "src-a": {"n_events": 100, "brier": 0.20, "roi": 0.01},
                 # source B: worse brier, better ROI
                 "src-b": {"n_events": 100, "brier": 0.22, "roi": 0.05},
             }},
@@ -95,6 +101,7 @@ def test_hybrid_mode_blends_brier_and_roi(tmp_path, monkeypatch):
     }))
     monkeypatch.setattr(cfg, "SOURCE_WEIGHTS_PATH", weights_path)
     monkeypatch.setattr("flashcat.model.blend.SOURCE_WEIGHTS_PATH", weights_path)
+    monkeypatch.setattr(rw, "_overlay_source_history_for_reweight", lambda x: x)
 
     p_brier = rw.update_weights(scoreboard_path=scoreboard, mode="brier")
     p_roi = rw.update_weights(scoreboard_path=scoreboard, mode="roi")

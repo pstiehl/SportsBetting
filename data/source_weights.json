@@ -1,72 +1,167 @@
 {
-  "beta": 8.0,
+  "beta": 16.0,
   "by_sport": {
     "atp": {
-      "market-close": 0.2627692295455175,
-      "market-consensus": 0.2627692295455175,
-      "sackmann-atp-elo": 0.24987493317985304,
-      "tennis-rank-bt": 0.224586607729112
+      "market-close": 0.2751210425342415,
+      "market-consensus": 0.2751210425342415,
+      "sackmann-atp-elo": 0.24878269901584116,
+      "tennis-rank-bt": 0.20097521591567596
     },
     "cfb": {
       "cfb-cfbfastr-epa": 1.0
     },
     "mlb": {
-      "fivethirtyeight-mlb-elo": 0.24761116495017602,
-      "fivethirtyeight-mlb-rating": 0.25180838659105537,
-      "mlb-pythagorean": 0.23797207603446005,
-      "mlb-statcast-lineup": 0.2626083724243086
+      "fivethirtyeight-mlb-elo": 0.24493886604945592,
+      "fivethirtyeight-mlb-rating": 0.25331309248523737,
+      "mlb-pythagorean": 0.22623992846422195,
+      "mlb-statcast-lineup": 0.2755081130010848
     },
     "nba": {
-      "fivethirtyeight-nba-elo-modern": 0.32907829453460935,
-      "fivethirtyeight-nba-raptor": 0.3533241069184637,
-      "nba-bref-srs-pace": 0.31759759854692693
+      "fivethirtyeight-nba-elo-modern": 0.3242303919872244,
+      "fivethirtyeight-nba-raptor": 0.37376771484139254,
+      "nba-bref-srs-pace": 0.302001893171383
     },
     "nfl": {
-      "fivethirtyeight-nfl-elo": 0.1424686912665387,
-      "fivethirtyeight-nfl-qbelo": 0.14572530592156827,
-      "market-close": 0.200575378482201,
-      "market-consensus": 0.200575378482201,
-      "nfl-nflfastr-epa": 0.31065524584749105
+      "market-close": 0.2273324147561519,
+      "market-consensus": 0.2273324147561519,
+      "nfl-nflfastr-epa": 0.5453351704876963
     },
     "wta": {
-      "market-close": 0.25780635351641107,
-      "market-consensus": 0.25780635351641107,
-      "sackmann-wta-elo": 0.26404394641460316,
-      "tennis-rank-bt": 0.22034334655257462
+      "market-close": 0.26458789399548105,
+      "market-consensus": 0.26458789399548105,
+      "sackmann-wta-elo": 0.2775461245114003,
+      "tennis-rank-bt": 0.19327808749763759
     }
   },
   "excluded": {
-    "atp": [],
+    "atp": [
+      {
+        "detail": "3 source(s) below ROI floor -0.0100 kept in pool to maintain \u22652 sources for blending",
+        "reason": "min_sources_floor_active",
+        "source": null,
+        "would_exclude": [
+          "tennis-rank-bt",
+          "market-close",
+          "market-consensus"
+        ]
+      }
+    ],
     "cfb": [],
-    "global": [],
+    "global": [
+      {
+        "brier": 0.22422602583228082,
+        "n_bets": 234,
+        "n_events": 329,
+        "reason": "roi=-0.0349 below floor -0.0100",
+        "roi": -0.03491953424810947,
+        "source": "nfl:fivethirtyeight-nfl-elo"
+      },
+      {
+        "brier": 0.21658516122753677,
+        "n_bets": 234,
+        "n_events": 329,
+        "reason": "roi=-0.0446 below floor -0.0100",
+        "roi": -0.04455098393804515,
+        "source": "nfl:fivethirtyeight-nfl-qbelo"
+      },
+      {
+        "brier": 0.223880522734342,
+        "n_bets": 5144,
+        "n_events": 5151,
+        "reason": "roi=-0.0243 below floor -0.0100",
+        "roi": -0.024250665934469905,
+        "source": "atp:tennis-rank-bt"
+      },
+      {
+        "brier": 0.1983744064139823,
+        "n_bets": 5148,
+        "n_events": 5148,
+        "reason": "roi=-0.0360 below floor -0.0100",
+        "roi": -0.03600920370738009,
+        "source": "atp:market-close"
+      },
+      {
+        "brier": 0.1983744064139823,
+        "n_bets": 5148,
+        "n_events": 5148,
+        "reason": "roi=-0.0360 below floor -0.0100",
+        "roi": -0.03600920370738009,
+        "source": "atp:market-consensus"
+      },
+      {
+        "brier": 0.2250848951873079,
+        "n_bets": 4625,
+        "n_events": 4631,
+        "reason": "roi=-0.0441 below floor -0.0100",
+        "roi": -0.044125727706080906,
+        "source": "wta:tennis-rank-bt"
+      },
+      {
+        "brier": 0.2015331266765654,
+        "n_bets": 4637,
+        "n_events": 4637,
+        "reason": "roi=-0.0520 below floor -0.0100",
+        "roi": -0.05197382987453301,
+        "source": "wta:market-close"
+      },
+      {
+        "brier": 0.2015331266765654,
+        "n_bets": 4637,
+        "n_events": 4637,
+        "reason": "roi=-0.0520 below floor -0.0100",
+        "roi": -0.05197382987453301,
+        "source": "wta:market-consensus"
+      }
+    ],
     "mlb": [],
     "nba": [],
-    "nfl": [],
+    "nfl": [
+      {
+        "brier": 0.22422602583228082,
+        "n_bets": 234,
+        "n_events": 329,
+        "reason": "roi=-0.0349 below floor -0.0100",
+        "roi": -0.03491953424810947,
+        "source": "fivethirtyeight-nfl-elo"
+      },
+      {
+        "brier": 0.21658516122753677,
+        "n_bets": 234,
+        "n_events": 329,
+        "reason": "roi=-0.0446 below floor -0.0100",
+        "roi": -0.04455098393804515,
+        "source": "fivethirtyeight-nfl-qbelo"
+      }
+    ],
     "pga": [],
-    "wta": []
+    "wta": [
+      {
+        "detail": "3 source(s) below ROI floor -0.0100 kept in pool to maintain \u22652 sources for blending",
+        "reason": "min_sources_floor_active",
+        "source": null,
+        "would_exclude": [
+          "tennis-rank-bt",
+          "market-close",
+          "market-consensus"
+        ]
+      }
+    ]
   },
   "global": {
-    "atp:market-close": 0.05315416978336018,
-    "atp:market-consensus": 0.05315416978336018,
-    "atp:sackmann-atp-elo": 0.05054585213732937,
-    "atp:tennis-rank-bt": 0.04543041321447515,
-    "cfb:cfb-cfbfastr-epa": 0.07406737837943998,
-    "mlb:fivethirtyeight-mlb-elo": 0.04338720607367526,
-    "mlb:fivethirtyeight-mlb-rating": 0.0441226564331385,
-    "mlb:mlb-pythagorean": 0.04169821463731252,
-    "nba:fivethirtyeight-nba-elo-modern": 0.04876745085890795,
-    "nba:fivethirtyeight-nba-raptor": 0.05236053640603012,
-    "nfl:fivethirtyeight-nfl-elo": 0.043412276827841496,
-    "nfl:fivethirtyeight-nfl-qbelo": 0.04440461455249465,
-    "nfl:market-close": 0.06111822729688743,
-    "nfl:market-consensus": 0.06111822729688743,
-    "nfl:nfl-nflfastr-epa": 0.09466115966153979,
-    "wta:market-close": 0.048621620005229495,
-    "wta:market-consensus": 0.048621620005229495,
-    "wta:sackmann-wta-elo": 0.04979801409911636,
-    "wta:tennis-rank-bt": 0.04155619254774454
+    "atp:sackmann-atp-elo": 0.06787644664339666,
+    "cfb:cfb-cfbfastr-epa": 0.14574779720900402,
+    "mlb:fivethirtyeight-mlb-elo": 0.05001167758774234,
+    "mlb:fivethirtyeight-mlb-rating": 0.05172152918993146,
+    "mlb:mlb-pythagorean": 0.046193723937392635,
+    "nba:fivethirtyeight-nba-elo-modern": 0.06318415236117178,
+    "nba:fivethirtyeight-nba-raptor": 0.07283770067784423,
+    "nfl:market-close": 0.09924063903116963,
+    "nfl:market-consensus": 0.09924063903116963,
+    "nfl:nfl-nflfastr-epa": 0.23806288629548059,
+    "wta:sackmann-wta-elo": 0.06588280803569703
   },
   "lambda": 0.5,
+  "min_bets_for_exclusion": 50,
   "min_events": {
     "atp": 50,
     "cfb": 50,
@@ -78,5 +173,6 @@
     "wta": 50
   },
   "mode": "brier_roi_hybrid",
+  "roi_floor": -0.01,
   "schema": "v2"
 }

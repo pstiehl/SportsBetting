@@ -15,7 +15,9 @@ from pathlib import Path
 
 import typer
 
+from .backtest.flat_stake import format_flat_stake_table, run_flat_stake_backtest
 from .backtest.runner import run_backtest, run_multi_sport_backtest
+from .backtest.scoreboard_patch import patch_scoreboard
 from .build_site import build as build_site
 from .config import (
     NoLiveDataError,
@@ -262,35 +264,130 @@ def backtest(
 
 @app.command()
 def calibrate() -> None:
-    """Fit per-sport Platt scaling on the latest backtest predictions.
+    """Fit per-sport Platt scaling against the post-exclusion blend.
 
-    Reads ``data/source_scoreboard.json`` (per_sport → blended.calibration_data
-    style) and the blended events' (prob, outcome) pairs to fit
-    σ(α + β · logit(p)). Persists to ``data/calibration.json``.
+    Re-blends ``source_history.db.predictions`` using the *current*
+    ``data/source_weights.json`` (i.e. after the de-dilution PR's exclusion
+    + sharper-β reweighter has run) and fits
+    σ(α + β · logit(p)) on the (post-exclusion blended_prob, outcome)
+    pairs. Persists per-sport coefficients to ``data/calibration.json``.
+
+    Falls back to the legacy scoreboard-rows path when source_history.db is
+    empty or missing.
     """
     import json
-    from .config import SOURCE_SCOREBOARD_PATH
+    from .config import SOURCE_HISTORY_DB_PATH, SOURCE_SCOREBOARD_PATH
+    from .model.blend import load_weights, weights_for_sport
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
-    if not SOURCE_SCOREBOARD_PATH.exists():
-        log.info("No scoreboard yet — skipping calibration.")
-        return
-    with open(SOURCE_SCOREBOARD_PATH) as f:
-        sb = json.load(f)
+
     per_sport: dict[str, dict] = {}
-    for sport, p in (sb.get("per_sport") or {}).items():
-        bm = (p or {}).get("blended") or {}
-        cal = bm.get("calibration_rows") or []
-        if not cal:
-            # Fall back to calibration_bins midpoints × actual hit rate
-            continue
-        fit = fit_platt([(float(prob), bool(y)) for prob, y in cal])
-        if not fit:
-            log.info("%s: calibration not fit (n=%d) — will pass-through", sport, len(cal))
-            continue
-        alpha, beta = fit
-        per_sport[sport] = {"alpha": alpha, "beta": beta, "n": len(cal)}
-        log.info("%s: Platt fit α=%.3f β=%.3f (n=%d)", sport, alpha, beta, len(cal))
+
+    # Preferred path: re-blend predictions out of source_history.db.
+    used_db = False
+    if SOURCE_HISTORY_DB_PATH.exists():
+        try:
+            import sqlite3
+            weights = load_weights()
+            with sqlite3.connect(str(SOURCE_HISTORY_DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                sports = [
+                    r[0]
+                    for r in conn.execute(
+                        "SELECT DISTINCT sport FROM predictions WHERE home_won IS NOT NULL"
+                    ).fetchall()
+                ]
+                for sport in sports:
+                    sw = weights_for_sport(weights, sport)
+                    if not sw:
+                        continue
+                    rows = conn.execute(
+                        "SELECT event_id, source, home_prob, home_won FROM predictions "
+                        "WHERE sport=? AND home_won IS NOT NULL", (sport,),
+                    ).fetchall()
+                    by_event: dict[str, list[dict]] = {}
+                    for r in rows:
+                        if r["source"] not in sw:
+                            continue
+                        by_event.setdefault(r["event_id"], []).append(dict(r))
+                    cal_pairs: list[tuple[float, bool]] = []
+                    for ev_id, rs in by_event.items():
+                        present = {r["source"]: sw[r["source"]] for r in rs}
+                        total = sum(present.values())
+                        if total <= 0:
+                            continue
+                        norm = {k: v / total for k, v in present.items()}
+                        blended = sum(
+                            float(r["home_prob"]) * norm[r["source"]] for r in rs
+                        )
+                        blended = max(0.0, min(1.0, blended))
+                        outcome = bool(rs[0]["home_won"])
+                        cal_pairs.append((blended, outcome))
+                    if not cal_pairs:
+                        continue
+                    used_db = True
+                    fit = fit_platt(cal_pairs)
+                    if not fit:
+                        log.info(
+                            "%s: calibration not fit (n=%d) — will pass-through",
+                            sport, len(cal_pairs),
+                        )
+                        continue
+                    alpha, beta = fit
+                    per_sport[sport] = {
+                        "alpha": alpha, "beta": beta, "n": len(cal_pairs),
+                    }
+                    log.info(
+                        "%s: Platt fit (post-exclusion) α=%.3f β=%.3f (n=%d)",
+                        sport, alpha, beta, len(cal_pairs),
+                    )
+        except Exception as exc:
+            log.warning("calibrate: source_history.db path failed (%s) — falling back", exc)
+
+    # Fallback: legacy scoreboard path (pre-PR-19 behaviour).
+    if not used_db:
+        if not SOURCE_SCOREBOARD_PATH.exists():
+            log.info("No scoreboard yet — skipping calibration.")
+            return
+        with open(SOURCE_SCOREBOARD_PATH) as f:
+            sb = json.load(f)
+        for sport, p in (sb.get("per_sport") or {}).items():
+            if sport in per_sport:
+                continue
+            bm = (p or {}).get("blended") or {}
+            cal = bm.get("calibration_rows") or []
+            if not cal:
+                continue
+            fit = fit_platt([(float(prob), bool(y)) for prob, y in cal])
+            if not fit:
+                log.info("%s: calibration not fit (n=%d) — will pass-through", sport, len(cal))
+                continue
+            alpha, beta = fit
+            per_sport[sport] = {"alpha": alpha, "beta": beta, "n": len(cal)}
+            log.info("%s: Platt fit α=%.3f β=%.3f (n=%d)", sport, alpha, beta, len(cal))
     save_coefficients(per_sport)
+
+
+@app.command("holdout")
+def holdout(
+    output: str = typer.Option(
+        "", help="Optional path to write the table as text (default: stdout only)"
+    ),
+) -> None:
+    """Run walk-forward hold-out validation and print the per-sport table.
+
+    Splits ``data/source_history.db`` into 2022-2023 (training) and 2024
+    (held-out). Fits the de-dilution reweighter on training-window source
+    stats, applies the frozen weights to the held-out predictions, and
+    reports training vs hold-out ROI.
+    """
+    from .model.holdout import format_holdout_table, run_holdout_validation
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    results = run_holdout_validation()
+    table = format_holdout_table(results)
+    typer.echo(table)
+    if output:
+        Path(output).write_text(table + "\n")
+        log.info("Wrote holdout table to %s", output)
 
 
 @app.command()
@@ -311,6 +408,38 @@ def reweight() -> None:
         log.info("Per-sport pool (%s):", sport.upper())
         for k, v in sorted(pool.items(), key=lambda kv: -kv[1]):
             log.info("  %-40s  %6.1f%%", k, v * 100)
+    excluded = (payload.get("excluded") or {})
+    for sport, ex_list in excluded.items():
+        if not ex_list:
+            continue
+        log.info("Excluded from %s pool:", sport.upper())
+        for ex in ex_list:
+            src = ex.get("source") or "(min-sources fallback)"
+            log.info("  %-40s  %s", src, ex.get("reason", ""))
+
+
+@app.command("flat-stake")
+def flat_stake() -> None:
+    """Run the headline flat-$100 backtest and print the per-sport table."""
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    payload = run_flat_stake_backtest()
+    typer.echo(format_flat_stake_table(payload))
+
+
+@app.command("patch-scoreboard")
+def patch_scoreboard_cmd() -> None:
+    """Patch source_scoreboard.json with addendum-10 fixes + flat-stake table.
+
+    Run AFTER reweight (so the in-blend weights reflect the post-exclusion
+    pool) and BEFORE build (so the rendered site sees the patched data).
+    """
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    flat = run_flat_stake_backtest()
+    sb = patch_scoreboard(flat_stake_payload=flat)
+    if not sb:
+        log.info("No scoreboard to patch.")
+        return
+    log.info("Patched source_scoreboard.json.")
 
 
 @app.command()
@@ -320,10 +449,11 @@ def all(
     sport: str = typer.Option("all"),
     days_ahead: int = typer.Option(2),
 ) -> None:
-    """Backtest → reweight → calibrate → build today's slate → render site."""
+    """Backtest → reweight → patch-scoreboard → calibrate → build."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     backtest(start=start, end=end, sport=sport)
     reweight()
+    patch_scoreboard_cmd()
     calibrate()
     build(days_ahead=days_ahead)
 

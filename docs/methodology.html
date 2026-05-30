@@ -15,9 +15,11 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 12:57 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 17:35 UTC</div>
         
-        <div class="site-status research" title="Blended backtest ROI: -0.7%">🟡 RESEARCH MODE &middot; backtest ROI -0.7%</div>
+        <div class="site-status-pills" title="Per-sport blended backtest ROI. Only sports with ROI ≥ floor and sufficient sample size go LIVE.">
+          <span class="mode-pill research" title="blended ROI -15.2% below +2.0% floor">🔍 RESEARCH ATP -15.2%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH CFB n/a</span><span class="mode-pill live-marginal" title="marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)">🟡 LIVE (marginal) MLB +2.8%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH NBA n/a</span><span class="mode-pill live" title="LIVE — ROI +18.3%, 635 scored bets">🟢 LIVE NFL +18.3%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH PGA n/a</span><span class="mode-pill research" title="blended ROI -15.3% below +2.0% floor">🔍 RESEARCH WTA -15.3%</span>
+        </div>
         
       </div>
     </div>
@@ -52,10 +54,21 @@
 <h3>3. Pick rule</h3>
 <p>We bet $100 on whichever side has the higher blended probability. The only exception is the <strong>tie-breaker band</strong>: when <code class="inline">p_blend(home) ∈ [0.48, 0.52]</code>, we bet the underdog by moneyline. This encodes the "favorite is a sucker's bet" hunch — in coin-flip games, the market premium on the slight favorite has historically been overpriced.</p>
 
-<h3>4. Source reweighting</h3>
-<p>After every backtest, each source gets a Brier score <code class="inline">B_s = mean((p_s − y)²)</code>, where <code class="inline">y ∈ {0, 1}</code> is the home-win outcome. New weights are a tempered softmax over <em>negative</em> Brier (so low-Brier sources get more weight):</p>
-<pre>w_s = softmax( −τ × B_s )    where τ = 4.0 by default</pre>
-<p>Sources with fewer than 20 graded events are excluded from reweighting — they keep their prior weight until the sample size is meaningful. Snapshots of every weight update are saved to SQLite (<code class="inline">weight_history</code> table) so we can audit drift.</p>
+<h3>4. Source reweighting (blender de-dilution — PR-19)</h3>
+<p>The blender has graduated from “Brier-only” to a three-stage filter that hard-excludes losing sources, sharpens the softmax, and protects against single-source dominance:</p>
+<ol>
+  <li><strong>Hard exclusion floor.</strong> Any source whose rolling-window ROI is below <code class="inline">FLASHCAT_BLENDER_ROI_FLOOR</code> (default <strong>−1%</strong>) AND has ≥ <code class="inline">FLASHCAT_BLENDER_MIN_BETS_FOR_EXCLUSION</code> graded bets (default 50) is removed from the pool. Reasoning: a source losing money over hundreds of bets cannot meaningfully de-bias the model, no matter how much you down-weight it.</li>
+  <li><strong>Min-source fallback.</strong> If applying the floor would leave fewer than two surviving sources for a sport, the exclusion is suppressed (you need ≥ 2 sources to blend at all) and an explicit <code class="inline">min_sources_floor_active</code> entry is emitted to the excluded list. This is the honest signal to a researcher: “we couldn’t apply the floor; the pool is the best we have, but treat the result with caution.”</li>
+  <li><strong>Sharper softmax (β = 16).</strong> Per-source weights are computed as <code class="inline">softmax(β · score_s)</code> where <code class="inline">score_s = (0.25 − B_s) + 0.5 · clip(ROI_s, ±20%)</code>. Bumping β from 8 to 16 doubles the gap a source's Brier improvement creates in its share of the blend. Empirically this lifts the NFL flat-stake blended ROI from +3.42% to +7.73% on the same data.</li>
+  <li><strong>Low-sample cap.</strong> A source with fewer than 50 graded bets keeps its natural softmax weight but is capped at <code class="inline">1/N</code> of the surviving pool, so a small-n source can’t dominate just because its score happened to be best on a noisy sample.</li>
+</ol>
+<p>Snapshots of every weight update are saved to SQLite (<code class="inline">weight_history</code> table) so we can audit drift, and the excluded list is shipped in <code class="inline">source_scoreboard.json::weights.excluded</code> for inspection.</p>
+
+<h4>4a. Walk-forward hold-out validation</h4>
+<p>To guard against “tuning the floor and β until backtest ROI looks great,” the de-dilution PR added a walk-forward check (<code class="inline">python -m flashcat holdout</code>). It splits <code class="inline">data/source_history.db</code> into a training window (2022-01-01 → 2023-12-31) and a held-out window (2024-01-01 → 2024-12-31), fits the post-PR reweighter on training-only data, and applies those frozen weights to the held-out predictions. If the held-out ROI is materially worse than the training ROI on any sport with ≥ 200 hold-out bets, the PR write-up surfaces it instead of declaring victory on the training number. The live source-weight file is still fit on the full rolling window — the hold-out exists purely as a diagnostic.</p>
+
+<h4>4b. Per-sport Platt calibration</h4>
+<p>After exclusion + reweighting, each sport’s blended probability is passed through a per-sport Platt transform <code class="inline">σ(α + β · logit(p))</code>. Coefficients are re-fit on the post-exclusion blend (not the pre-PR blend) and persisted to <code class="inline">data/calibration.json</code>. The fit is rejected and the sport falls back to pass-through whenever fewer than 50 calibration pairs are available or the fitted slope falls outside [0.2, 3.0].</p>
 
 <h3>5. The two signal flags</h3>
 
@@ -70,7 +83,13 @@
 </ul>
 
 <h3>6. Backtest</h3>
-<p>Phase 1 backtests on the most recent complete NFL season via <code class="inline">nfl_data_py</code>. Each historical event is simulated as a $100 flat bet at the book-average closing line; outcomes determine P&L. The bankroll curve, calibration bins, and ROI slices (overall / chalk-only / dog-only / RLM-only / dispersion-only) are recomputed every run.</p>
+<p>Phase 1 backtests on the most recent complete NFL season via <code class="inline">nfl_data_py</code>. Each historical event is simulated as a $100 flat bet at the book-average closing line; outcomes determine P&amp;L. The bankroll curve, calibration bins, and ROI slices (overall / chalk-only / dog-only / RLM-only / dispersion-only) are recomputed every run.</p>
+
+<h4>6a. Flat-stake headline simulator</h4>
+<p>The <a href="index.html">homepage Backtest Profitability table</a> is computed by a separate simulator (<code class="inline">flashcat.backtest.flat_stake</code>) that mirrors Phil’s research question literally: “drop $100 on every prediction that beats the devigged market close by ≥ 3pp.” Per-(sport, source) and blended rows are computed end-to-end against <code class="inline">data/source_history.db</code>; the per-event Recommended Plays cards on the homepage use Kelly sizing instead. When the predictions ledger lacks settlement prices for a sport, the simulator falls back to reconstructing stake/profit from the persisted meta rows (<code class="inline">n_bets × $100</code>, <code class="inline">roi × stake</code>) and tags the result with <code class="inline">roi_source = "weighted_per_source_meta"</code> so it’s clearly distinguishable from a per-event sim.</p>
+
+<h4>6b. LIVE-mode floor</h4>
+<p>A sport ships LIVE only if its blended backtest ROI is ≥ <code class="inline">FLASHCAT_LIVE_ROI_FLOOR</code> (now +2%, up from +1% before PR-19) with at least <code class="inline">FLASHCAT_LIVE_MIN_BETS</code> scored bets (200). Sports between +2% and +4% are LIVE but flagged <code class="inline">marginal</code> (yellow tint). Everything else stays in RESEARCH mode — odds, probabilities, and rationale are still displayed for transparency, but no $ stake recommendations are issued.</p>
 
 <h3>7. What is out of scope (Phase 1)</h3>
 <ul>

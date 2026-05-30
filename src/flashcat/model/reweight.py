@@ -42,6 +42,8 @@ from pathlib import Path
 
 from ..config import (
     SOURCE_SCOREBOARD_PATH,
+    blender_min_bets_for_exclusion,
+    blender_roi_floor,
     hybrid_beta,
     hybrid_lambda,
 )
@@ -90,6 +92,7 @@ def _overlay_source_history_for_reweight(per_sport: dict) -> dict:
             continue
         srcs[source] = {
             "n_events": row.get("n_events") or 0,
+            "n_bets": row.get("n_bets") or 0,
             "brier": row.get("brier"),
             "log_loss": row.get("log_loss"),
             "accuracy": row.get("accuracy"),
@@ -179,6 +182,86 @@ def _hybrid_score(row: dict, lam: float) -> float | None:
     return score
 
 
+def _n_bets(row: dict) -> int:
+    """Best-effort n_bets for a source row.
+
+    Prefers an explicit ``n_bets`` field (the post-edge-gate count of graded
+    bets), then ``wins + losses`` (scoreboard rows), then ``n_events``
+    (graded probabilistic predictions).
+    """
+    n_bets = row.get("n_bets")
+    if n_bets is not None:
+        try:
+            return int(n_bets)
+        except Exception:
+            pass
+    try:
+        wins = int(row.get("wins") or 0)
+        losses = int(row.get("losses") or 0)
+        if wins + losses > 0:
+            return wins + losses
+    except Exception:
+        pass
+    try:
+        return int(row.get("n_events") or 0)
+    except Exception:
+        return 0
+
+
+def _cap_low_sample_sources(
+    weights: dict[str, float],
+    rows: dict[str, dict],
+    *,
+    min_bets_for_exclusion: int,
+) -> dict[str, float]:
+    """Cap low-sample sources at 1/N of the surviving pool.
+
+    Per spec item (5): a source with n_bets < min_bets_for_exclusion has too
+    much noise on its ROI to make an exclude decision, so we keep it in the
+    blend but cap its max weight at 1/N (where N is the number of surviving
+    sources) so it can't dominate. Mass freed by the cap is redistributed
+    proportionally to the uncapped sources.
+    """
+    if not weights:
+        return weights
+    n = len(weights)
+    if n == 0:
+        return weights
+    cap = 1.0 / n
+    low_sample = {
+        k for k in weights
+        if _n_bets(rows.get(k) or {}) < min_bets_for_exclusion
+    }
+    if not low_sample:
+        return weights
+    capped: dict[str, float] = {}
+    freed = 0.0
+    for k, w in weights.items():
+        if k in low_sample and w > cap:
+            freed += (w - cap)
+            capped[k] = cap
+        else:
+            capped[k] = w
+    if freed <= 1e-12:
+        return capped
+    uncapped_total = sum(
+        w for k, w in capped.items() if k not in low_sample
+    )
+    if uncapped_total <= 0:
+        # Edge case: everything is low-sample. Renormalize evenly.
+        total = sum(capped.values())
+        if total <= 0:
+            return {k: 1.0 / n for k in capped}
+        return {k: w / total for k, w in capped.items()}
+    out: dict[str, float] = {}
+    for k, w in capped.items():
+        if k in low_sample:
+            out[k] = w
+        else:
+            out[k] = w + freed * (w / uncapped_total)
+    return out
+
+
 def _compute_pool_weights(
     rows: dict[str, dict],
     *,
@@ -186,12 +269,32 @@ def _compute_pool_weights(
     beta: float,
     lam: float,
     min_n: int,
+    roi_floor: float | None = None,
+    min_bets_for_exclusion: int | None = None,
 ) -> tuple[dict[str, float], list[dict]]:
     """Filter low-sample / worse-than-naive rows and softmax over score.
 
+    De-dilution rules (PR "blender de-dilute"):
+      * Sources whose ``roi`` is strictly below ``roi_floor`` AND have
+        ``n_bets >= min_bets_for_exclusion`` are HARD-EXCLUDED. They get a
+        weight of 0 and appear in the excluded list with reason
+        ``roi=<v> below floor <floor>``.
+      * If applying that rule would leave the pool with fewer than 2
+        surviving sources, we instead keep the pool intact (you need at
+        least 2 sources to blend meaningfully) and emit a synthetic
+        ``min_sources_floor_active`` entry in the excluded list.
+      * Low-sample sources (n_bets < min_bets_for_exclusion) keep their
+        natural softmax weight but are capped at 1/N afterwards.
+
     Returns ``(weights, excluded)`` where excluded is a list of
-    ``{source, reason, brier, roi, n_events}`` dicts for the scoreboard.
+    ``{source, reason, brier, roi, n_events, n_bets}`` dicts for the
+    scoreboard.
     """
+    if roi_floor is None:
+        roi_floor = blender_roi_floor()
+    if min_bets_for_exclusion is None:
+        min_bets_for_exclusion = blender_min_bets_for_exclusion()
+
     eligible: dict[str, dict] = {}
     excluded: list[dict] = []
     for k, v in rows.items():
@@ -203,38 +306,92 @@ def _compute_pool_weights(
         if n < min_n:
             excluded.append({
                 "source": k, "reason": f"n<{min_n}",
-                "brier": v.get("brier"), "roi": v.get("roi"), "n_events": n,
+                "brier": v.get("brier"), "roi": v.get("roi"),
+                "n_events": n, "n_bets": _n_bets(v),
             })
             continue
         brier = v.get("brier")
         if brier is not None and float(brier) > NAIVE_BRIER:
             excluded.append({
                 "source": k, "reason": f"brier>{NAIVE_BRIER}",
-                "brier": brier, "roi": v.get("roi"), "n_events": n,
+                "brier": brier, "roi": v.get("roi"),
+                "n_events": n, "n_bets": _n_bets(v),
             })
             continue
         if brier is None and v.get("roi") is None and v.get("log_loss") is None:
             excluded.append({
                 "source": k, "reason": "no_signal",
-                "brier": None, "roi": None, "n_events": n,
+                "brier": None, "roi": None,
+                "n_events": n, "n_bets": _n_bets(v),
             })
             continue
         eligible[k] = v
+
+    # Hard ROI-floor exclusion (with min-sources fallback).
+    roi_failers: list[tuple[str, dict]] = []
+    for k, v in eligible.items():
+        roi = v.get("roi")
+        if roi is None:
+            continue
+        try:
+            roi_f = float(roi)
+        except Exception:
+            continue
+        if _n_bets(v) < min_bets_for_exclusion:
+            continue
+        if roi_f < roi_floor:
+            roi_failers.append((k, v))
+
+    survivors_after_floor = {
+        k: v for k, v in eligible.items()
+        if k not in {kk for kk, _ in roi_failers}
+    }
+    if len(survivors_after_floor) >= 2 and roi_failers:
+        for k, v in roi_failers:
+            excluded.append({
+                "source": k,
+                "reason": f"roi={float(v.get('roi')):.4f} below floor {roi_floor:.4f}",
+                "brier": v.get("brier"), "roi": v.get("roi"),
+                "n_events": int(v.get("n_events") or 0),
+                "n_bets": _n_bets(v),
+            })
+        eligible = survivors_after_floor
+    elif roi_failers:
+        # Would leave <2 survivors — keep everyone, emit fallback marker.
+        excluded.append({
+            "source": None,
+            "reason": "min_sources_floor_active",
+            "detail": (
+                f"{len(roi_failers)} source(s) below ROI floor {roi_floor:.4f} "
+                f"kept in pool to maintain ≥2 sources for blending"
+            ),
+            "would_exclude": [k for k, _ in roi_failers],
+        })
+
     if not eligible:
         return {}, excluded
+
     if mode == "brier_roi_hybrid":
         scores: dict[str, float] = {}
         for k, v in eligible.items():
             s = _hybrid_score(v, lam)
             if s is not None:
                 scores[k] = s
-        return _softmax(scores, beta), excluded
-    signals: dict[str, float] = {}
-    for k, v in eligible.items():
-        s = _row_signal(v, mode)
-        if s is not None:
-            signals[k] = s
-    return (_softmax(signals, beta) if signals else {}), excluded
+        weights = _softmax(scores, beta) if scores else {}
+    else:
+        signals: dict[str, float] = {}
+        for k, v in eligible.items():
+            s = _row_signal(v, mode)
+            if s is not None:
+                signals[k] = s
+        weights = _softmax(signals, beta) if signals else {}
+
+    # Cap low-sample sources at 1/N of the surviving pool.
+    weights = _cap_low_sample_sources(
+        weights, eligible,
+        min_bets_for_exclusion=min_bets_for_exclusion,
+    )
+    return weights, excluded
 
 
 def update_weights(
@@ -243,6 +400,8 @@ def update_weights(
     beta: float | None = None,
     lam: float | None = None,
     mode: str | None = None,
+    roi_floor: float | None = None,
+    min_bets_for_exclusion: int | None = None,
 ) -> dict:
     """Read the scoreboard, compute per-sport + global weights, persist them."""
     sp = scoreboard_path or SOURCE_SCOREBOARD_PATH
@@ -256,10 +415,17 @@ def update_weights(
     mode = mode or weight_mode()
     beta = beta if beta is not None else hybrid_beta()
     lam = lam if lam is not None else hybrid_lambda()
+    roi_floor = roi_floor if roi_floor is not None else blender_roi_floor()
+    min_bets_for_exclusion = (
+        min_bets_for_exclusion
+        if min_bets_for_exclusion is not None
+        else blender_min_bets_for_exclusion()
+    )
 
     sources = scoreboard.get("sources", {}) or {}
     global_weights, global_excluded = _compute_pool_weights(
         sources, mode=mode, beta=beta, lam=lam, min_n=min_events_for(None),
+        roi_floor=roi_floor, min_bets_for_exclusion=min_bets_for_exclusion,
     )
 
     # Overlay persistent ``source_history.db.meta`` rows onto the in-memory
@@ -278,6 +444,8 @@ def update_weights(
         min_n = min_events_for(sport)
         weights, excluded = _compute_pool_weights(
             srcs, mode=mode, beta=beta, lam=lam, min_n=min_n,
+            roi_floor=roi_floor,
+            min_bets_for_exclusion=min_bets_for_exclusion,
         )
         if weights:
             per_sport_rows[sport] = weights
@@ -289,6 +457,8 @@ def update_weights(
         "mode": mode,
         "beta": beta,
         "lambda": lam,
+        "roi_floor": roi_floor,
+        "min_bets_for_exclusion": min_bets_for_exclusion,
         "min_events": min_events_by_sport,
         "global": global_weights,
         "by_sport": per_sport_rows,

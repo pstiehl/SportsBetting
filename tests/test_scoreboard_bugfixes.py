@@ -134,7 +134,7 @@ def _patch_paths(tmp_path, monkeypatch, sb_kind: str = "live"):
         per_sport = {
             "nfl": {"roi": 0.05, "n_events": 500},
             "atp": {"roi": -0.07, "n_events": 14000},  # ATP negative → research
-            "wta": {"roi": 0.015, "n_events": 12000},  # WTA marginal → live
+            "wta": {"roi": 0.03, "n_events": 12000},  # WTA marginal → live (post-PR-19: floor=2%, ceiling=4%)
         }
     elif sb_kind == "atp_research":
         per_sport = {

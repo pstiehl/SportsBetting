@@ -42,7 +42,7 @@ def test_pga_can_go_live_with_clean_backtest():
                 "sources": {},
                 "blended": {
                     "n_events": 800,
-                    "roi": 0.035,
+                    "roi": 0.06,
                     "brier": 0.21,
                     "wins": 420,
                     "losses": 380,
@@ -86,7 +86,7 @@ def test_pga_listed_alongside_other_sports():
                      "blended": {"n_events": 600, "roi": 0.12,
                                  "wins": 320, "losses": 280}},
             "pga": {"n_events": 300, "sources": {},
-                     "blended": {"n_events": 300, "roi": 0.01,
+                     "blended": {"n_events": 300, "roi": 0.03,
                                  "wins": 150, "losses": 150}},
             "atp": {"n_events": 500, "sources": {},
                      "blended": {"n_events": 500, "roi": -0.06,
@@ -95,6 +95,7 @@ def test_pga_listed_alongside_other_sports():
     }
     modes = resolve_sport_modes(sb)
     assert set(modes) == {"nfl", "pga", "atp"}
-    # PGA at exactly the +1.0% floor is LIVE-marginal.
+    # PGA at +3.0% is in the marginal band [+2.0%, +4.0%) under the
+    # blender-de-dilution PR.
     assert modes["pga"]["mode"] == "live"
     assert modes["pga"]["marginal"] is True

@@ -15,9 +15,11 @@
       <img src="assets/flashcat-logo.svg" alt="Flashcat">
       <div>
         <h1><a href="index.html"><span class="accent">Flashcat</span> Betting</a></h1>
-        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 12:57 UTC</div>
+        <div class="meta">¼ Kelly stake-sized &middot; probability-blended &middot; 2026-05-30 17:35 UTC</div>
         
-        <div class="site-status research" title="Blended backtest ROI: -0.7%">🟡 RESEARCH MODE &middot; backtest ROI -0.7%</div>
+        <div class="site-status-pills" title="Per-sport blended backtest ROI. Only sports with ROI ≥ floor and sufficient sample size go LIVE.">
+          <span class="mode-pill research" title="blended ROI -15.2% below +2.0% floor">🔍 RESEARCH ATP -15.2%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH CFB n/a</span><span class="mode-pill live-marginal" title="marginal LIVE — ROI +2.8% in [+2.0%, +4.0%)">🟡 LIVE (marginal) MLB +2.8%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH NBA n/a</span><span class="mode-pill live" title="LIVE — ROI +18.3%, 635 scored bets">🟢 LIVE NFL +18.3%</span><span class="mode-pill research" title="insufficient backtest — no scored bets">🔍 RESEARCH PGA n/a</span><span class="mode-pill research" title="blended ROI -15.3% below +2.0% floor">🔍 RESEARCH WTA -15.3%</span>
+        </div>
         
       </div>
     </div>
@@ -35,8 +37,8 @@
 <p class="lede">Flashcat is a meta-model: every public probability source on the internet is graded on historical outcomes, then weighted by accuracy. Brier score (lower&nbsp;=&nbsp;better) drives the per-sport softmax; ROI is profit ÷ wagered using the model's stake rule. Rows are color-coded by accuracy quartile within each sport &mdash; <span class="acc-top inline-chip">top 25%</span>, <span class="acc-mid inline-chip">middle 50%</span>, <span class="acc-bottom inline-chip">bottom 25%</span>. Weighting mode: <code class="inline">brier_roi_hybrid</code>.</p>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="num">18</div><div class="label">Live Sources</div></div>
-  <div class="kpi"><div class="num">34428</div><div class="label">Events Graded</div></div>
+  <div class="kpi"><div class="num">19</div><div class="label">Live Sources</div></div>
+  <div class="kpi"><div class="num">36974</div><div class="label">Events Graded</div></div>
   <div class="kpi"><div class="num">2022-01-01 → 2024-12-31</div><div class="label">Backtest Window</div></div>
 </div>
 
@@ -58,10 +60,10 @@
 <tr class="acc-mid">
   <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
   <td class="num">14129</td>
-  <td class="num">0.2170</td>
-  <td class="num neg">-6.8%</td>
-  <td class="num">183 / 256</td>
-  <td class="num neg">$-4,786</td>
+  <td class="num">0.2163</td>
+  <td class="num neg">-15.2%</td>
+  <td class="num">929 / 2524</td>
+  <td class="num neg">$-85,575</td>
   <td class="num">—</td>
 </tr>
 
@@ -72,7 +74,7 @@
   <td class="num neg">-3.6%</td>
   <td class="num">3524 / 1624</td>
   <td class="num neg">$-18,538</td>
-  <td class="num">26.3%</td>
+  <td class="num">27.5%</td>
 </tr>
 
 <tr class="acc-top">
@@ -82,7 +84,7 @@
   <td class="num neg">-3.6%</td>
   <td class="num">3524 / 1624</td>
   <td class="num neg">$-18,538</td>
-  <td class="num">26.3%</td>
+  <td class="num">27.5%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -92,7 +94,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">25.0%</td>
+  <td class="num">24.9%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -102,7 +104,43 @@
   <td class="num neg">-2.4%</td>
   <td class="num">3294 / 1850</td>
   <td class="num neg">$-12,475</td>
-  <td class="num">22.5%</td>
+  <td class="num">20.1%</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">CFB <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 1843 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
+
+<tr class="">
+  <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
+  <td class="num">1843</td>
+  <td class="num">0.1749</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="">
+  <td><strong>cfb-cfbfastr-epa</strong></td>
+  <td class="num">1843</td>
+  <td class="num">0.1749</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">100.0%</td>
 </tr>
 
 </tbody>
@@ -121,50 +159,60 @@
 </tr></thead>
 <tbody>
 
-<tr class="">
+<tr class="acc-mid">
   <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
-  <td class="num">3488</td>
-  <td class="num">0.2463</td>
-  <td class="num ">—</td>
+  <td class="num">7135</td>
+  <td class="num">0.2448</td>
+  <td class="num pos">+2.8%</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
   <td class="num">—</td>
 </tr>
 
-<tr class="">
+<tr class="acc-top">
   <td><strong>fivethirtyeight-mlb-elo</strong></td>
   <td class="num">3569</td>
   <td class="num">0.2418</td>
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">33.6%</td>
+  <td class="num">24.5%</td>
 </tr>
 
-<tr class="">
+<tr class="acc-top">
   <td><strong>fivethirtyeight-mlb-rating</strong></td>
   <td class="num">3569</td>
   <td class="num">0.2397</td>
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">34.1%</td>
+  <td class="num">25.3%</td>
 </tr>
 
-<tr class="">
+<tr class="acc-mid">
   <td><strong>mlb-pythagorean</strong></td>
   <td class="num">3569</td>
   <td class="num">0.2467</td>
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">32.3%</td>
+  <td class="num">22.6%</td>
+</tr>
+
+<tr class="acc-bottom">
+  <td><strong>mlb-statcast-lineup</strong></td>
+  <td class="num">7135</td>
+  <td class="num">0.2483</td>
+  <td class="num pos">+2.8%</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">27.6%</td>
 </tr>
 
 </tbody>
 </table>
 
-<h3 style="margin-top:24px">NBA <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 2116 events</span></h3>
+<h3 style="margin-top:24px">NBA <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 2819 events</span></h3>
 <table>
 <thead><tr>
   <th>Source</th>
@@ -180,7 +228,7 @@
 <tr class="">
   <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
   <td class="num">2116</td>
-  <td class="num">0.2176</td>
+  <td class="num">0.2199</td>
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
@@ -194,7 +242,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">48.2%</td>
+  <td class="num">32.4%</td>
 </tr>
 
 <tr class="">
@@ -204,7 +252,17 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">51.8%</td>
+  <td class="num">37.4%</td>
+</tr>
+
+<tr class="">
+  <td><strong>nba-bref-srs-pace</strong></td>
+  <td class="num">3643</td>
+  <td class="num">0.2316</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">30.2%</td>
 </tr>
 
 </tbody>
@@ -223,13 +281,13 @@
 </tr></thead>
 <tbody>
 
-<tr class="acc-mid">
+<tr class="acc-top">
   <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
   <td class="num">635</td>
-  <td class="num">0.2078</td>
-  <td class="num pos">+11.7%</td>
-  <td class="num">74 / 51</td>
-  <td class="num pos">$+2,542</td>
+  <td class="num">0.2012</td>
+  <td class="num pos">+18.3%</td>
+  <td class="num">257 / 131</td>
+  <td class="num pos">$+12,862</td>
   <td class="num">—</td>
 </tr>
 
@@ -240,7 +298,7 @@
   <td class="num neg">-3.5%</td>
   <td class="num">148 / 86</td>
   <td class="num neg">$-817</td>
-  <td class="num">14.2%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -250,7 +308,7 @@
   <td class="num neg">-4.5%</td>
   <td class="num">150 / 84</td>
   <td class="num neg">$-1,042</td>
-  <td class="num">14.6%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-top">
@@ -260,7 +318,7 @@
   <td class="num pos">+1.2%</td>
   <td class="num">370 / 170</td>
   <td class="num pos">$+633</td>
-  <td class="num">20.1%</td>
+  <td class="num">22.7%</td>
 </tr>
 
 <tr class="acc-top">
@@ -270,7 +328,7 @@
   <td class="num pos">+1.2%</td>
   <td class="num">370 / 170</td>
   <td class="num pos">$+633</td>
-  <td class="num">20.1%</td>
+  <td class="num">22.7%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -280,8 +338,24 @@
   <td class="num pos">+13.2%</td>
   <td class="num">375 / 165</td>
   <td class="num pos">$+7,124</td>
-  <td class="num">31.1%</td>
+  <td class="num">54.5%</td>
 </tr>
+
+</tbody>
+</table>
+
+<h3 style="margin-top:24px">PGA <span style="color:var(--muted);font-weight:400;font-size:0.7em;">&middot; 0 events</span></h3>
+<table>
+<thead><tr>
+  <th>Source</th>
+  <th class="num">Events</th>
+  <th class="num">Brier ↓</th>
+  <th class="num">ROI</th>
+  <th class="num">Wins/Losses</th>
+  <th class="num">Profit</th>
+  <th class="num">Sport Weight</th>
+</tr></thead>
+<tbody>
 
 </tbody>
 </table>
@@ -302,10 +376,10 @@
 <tr class="acc-mid">
   <td><strong>flashcat-blended</strong> <span class="badge chalk" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent)">FLASHCAT</span></td>
   <td class="num">12736</td>
-  <td class="num">0.2188</td>
-  <td class="num pos">+1.6%</td>
-  <td class="num">200 / 261</td>
-  <td class="num pos">$+1,164</td>
+  <td class="num">0.2186</td>
+  <td class="num neg">-15.3%</td>
+  <td class="num">814 / 2167</td>
+  <td class="num neg">$-72,348</td>
   <td class="num">—</td>
 </tr>
 
@@ -316,7 +390,7 @@
   <td class="num neg">-5.2%</td>
   <td class="num">3123 / 1514</td>
   <td class="num neg">$-24,100</td>
-  <td class="num">25.8%</td>
+  <td class="num">26.5%</td>
 </tr>
 
 <tr class="acc-top">
@@ -326,7 +400,7 @@
   <td class="num neg">-5.2%</td>
   <td class="num">3123 / 1514</td>
   <td class="num neg">$-24,100</td>
-  <td class="num">25.8%</td>
+  <td class="num">26.5%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -336,7 +410,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">26.4%</td>
+  <td class="num">27.8%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -346,7 +420,7 @@
   <td class="num neg">-4.4%</td>
   <td class="num">2934 / 1691</td>
   <td class="num neg">$-20,408</td>
-  <td class="num">22.0%</td>
+  <td class="num">19.3%</td>
 </tr>
 
 </tbody>
@@ -375,27 +449,27 @@
   <td class="num pos">+13.2%</td>
   <td class="num">375 / 165</td>
   <td class="num pos">$+7,124</td>
-  <td class="num">10.2%</td>
+  <td class="num">23.8%</td>
 </tr>
 
-<tr class="acc-top">
+<tr class="acc-mid">
   <td><strong>nfl:market-close</strong></td>
   <td class="num">540</td>
   <td class="num">0.2048</td>
   <td class="num pos">+1.2%</td>
   <td class="num">370 / 170</td>
   <td class="num pos">$+633</td>
-  <td class="num">6.6%</td>
+  <td class="num">9.9%</td>
 </tr>
 
-<tr class="acc-top">
+<tr class="acc-mid">
   <td><strong>nfl:market-consensus</strong></td>
   <td class="num">540</td>
   <td class="num">0.2048</td>
   <td class="num pos">+1.2%</td>
   <td class="num">370 / 170</td>
   <td class="num pos">$+633</td>
-  <td class="num">6.6%</td>
+  <td class="num">9.9%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -405,7 +479,7 @@
   <td class="num neg">-3.5%</td>
   <td class="num">148 / 86</td>
   <td class="num neg">$-817</td>
-  <td class="num">4.7%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-mid">
@@ -415,7 +489,17 @@
   <td class="num neg">-4.5%</td>
   <td class="num">150 / 84</td>
   <td class="num neg">$-1,042</td>
-  <td class="num">4.8%</td>
+  <td class="num">—</td>
+</tr>
+
+<tr class="acc-top">
+  <td><strong>cfb:cfb-cfbfastr-epa</strong></td>
+  <td class="num">1843</td>
+  <td class="num">0.1749</td>
+  <td class="num ">—</td>
+  <td class="num">0 / 0</td>
+  <td class="num ">$+0</td>
+  <td class="num">14.6%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -425,7 +509,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">5.3%</td>
+  <td class="num">6.3%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -435,7 +519,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">5.7%</td>
+  <td class="num">7.3%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -445,7 +529,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">4.7%</td>
+  <td class="num">5.0%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -455,7 +539,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">4.8%</td>
+  <td class="num">5.2%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -465,7 +549,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">4.5%</td>
+  <td class="num">4.6%</td>
 </tr>
 
 <tr class="acc-mid">
@@ -475,7 +559,7 @@
   <td class="num neg">-2.4%</td>
   <td class="num">3294 / 1850</td>
   <td class="num neg">$-12,475</td>
-  <td class="num">4.9%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-top">
@@ -485,7 +569,7 @@
   <td class="num neg">-3.6%</td>
   <td class="num">3524 / 1624</td>
   <td class="num neg">$-18,538</td>
-  <td class="num">5.7%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-top">
@@ -495,7 +579,7 @@
   <td class="num neg">-3.6%</td>
   <td class="num">3524 / 1624</td>
   <td class="num neg">$-18,538</td>
-  <td class="num">5.7%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-mid">
@@ -505,7 +589,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">5.5%</td>
+  <td class="num">6.8%</td>
 </tr>
 
 <tr class="acc-bottom">
@@ -515,7 +599,7 @@
   <td class="num neg">-4.4%</td>
   <td class="num">2934 / 1691</td>
   <td class="num neg">$-20,408</td>
-  <td class="num">4.5%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-top">
@@ -525,7 +609,7 @@
   <td class="num neg">-5.2%</td>
   <td class="num">3123 / 1514</td>
   <td class="num neg">$-24,100</td>
-  <td class="num">5.3%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-top">
@@ -535,7 +619,7 @@
   <td class="num neg">-5.2%</td>
   <td class="num">3123 / 1514</td>
   <td class="num neg">$-24,100</td>
-  <td class="num">5.3%</td>
+  <td class="num">—</td>
 </tr>
 
 <tr class="acc-mid">
@@ -545,7 +629,7 @@
   <td class="num ">—</td>
   <td class="num">0 / 0</td>
   <td class="num ">$+0</td>
-  <td class="num">5.4%</td>
+  <td class="num">6.6%</td>
 </tr>
 
 </tbody>

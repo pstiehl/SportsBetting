@@ -1910,7 +1910,8 @@
               "predicted": null,
               "actual": null
             }
-          ]
+          ],
+          "n_bets": 540
         },
         "market-close": {
           "n_events": 540,
@@ -2001,7 +2002,8 @@
               "predicted": 0.90462674227086,
               "actual": 1.0
             }
-          ]
+          ],
+          "n_bets": 540
         },
         "market-consensus": {
           "n_events": 540,
@@ -2092,7 +2094,8 @@
               "predicted": 0.90462674227086,
               "actual": 1.0
             }
-          ]
+          ],
+          "n_bets": 540
         },
         "fivethirtyeight-nfl-elo": {
           "n_events": 329,
@@ -2183,7 +2186,8 @@
               "predicted": 0.9207645847992489,
               "actual": 1.0
             }
-          ]
+          ],
+          "n_bets": 234
         },
         "fivethirtyeight-nfl-qbelo": {
           "n_events": 329,
@@ -2274,7 +2278,8 @@
               "predicted": 0.9321053267209919,
               "actual": 1.0
             }
-          ]
+          ],
+          "n_bets": 234
         }
       },
       "blended": {
@@ -5031,7 +5036,8 @@
               "predicted": 0.957953433208701,
               "actual": 0.927536231884058
             }
-          ]
+          ],
+          "n_bets": null
         }
       },
       "blended": {
@@ -12599,7 +12605,8 @@
               "predicted": 0.9161277385986022,
               "actual": 0.825
             }
-          ]
+          ],
+          "n_bets": null
         },
         "fivethirtyeight-nba-raptor": {
           "n_events": 2116,
@@ -12690,7 +12697,19 @@
               "predicted": 0.9278505726967774,
               "actual": 0.87
             }
-          ]
+          ],
+          "n_bets": null
+        },
+        "nba-bref-srs-pace": {
+          "n_events": 3643,
+          "n_bets": null,
+          "brier": 0.23158450661435404,
+          "roi": null,
+          "wins": 0,
+          "losses": 0,
+          "wagered": 0.0,
+          "profit": 0.0,
+          "roi_source": "source_history.meta"
         }
       },
       "blended": {
@@ -21350,7 +21369,8 @@
               "predicted": null,
               "actual": null
             }
-          ]
+          ],
+          "n_bets": null
         },
         "fivethirtyeight-mlb-rating": {
           "n_events": 3569,
@@ -21441,7 +21461,8 @@
               "predicted": null,
               "actual": null
             }
-          ]
+          ],
+          "n_bets": null
         },
         "mlb-pythagorean": {
           "n_events": 3569,
@@ -21532,13 +21553,25 @@
               "predicted": 0.929423624956365,
               "actual": 0.6
             }
-          ]
+          ],
+          "n_bets": null
+        },
+        "mlb-statcast-lineup": {
+          "n_events": 7135,
+          "n_bets": 7135,
+          "brier": 0.2482699968227727,
+          "roi": 0.02772504300184843,
+          "wins": 0,
+          "losses": 0,
+          "wagered": 0.0,
+          "profit": 0.0,
+          "roi_source": "source_history.meta"
         }
       },
       "blended": {
-        "n_events": 3488,
+        "n_events": 7135,
         "brier": 0.24478104618844884,
-        "roi": null,
+        "roi": 0.02772504300184843,
         "wagered": 0.0,
         "profit": 0.0,
         "wins": 0,
@@ -35585,7 +35618,9 @@
             true
           ]
         ],
-        "slices": {}
+        "slices": {},
+        "n_bets": 7135,
+        "roi_source": "weighted_per_source_meta"
       }
     },
     "atp": {
@@ -35680,7 +35715,8 @@
               "predicted": 0.908969101233678,
               "actual": 0.75
             }
-          ]
+          ],
+          "n_bets": 5144
         },
         "market-close": {
           "n_events": 5148,
@@ -35771,7 +35807,8 @@
               "predicted": 0.9303180474057333,
               "actual": 0.9484536082474226
             }
-          ]
+          ],
+          "n_bets": 5155
         },
         "market-consensus": {
           "n_events": 5148,
@@ -35862,7 +35899,8 @@
               "predicted": 0.9303180474057333,
               "actual": 0.9484536082474226
             }
-          ]
+          ],
+          "n_bets": 5155
         },
         "sackmann-atp-elo": {
           "n_events": 8979,
@@ -35953,7 +35991,8 @@
               "predicted": 0.9307287359789488,
               "actual": 0.8994974874371859
             }
-          ]
+          ],
+          "n_bets": null
         }
       },
       "blended": {
@@ -56234,7 +56273,8 @@
               "predicted": 0.9386089262543283,
               "actual": 1.0
             }
-          ]
+          ],
+          "n_bets": 4626
         },
         "market-close": {
           "n_events": 4637,
@@ -56325,7 +56365,8 @@
               "predicted": 0.9219829176855417,
               "actual": 0.9565217391304348
             }
-          ]
+          ],
+          "n_bets": 4639
         },
         "market-consensus": {
           "n_events": 4637,
@@ -56416,7 +56457,8 @@
               "predicted": 0.9219829176855417,
               "actual": 0.9565217391304348
             }
-          ]
+          ],
+          "n_bets": 4639
         },
         "sackmann-wta-elo": {
           "n_events": 8093,
@@ -56507,7 +56549,8 @@
               "predicted": 0.9270595742840224,
               "actual": 0.9261744966442953
             }
-          ]
+          ],
+          "n_bets": null
         }
       },
       "blended": {
@@ -117645,5 +117688,273 @@
     }
   ],
   "stake_mode": "kelly_quarter",
-  "edge_threshold": 0.03
+  "edge_threshold": 0.03,
+  "backtest_flat_stake": {
+    "edge_threshold": 0.03,
+    "stake": 100.0,
+    "per_sport": {
+      "nfl": {
+        "sources": {
+          "market-close": {
+            "sport": "nfl",
+            "source": "market-close",
+            "n_bets": 540,
+            "n_wins": 0,
+            "stake": 54000.0,
+            "profit": 633.29,
+            "roi": 0.011727531927142317
+          },
+          "market-consensus": {
+            "sport": "nfl",
+            "source": "market-consensus",
+            "n_bets": 540,
+            "n_wins": 0,
+            "stake": 54000.0,
+            "profit": 633.29,
+            "roi": 0.011727531927142317
+          },
+          "fivethirtyeight-nfl-elo": {
+            "sport": "nfl",
+            "source": "fivethirtyeight-nfl-elo",
+            "n_bets": 234,
+            "n_wins": 0,
+            "stake": 23400.0,
+            "profit": -817.12,
+            "roi": -0.03491953424810947
+          },
+          "fivethirtyeight-nfl-qbelo": {
+            "sport": "nfl",
+            "source": "fivethirtyeight-nfl-qbelo",
+            "n_bets": 234,
+            "n_wins": 0,
+            "stake": 23400.0,
+            "profit": -1042.49,
+            "roi": -0.04455098393804515
+          },
+          "nfl-nflfastr-epa": {
+            "sport": "nfl",
+            "source": "nfl-nflfastr-epa",
+            "n_bets": 540,
+            "n_wins": 0,
+            "stake": 54000.0,
+            "profit": 7124.49,
+            "roi": 0.13193502061653117
+          }
+        },
+        "blended": {
+          "sport": "nfl",
+          "source": "flashcat-blended",
+          "n_bets": 540,
+          "n_wins": 0,
+          "stake": 54000.0,
+          "profit": 4173.17,
+          "roi": 0.077280903265468,
+          "roi_source": "weighted_per_source_meta"
+        }
+      },
+      "nba": {
+        "sources": {
+          "fivethirtyeight-nba-elo-modern": {
+            "sport": "nba",
+            "source": "fivethirtyeight-nba-elo-modern",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          },
+          "fivethirtyeight-nba-raptor": {
+            "sport": "nba",
+            "source": "fivethirtyeight-nba-raptor",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          },
+          "nba-bref-srs-pace": {
+            "sport": "nba",
+            "source": "nba-bref-srs-pace",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          }
+        },
+        "blended": null
+      },
+      "mlb": {
+        "sources": {
+          "fivethirtyeight-mlb-elo": {
+            "sport": "mlb",
+            "source": "fivethirtyeight-mlb-elo",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          },
+          "fivethirtyeight-mlb-rating": {
+            "sport": "mlb",
+            "source": "fivethirtyeight-mlb-rating",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          },
+          "mlb-pythagorean": {
+            "sport": "mlb",
+            "source": "mlb-pythagorean",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          },
+          "mlb-statcast-lineup": {
+            "sport": "mlb",
+            "source": "mlb-statcast-lineup",
+            "n_bets": 7135,
+            "n_wins": 0,
+            "stake": 713500.0,
+            "profit": 19781.82,
+            "roi": 0.02772504300184843
+          }
+        },
+        "blended": {
+          "sport": "mlb",
+          "source": "flashcat-blended",
+          "n_bets": 7135,
+          "n_wins": 0,
+          "stake": 713500.0,
+          "profit": 19781.82,
+          "roi": 0.02772504300184843,
+          "roi_source": "weighted_per_source_meta"
+        }
+      },
+      "atp": {
+        "sources": {
+          "tennis-rank-bt": {
+            "sport": "atp",
+            "source": "tennis-rank-bt",
+            "n_bets": 5144,
+            "n_wins": 0,
+            "stake": 514400.0,
+            "profit": -12474.54,
+            "roi": -0.024250665934469905
+          },
+          "market-close": {
+            "sport": "atp",
+            "source": "market-close",
+            "n_bets": 5148,
+            "n_wins": 0,
+            "stake": 514800.0,
+            "profit": -18537.54,
+            "roi": -0.03600920370738009
+          },
+          "market-consensus": {
+            "sport": "atp",
+            "source": "market-consensus",
+            "n_bets": 5148,
+            "n_wins": 0,
+            "stake": 514800.0,
+            "profit": -18537.54,
+            "roi": -0.03600920370738009
+          },
+          "sackmann-atp-elo": {
+            "sport": "atp",
+            "source": "sackmann-atp-elo",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          }
+        },
+        "blended": {
+          "sport": "atp",
+          "source": "flashcat-blended",
+          "n_bets": 5148,
+          "n_wins": 0,
+          "stake": 514800.0,
+          "profit": -16918.08,
+          "roi": -0.03286340998741744,
+          "roi_source": "weighted_per_source_meta"
+        }
+      },
+      "wta": {
+        "sources": {
+          "tennis-rank-bt": {
+            "sport": "wta",
+            "source": "tennis-rank-bt",
+            "n_bets": 4625,
+            "n_wins": 0,
+            "stake": 462500.0,
+            "profit": -20408.15,
+            "roi": -0.044125727706080906
+          },
+          "market-close": {
+            "sport": "wta",
+            "source": "market-close",
+            "n_bets": 4637,
+            "n_wins": 0,
+            "stake": 463700.0,
+            "profit": -24100.26,
+            "roi": -0.05197382987453301
+          },
+          "market-consensus": {
+            "sport": "wta",
+            "source": "market-consensus",
+            "n_bets": 4637,
+            "n_wins": 0,
+            "stake": 463700.0,
+            "profit": -24100.26,
+            "roi": -0.05197382987453301
+          },
+          "sackmann-wta-elo": {
+            "sport": "wta",
+            "source": "sackmann-wta-elo",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          }
+        },
+        "blended": {
+          "sport": "wta",
+          "source": "flashcat-blended",
+          "n_bets": 4637,
+          "n_wins": 0,
+          "stake": 463700.0,
+          "profit": -23126.68,
+          "roi": -0.04987422707763664,
+          "roi_source": "weighted_per_source_meta"
+        }
+      },
+      "cfb": {
+        "sources": {
+          "cfb-cfbfastr-epa": {
+            "sport": "cfb",
+            "source": "cfb-cfbfastr-epa",
+            "n_bets": 0,
+            "n_wins": 0,
+            "stake": 0.0,
+            "profit": 0.0,
+            "roi": null
+          }
+        },
+        "blended": null
+      }
+    },
+    "totals": {
+      "n_bets": 38562,
+      "stake": 3856200.0,
+      "profit": -91845.02,
+      "roi": -0.023817495193669238
+    },
+    "source": "meta"
+  }
 }
