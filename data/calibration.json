@@ -1,8 +1,28 @@
 {
   "fitted_at": "2026-05-30T12:57:28.120011+00:00",
+  "mlb-statcast-lineup-2022": {
+    "fitted_at": "2026-05-30T15:12:14.282584+00:00",
+    "intercept": 0.12815171089590757,
+    "slope": 7.0175125088429855
+  },
+  "mlb-statcast-lineup-2023": {
+    "fitted_at": "2026-05-30T15:41:20.189653+00:00",
+    "intercept": 0.08283146042433548,
+    "slope": 7.171303723983321
+  },
+  "mlb-statcast-lineup-2024": {
+    "fitted_at": "2026-05-30T16:19:45.584824+00:00",
+    "intercept": 0.08701745515601268,
+    "slope": 4.793819153018008
+  },
+  "mlb-statcast-lineup-rolling": {
+    "fitted_at": "2026-05-30T16:19:46.098673+00:00",
+    "intercept": 0.08701745515601268,
+    "slope": 4.793819153018008
+  },
   "nba": {
     "fivethirtyeight-nba-elo-modern": {
-      "fitted_at": "2026-05-30T15:03:01.730252+00:00",
+      "fitted_at": "2026-05-30T16:34:23.182661+00:00",
       "method": "logit-Newton",
       "platt": {
         "intercept": -0.17011090592894687,
@@ -11,7 +31,7 @@
       "window": "2022-01-01..2024-12-31"
     },
     "fivethirtyeight-nba-raptor": {
-      "fitted_at": "2026-05-30T15:03:01.730254+00:00",
+      "fitted_at": "2026-05-30T16:34:23.182663+00:00",
       "method": "logit-Newton",
       "platt": {
         "intercept": -0.12446726951663827,
@@ -20,7 +40,7 @@
       "window": "2022-01-01..2024-12-31"
     },
     "nba-bref-srs-pace": {
-      "fitted_at": "2026-05-30T15:03:01.730233+00:00",
+      "fitted_at": "2026-05-30T16:34:23.182643+00:00",
       "method": "logit-Newton",
       "platt": {
         "intercept": 0.045641192472780125,

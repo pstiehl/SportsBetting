@@ -11,9 +11,10 @@
       "cfb-cfbfastr-epa": 1.0
     },
     "mlb": {
-      "fivethirtyeight-mlb-elo": 0.3357932958423228,
-      "fivethirtyeight-mlb-rating": 0.3414852802423606,
-      "mlb-pythagorean": 0.3227214239153167
+      "fivethirtyeight-mlb-elo": 0.24761116495017602,
+      "fivethirtyeight-mlb-rating": 0.25180838659105537,
+      "mlb-pythagorean": 0.23797207603446005,
+      "mlb-statcast-lineup": 0.2626083724243086
     },
     "nba": {
       "fivethirtyeight-nba-elo-modern": 0.32907829453460935,
