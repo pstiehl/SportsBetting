@@ -69,6 +69,25 @@ BREF_HEADERS = {
     "Referer": "https://www.basketball-reference.com/",
 }
 
+# stats.nba.com fallback. Used when basketball-reference returns 403 from
+# this environment (cloud egress / CI is currently bref-blocked despite the
+# project-identifying UA fix from PR #12). The fallback computes a coarse
+# "avg-margin SRS" from ``DiffPointsPG`` in LeagueStandingsV3 — the strength
+# of schedule adjustment of true SRS is omitted because schedule symmetry
+# washes out the difference at the team-vs-team level we care about here.
+NBA_STATS_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+    ),
+    "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Referer": "https://www.nba.com/",
+    "Origin": "https://www.nba.com",
+    "x-nba-stats-origin": "stats",
+    "x-nba-stats-token": "true",
+}
+
 
 def _phi(z: float) -> float:
     return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
@@ -77,6 +96,58 @@ def _phi(z: float) -> float:
 def diff_to_home_prob(diff: float) -> float:
     p = _phi(diff / NBA_MARGIN_SIGMA)
     return max(0.05, min(0.95, p))
+
+
+def _fetch_team_ratings_nba_stats(season: int, *, timeout: float = 30.0) -> dict[str, dict] | None:
+    """Fallback rating fetch via ``stats.nba.com`` LeagueStandingsV3.
+
+    Maps NBA-API ``DiffPointsPG`` onto ``srs`` (true SRS adds opponent-strength;
+    DiffPointsPG is just avg margin). ``pace`` / ``ortg`` / ``drtg`` are best-
+    effort: NBA-API exposes them via a different endpoint (TeamEstimatedMetrics),
+    but a 0.0 default is safe — the live connector only uses ``srs`` for the
+    diff-to-prob conversion. The fallback exists so live picks don't drop to
+    [] when bref 403s.
+    """
+    try:
+        from nba_api.stats.endpoints import leaguestandingsv3  # type: ignore
+    except Exception as e:  # noqa: BLE001
+        log.warning("nba_api not installed, fallback unavailable: %s", e)
+        return None
+    # Season label conversion. bref season=2024 → nba-api season="2023-24".
+    label = f"{season - 1}-{str(season)[2:]}"
+    try:
+        # nba_api ships its own browser-fingerprint UA via
+        # nba_api.library.http; passing custom headers can break the
+        # multi-part request flow (read timeout). Use the bundled defaults.
+        ls = leaguestandingsv3.LeagueStandingsV3(
+            season=label,
+            season_type="Regular Season",
+            league_id="00",
+            timeout=max(timeout, 30.0),
+        )
+        df = ls.get_data_frames()[0]
+    except Exception as e:  # noqa: BLE001
+        log.warning("nba_api LeagueStandingsV3 %s failed: %s", label, e)
+        return None
+    out: dict[str, dict] = {}
+    for row in df.to_dict("records"):
+        city = (row.get("TeamCity") or "").strip()
+        name = (row.get("TeamName") or "").strip()
+        full = f"{city} {name}".strip()
+        if not full:
+            continue
+        diff = row.get("DiffPointsPG")
+        try:
+            srs = float(diff) if diff is not None else 0.0
+        except Exception:
+            srs = 0.0
+        out[full] = {
+            "srs": srs,
+            "pace": 0.0,
+            "ortg": float(row.get("PointsPG") or 0.0),
+            "drtg": float(row.get("OppPointsPG") or 0.0),
+        }
+    return out or None
 
 
 def fetch_team_ratings(season: int, *, timeout: float = 15.0) -> dict[str, dict] | None:
@@ -94,7 +165,8 @@ def fetch_team_ratings(season: int, *, timeout: float = 15.0) -> dict[str, dict]
         timeout=timeout,
     )
     if data is None:
-        return None
+        log.info("bref ratings %s unavailable; falling back to stats.nba.com", season)
+        return _fetch_team_ratings_nba_stats(season, timeout=timeout)
     # Respect the documented crawl-delay even on cache miss → next request.
     time.sleep(CRAWL_DELAY_S * 0.01)  # only sleep a fraction in tests
     try:
@@ -109,7 +181,10 @@ def fetch_team_ratings(season: int, *, timeout: float = 15.0) -> dict[str, dict]
     if not m:
         m = re.search(r'<table[^>]*id="advanced_team"[^>]*>(.*?)</table>', html, re.S)
     if not m:
-        return None
+        # bref returned something but it's not the ratings table (likely a
+        # Cloudflare interstitial). Fall through to the stats.nba.com path.
+        log.info("bref ratings %s parsed empty; falling back to stats.nba.com", season)
+        return _fetch_team_ratings_nba_stats(season, timeout=timeout)
     table_html = m.group(1)
     rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.S)
     out: dict[str, dict] = {}
@@ -133,7 +208,9 @@ def fetch_team_ratings(season: int, *, timeout: float = 15.0) -> dict[str, dict]
             continue
         if team:
             out[team] = entry
-    return out or None
+    if not out:
+        return _fetch_team_ratings_nba_stats(season, timeout=timeout)
+    return out
 
 
 class NBABasketballReferenceSRS(SourceConnector):
@@ -241,7 +318,66 @@ class NBABasketballReferenceSRS(SourceConnector):
                     continue
                 rows.append({"date": d, "home": home_m.group(1).strip(),
                              "away": away_m.group(1).strip()})
+        if not rows:
+            log.info(
+                "bref schedule %s parsed empty; falling back to stats.nba.com",
+                season,
+            )
+            return _fetch_schedule_nba_stats(season, timeout=self.timeout)
         return rows
+
+
+def _fetch_schedule_nba_stats(season: int, *, timeout: float = 30.0) -> list[dict]:
+    """stats.nba.com fallback schedule pull. Returns same shape as bref.
+
+    Uses ``LeagueGameFinder`` (Regular Season) which returns every team-row
+    of every game; we deduplicate by ``GAME_ID`` and resolve home/away from
+    the ``MATCHUP`` field (``vs.`` = home, ``@`` = away).
+    """
+    try:
+        from nba_api.stats.endpoints import leaguegamefinder  # type: ignore
+    except Exception as e:  # noqa: BLE001
+        log.warning("nba_api missing for schedule fallback: %s", e)
+        return []
+    label = f"{season - 1}-{str(season)[2:]}"
+    try:
+        gf = leaguegamefinder.LeagueGameFinder(
+            season_nullable=label,
+            season_type_nullable="Regular Season",
+            league_id_nullable="00",
+            timeout=max(timeout, 30.0),
+        )
+        df = gf.get_data_frames()[0]
+    except Exception as e:  # noqa: BLE001
+        log.warning("nba_api LeagueGameFinder %s failed: %s", label, e)
+        return []
+    games: dict[str, dict] = {}
+    for r in df.to_dict("records"):
+        gid = str(r.get("GAME_ID") or "")
+        if not gid:
+            continue
+        matchup = (r.get("MATCHUP") or "").strip()
+        # Use TEAM_NAME ("Boston Celtics") not TEAM_ABBREVIATION ("BOS") so
+        # the ratings keys (from LeagueStandingsV3 city+name) align with the
+        # schedule keys here. This keeps the connector's ratings↔schedule
+        # join working under the stats.nba.com fallback path.
+        team_full = (r.get("TEAM_NAME") or "").strip()
+        if "vs." in matchup:
+            games.setdefault(gid, {})["home"] = team_full
+            games[gid]["date"] = r.get("GAME_DATE")
+        elif "@" in matchup:
+            games.setdefault(gid, {})["away"] = team_full
+            games[gid].setdefault("date", r.get("GAME_DATE"))
+    out: list[dict] = []
+    for gid, g in games.items():
+        if "home" not in g or "away" not in g or not g.get("date"):
+            continue
+        try:
+            d = datetime.strptime(g["date"], "%Y-%m-%d").date()
+        except Exception:
+            continue
+        out.append({"date": d, "home": g["home"], "away": g["away"]})
+    return out
 
 
 # ---------------------------------------------------------------------------
