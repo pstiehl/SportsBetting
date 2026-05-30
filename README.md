@@ -12,7 +12,7 @@
 
 <p align="center"><img src="docs/assets/flashcat-logo.svg" alt="Flashcat" width="180"></p>
 
-[**Live site →**](https://pstiehl.github.io/SportsBetting/) · [Methodology](https://pstiehl.github.io/SportsBetting/methodology.html) · [Backtest](https://pstiehl.github.io/SportsBetting/backtest.html) · [Sources](https://pstiehl.github.io/SportsBetting/source-scoreboard.html)
+[**Live site →**](https://pstiehl.github.io/SportsBetting/) · [Methodology (math)](docs/METHODOLOGY.md) · [Methodology (site)](https://pstiehl.github.io/SportsBetting/methodology.html) · [Backtest](https://pstiehl.github.io/SportsBetting/backtest.html) · [Sources](https://pstiehl.github.io/SportsBetting/source-scoreboard.html)
 
 ## What Flashcat does
 

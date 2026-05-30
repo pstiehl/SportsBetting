@@ -1,21 +1,24 @@
 # Source Scoreboard
-Window: **2022-01-01 → 2022-12-31** (multi)
+Window: **2022-01-01 → 2023-12-31** (multi)
 
-Events graded: **8874**
+Events graded: **28674**
 
 | Source | Events | Brier ↓ | ROI | Wins/Losses | Profit |
 |---|---:|---:|---:|---:|---:|
-| nfl:market-close | 241 | 0.2157 | -3.2% | 156/85 | $-773 |
-| nfl:market-consensus | 241 | 0.2157 | -3.2% | 156/85 | $-773 |
-| nfl:fivethirtyeight-nfl-elo | 286 | 0.2285 | -5.5% | 121/76 | $-1,078 |
-| nfl:fivethirtyeight-nfl-qbelo | 286 | 0.2234 | -7.3% | 122/75 | $-1,445 |
-| nba:fivethirtyeight-nba-elo-modern | 1342 | 0.2255 | — | 0/0 | $+0 |
-| nba:fivethirtyeight-nba-raptor | 1342 | 0.2188 | — | 0/0 | $+0 |
-| mlb:fivethirtyeight-mlb-elo | 2470 | 0.2409 | — | 0/0 | $+0 |
-| mlb:fivethirtyeight-mlb-rating | 2470 | 0.2387 | — | 0/0 | $+0 |
-| atp:tennis-rank-bt | 2545 | 0.2228 | -1.5% | 1635/907 | $-3,716 |
-| atp:market-close | 2544 | 0.1980 | -5.2% | 1729/815 | $-13,250 |
-| atp:market-consensus | 2544 | 0.1980 | -5.2% | 1729/815 | $-13,250 |
-| wta:tennis-rank-bt | 2249 | 0.2252 | -5.7% | 1423/823 | $-12,756 |
-| wta:market-close | 2251 | 0.2014 | -4.7% | 1526/725 | $-10,537 |
-| wta:market-consensus | 2251 | 0.2014 | -4.7% | 1526/725 | $-10,537 |
+| nfl:market-close | 540 | 0.2134 | -1.2% | 360/180 | $-629 |
+| nfl:market-consensus | 540 | 0.2134 | -1.2% | 360/180 | $-629 |
+| nfl:fivethirtyeight-nfl-elo | 329 | 0.2242 | -3.5% | 148/86 | $-817 |
+| nfl:fivethirtyeight-nfl-qbelo | 329 | 0.2166 | -4.5% | 150/84 | $-1,042 |
+| nba:fivethirtyeight-nba-elo-modern | 2116 | 0.2271 | — | 0/0 | $+0 |
+| nba:fivethirtyeight-nba-raptor | 2116 | 0.2183 | — | 0/0 | $+0 |
+| mlb:fivethirtyeight-mlb-elo | 3569 | 0.2418 | — | 0/0 | $+0 |
+| mlb:fivethirtyeight-mlb-rating | 3569 | 0.2397 | — | 0/0 | $+0 |
+| mlb:mlb-pythagorean | 3569 | 0.2467 | — | 0/0 | $+0 |
+| atp:tennis-rank-bt | 5150 | 0.2259 | -4.4% | 3264/1881 | $-22,865 |
+| atp:market-close | 5155 | 0.2004 | -4.9% | 3495/1660 | $-25,175 |
+| atp:market-consensus | 5155 | 0.2004 | -4.9% | 3495/1660 | $-25,175 |
+| atp:sackmann-atp-elo | 5903 | 0.2225 | — | 0/0 | $+0 |
+| wta:tennis-rank-bt | 4632 | 0.2276 | -6.0% | 2912/1714 | $-27,653 |
+| wta:market-close | 4639 | 0.2010 | -3.4% | 3174/1465 | $-15,603 |
+| wta:market-consensus | 4639 | 0.2010 | -3.4% | 3174/1465 | $-15,603 |
+| wta:sackmann-wta-elo | 5404 | 0.2247 | — | 0/0 | $+0 |

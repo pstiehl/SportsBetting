@@ -16,6 +16,7 @@ venv/
 # Data caches (samples are committed; cache is not)
 data/cache/
 data/flashcat.db
+data/source_history.db
 data/*.db-journal
 
 # Tests / coverage
