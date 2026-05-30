@@ -260,6 +260,14 @@ def test_live_mode_shows_status_badge(tmp_path, monkeypatch):
     _patch_scoreboard(tmp_path, monkeypatch, kind="live")
     bs.build([])
     html = (tmp_docs / "index.html").read_text()
-    # Per-sport badge: NFL is LIVE
-    assert "sport(s) LIVE" in html
-    assert "RESEARCH MODE" not in html
+    # Per-sport pills row in the site header carries a LIVE pill (🟢 LIVE NFL)
+    # for any sport that cleared the ROI floor. The pre-fix single-number
+    # headline ("backtest ROI +X%") has been removed because it conflated
+    # very different per-sport regimes.
+    assert "site-status-pills" in html
+    assert "🟢 LIVE" in html
+    # The misleading aggregate ("· backtest ROI +X.X%") next to the badge is
+    # gone. Tooltip text inside the pills row may still describe what the
+    # per-sport ROIs mean, but the single-number header roll-up is removed.
+    assert "· backtest ROI" not in html
+    assert "&middot; backtest ROI" not in html

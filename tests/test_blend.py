@@ -36,6 +36,21 @@ def test_blend_unequal_weights(basic_event):
     # src-a weight 3, src-b weight 1 → 0.75*0.60 + 0.25*0.70 = 0.625
     e = blend_event(basic_event, weights={"src-a": 3.0, "src-b": 1.0})
     assert math.isclose(e.blended_home_prob, 0.625, rel_tol=1e-6)
+    # Market devigged: home -195 avg ≈ 0.639. Blended home 0.625 is BELOW
+    # the devigged market on home, meaning the model thinks home is less
+    # likely than the market does — the model's edge is on the AWAY side.
+    # The pick must reflect that. (Pre-fix, pick_side ignored the market
+    # and picked home whenever blended_home >= 0.5, which is the root cause
+    # of Phil's "Recommended Plays with negative edge" bug.)
+    assert e.pick == "away"
+    assert math.isclose(e.pick_prob, 0.375, rel_tol=1e-6)
+
+
+def test_blend_equal_weights_picks_higher_edge_side(basic_event):
+    # Equal weights → blended 0.65. Market devigged home ≈ 0.639. Blended
+    # 0.65 > 0.639 → edge on home, pick home.
+    e = blend_event(basic_event, weights={})
+    assert math.isclose(e.blended_home_prob, 0.65, rel_tol=1e-6)
     assert e.pick == "home"
 
 

@@ -190,6 +190,15 @@ strong.pos { color: var(--green); }
 .site-status.live { background: rgba(34, 197, 94, 0.16); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); }
 .site-status.live-marginal { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
 
+/* Per-sport pills row in the site header (replaces the misleading
+   cross-sport headline ROI). Each pill carries its sport's own ROI so the
+   viewer can tell at a glance which sports are LIVE-eligible. */
+.site-status-pills {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+  align-items: center;
+}
+.site-status-pills .mode-pill { font-size: 10px; }
+
 /* Per-sport mode summary table & pills */
 .sport-mode-summary {
   margin: 18px 0; padding: 14px 16px; border-radius: 8px;
