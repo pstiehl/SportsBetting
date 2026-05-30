@@ -189,14 +189,32 @@ def _fetch_game_schedule(season: int) -> list[dict]:
 
     Returns dicts: ``{game_pk, date, home, away, home_won}`` (home_won None
     if the game hasn't been played yet — filtered out by callers).
+
+    The MLB Stats API returns 406 Not Acceptable on long-window calls when
+    the default ``hydrate`` payload exceeds their server budget, so we
+    chunk by month.
     """
     import statsapi  # type: ignore
 
-    sched = statsapi.schedule(
-        start_date=f"{season}-03-15",
-        end_date=f"{season}-11-15",
-        sportId=1,
-    )
+    months = [
+        (f"{season}-03-15", f"{season}-03-31"),
+        (f"{season}-04-01", f"{season}-04-30"),
+        (f"{season}-05-01", f"{season}-05-31"),
+        (f"{season}-06-01", f"{season}-06-30"),
+        (f"{season}-07-01", f"{season}-07-31"),
+        (f"{season}-08-01", f"{season}-08-31"),
+        (f"{season}-09-01", f"{season}-09-30"),
+        (f"{season}-10-01", f"{season}-10-31"),
+        (f"{season}-11-01", f"{season}-11-15"),
+    ]
+    sched: list = []
+    for ws, we in months:
+        try:
+            chunk = statsapi.schedule(start_date=ws, end_date=we, sportId=1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("schedule chunk %s→%s failed: %s", ws, we, e)
+            continue
+        sched.extend(chunk or [])
     out: list[dict] = []
     for g in sched:
         if g.get("game_type") not in ("R",):
