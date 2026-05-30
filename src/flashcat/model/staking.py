@@ -148,8 +148,20 @@ def decide_stake(
         "kelly_half": 0.5,
         "kelly_quarter": 0.25,
     }.get(mode, 0.25)
-    f = max(0.0, min(0.05, f_full * fraction))  # cap at 5% of bankroll per bet
-    stake = round(bankroll * f, 2)
+    # Variance floor: if fractional Kelly < 0.5% of bankroll, skip the bet.
+    f_scaled = f_full * fraction
+    if f_scaled < 0.005:
+        return StakeDecision(
+            side=side, stake=0.0, price=price, edge=edge,
+            reason=mode, skipped_reason="kelly_below_variance_floor",
+        )
+    f = max(0.0, min(0.02, f_scaled))  # cap at 2% of bankroll per bet
+    stake = round(bankroll * f / 5.0) * 5.0  # round to nearest $5
+    if stake <= 0:
+        return StakeDecision(
+            side=side, stake=0.0, price=price, edge=edge,
+            reason=mode, skipped_reason="kelly_below_variance_floor",
+        )
     return StakeDecision(
         side=side, stake=stake, price=price, edge=edge, reason=mode,
     )

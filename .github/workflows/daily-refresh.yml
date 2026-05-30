@@ -46,11 +46,18 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
-      - name: Run the model end-to-end (backtest → reweight → build)
+      - name: Run the model end-to-end (backtest → reweight → calibrate → build)
         env:
           # Optional. If unset, the OddsAPI source falls back to the
           # committed sample data — site still publishes, just not fresh.
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          # Wider backtest window so MLB, NBA, NFL all get material to score.
+          FLASHCAT_BACKTEST_START: '2022-01-01'
+          # Hybrid score tunables; defaults are fine but expose them for tuning.
+          FLASHCAT_HYBRID_BETA: '8'
+          FLASHCAT_HYBRID_LAMBDA: '0.5'
+          KELLY_FRACTION: '0.25'
+          BANKROLL: '10000'
         run: |
           python -m flashcat all
 

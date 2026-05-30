@@ -1,20 +1,30 @@
-"""Adaptive reweighting: per-sport softmax over (negative Brier) and/or ROI.
+"""Adaptive reweighting: per-sport softmax over a hybrid Brier+ROI score.
 
-Modes (ACCURACY_WEIGHT_MODE env):
-  - ``brier`` (default until calibrated): softmax over -Brier per sport
-  - ``log_loss``: softmax over -log-loss per sport
-  - ``roi``: softmax over ROI per sport
-  - ``brier_roi_hybrid``: 0.5 * softmax(-Brier) + 0.5 * softmax(ROI) per sport
+Hybrid mode (default, ``brier_roi_hybrid``):
 
-Sources with ``n_events < MIN_EVENTS`` (default 50) are excluded from the
-weight pool. They still appear in the scoreboard but don't influence the blend.
+    score_i  = (NAIVE_BRIER - brier_i) + λ · clip(roi_i, -0.2, +0.2)
+    weight_i = softmax(β · score_i)
 
-The output schema (v2) is:
+where ``NAIVE_BRIER = 0.25`` (a fair coin) and ``β``, ``λ`` are
+configurable. Sources with ``brier_i > NAIVE_BRIER`` for the sport are
+EXCLUDED outright — they're worse than guessing, and we don't want them in
+the pool.
+
+Per-sport minimum-sample gates:
+    nfl → 30   (short seasons)
+    nba/mlb → 50
+    atp/wta → 50
+
+Output schema (v2):
 
     {
       "schema": "v2",
-      "global": { source: weight, ... },           // legacy/back-compat
-      "by_sport": { sport: { source: weight, ... }, ... }
+      "global": { source: weight, ... },
+      "by_sport": { sport: { source: weight, ... }, ... },
+      "excluded": { sport: [source, ...], ... },   // why we dropped them
+      "mode": str,
+      "min_events": { sport: int, ... },
+      "beta": float, "lambda": float
     }
 
 The blender prefers per-sport weights when the event's sport is known and
@@ -30,13 +40,27 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..config import SOURCE_SCOREBOARD_PATH
+from ..config import (
+    SOURCE_SCOREBOARD_PATH,
+    hybrid_beta,
+    hybrid_lambda,
+)
 from ..db import insert_weight_snapshot
 from .blend import save_weights
 
 log = logging.getLogger(__name__)
 
 VALID_MODES = ("brier", "log_loss", "roi", "brier_roi_hybrid")
+NAIVE_BRIER = 0.25  # a 50/50 coin scores Brier 0.25
+ROI_CLIP = 0.20  # clip rolling ROI to ±20% to limit single-source dominance
+
+PER_SPORT_MIN_EVENTS: dict[str, int] = {
+    "nfl": 30,
+    "nba": 50,
+    "mlb": 50,
+    "atp": 50,
+    "wta": 50,
+}
 
 
 def weight_mode() -> str:
@@ -47,18 +71,19 @@ def weight_mode() -> str:
     return val
 
 
-def min_events() -> int:
+def min_events_for(sport: str | None) -> int:
+    if sport and sport in PER_SPORT_MIN_EVENTS:
+        return PER_SPORT_MIN_EVENTS[sport]
     try:
         return int(os.getenv("FLASHCAT_MIN_EVENTS_FOR_WEIGHT", "50"))
     except Exception:
         return 50
 
 
-def softmax(values: dict[str, float], temperature: float = 4.0) -> dict[str, float]:
-    """Numerically stable softmax. Higher temperature = sharper concentration."""
+def _softmax(values: dict[str, float], beta: float) -> dict[str, float]:
     if not values:
         return {}
-    scaled = {k: temperature * v for k, v in values.items()}
+    scaled = {k: beta * v for k, v in values.items()}
     m = max(scaled.values())
     exps = {k: math.exp(v - m) for k, v in scaled.items()}
     total = sum(exps.values())
@@ -68,8 +93,16 @@ def softmax(values: dict[str, float], temperature: float = 4.0) -> dict[str, flo
     return {k: v / total for k, v in exps.items()}
 
 
+def softmax(values: dict[str, float], temperature: float = 4.0) -> dict[str, float]:
+    """Backward-compatible alias for ``_softmax``.
+
+    Older callers (and the unit tests) used ``temperature`` to mean the
+    softmax sharpness — i.e. the β multiplier on each score.
+    """
+    return _softmax(values, temperature)
+
+
 def _row_signal(row: dict, mode: str) -> float | None:
-    """Pick the (higher-is-better) signal value to softmax over for one source row."""
     brier = row.get("brier")
     roi = row.get("roi")
     log_loss = row.get("log_loss")
@@ -79,39 +112,40 @@ def _row_signal(row: dict, mode: str) -> float | None:
         return -float(log_loss) if log_loss is not None else None
     if mode == "roi":
         return float(roi) if roi is not None else None
-    # hybrid handled by caller
-    return None
+    return None  # hybrid handled separately
 
 
-def _blend_hybrid(rows: dict[str, dict], temperature: float) -> dict[str, float]:
-    """Hybrid: 0.5 * softmax(-Brier) + 0.5 * softmax(ROI). Sources missing
-    ROI fall back to the Brier softmax alone."""
-    brier_vals = {k: -float(v["brier"]) for k, v in rows.items() if v.get("brier") is not None}
-    roi_vals = {k: float(v["roi"]) for k, v in rows.items() if v.get("roi") is not None}
-    if not roi_vals:
-        return softmax(brier_vals, temperature=temperature)
-    if not brier_vals:
-        return softmax(roi_vals, temperature=temperature)
-    s_brier = softmax(brier_vals, temperature=temperature)
-    s_roi = softmax(roi_vals, temperature=temperature)
-    out: dict[str, float] = {}
-    for k in set(s_brier) | set(s_roi):
-        out[k] = 0.5 * s_brier.get(k, 0.0) + 0.5 * s_roi.get(k, 0.0)
-    total = sum(out.values())
-    if total > 0:
-        out = {k: v / total for k, v in out.items()}
-    return out
+def _hybrid_score(row: dict, lam: float) -> float | None:
+    """Hybrid score: Brier improvement vs naive + λ · clipped ROI."""
+    brier = row.get("brier")
+    if brier is None:
+        return None
+    score = NAIVE_BRIER - float(brier)
+    roi = row.get("roi")
+    if roi is not None:
+        try:
+            roi_clipped = max(-ROI_CLIP, min(ROI_CLIP, float(roi)))
+            score += lam * roi_clipped
+        except Exception:
+            pass
+    return score
 
 
 def _compute_pool_weights(
     rows: dict[str, dict],
     *,
     mode: str,
-    temperature: float,
+    beta: float,
+    lam: float,
     min_n: int,
-) -> dict[str, float]:
-    """Filter low-sample rows and softmax over the configured signal."""
+) -> tuple[dict[str, float], list[dict]]:
+    """Filter low-sample / worse-than-naive rows and softmax over score.
+
+    Returns ``(weights, excluded)`` where excluded is a list of
+    ``{source, reason, brier, roi, n_events}`` dicts for the scoreboard.
+    """
     eligible: dict[str, dict] = {}
+    excluded: list[dict] = []
     for k, v in rows.items():
         if k == "flashcat-blended":
             continue
@@ -119,32 +153,50 @@ def _compute_pool_weights(
             continue
         n = int(v.get("n_events") or 0)
         if n < min_n:
+            excluded.append({
+                "source": k, "reason": f"n<{min_n}",
+                "brier": v.get("brier"), "roi": v.get("roi"), "n_events": n,
+            })
             continue
-        if v.get("brier") is None and v.get("roi") is None and v.get("log_loss") is None:
+        brier = v.get("brier")
+        if brier is not None and float(brier) > NAIVE_BRIER:
+            excluded.append({
+                "source": k, "reason": f"brier>{NAIVE_BRIER}",
+                "brier": brier, "roi": v.get("roi"), "n_events": n,
+            })
+            continue
+        if brier is None and v.get("roi") is None and v.get("log_loss") is None:
+            excluded.append({
+                "source": k, "reason": "no_signal",
+                "brier": None, "roi": None, "n_events": n,
+            })
             continue
         eligible[k] = v
     if not eligible:
-        return {}
+        return {}, excluded
     if mode == "brier_roi_hybrid":
-        return _blend_hybrid(eligible, temperature=temperature)
+        scores: dict[str, float] = {}
+        for k, v in eligible.items():
+            s = _hybrid_score(v, lam)
+            if s is not None:
+                scores[k] = s
+        return _softmax(scores, beta), excluded
     signals: dict[str, float] = {}
     for k, v in eligible.items():
         s = _row_signal(v, mode)
         if s is not None:
             signals[k] = s
-    return softmax(signals, temperature=temperature) if signals else {}
+    return (_softmax(signals, beta) if signals else {}), excluded
 
 
 def update_weights(
     scoreboard_path: Path | None = None,
-    temperature: float = 4.0,
-    min_n: int | None = None,
+    *,
+    beta: float | None = None,
+    lam: float | None = None,
     mode: str | None = None,
 ) -> dict:
-    """Read the scoreboard, compute per-sport + global weights, persist them.
-
-    Returns the full v2 payload that was written.
-    """
+    """Read the scoreboard, compute per-sport + global weights, persist them."""
     sp = scoreboard_path or SOURCE_SCOREBOARD_PATH
     if not sp.exists():
         return {}
@@ -154,33 +206,37 @@ def update_weights(
         return {}
 
     mode = mode or weight_mode()
-    min_n = min_n if min_n is not None else min_events()
+    beta = beta if beta is not None else hybrid_beta()
+    lam = lam if lam is not None else hybrid_lambda()
 
-    # Global weights come from the flat per-source scoreboard (which is keyed
-    # by ``<sport>:<source>`` in multi-sport runs and bare source name in
-    # single-sport runs).
     sources = scoreboard.get("sources", {}) or {}
-    global_weights = _compute_pool_weights(
-        sources, mode=mode, temperature=temperature, min_n=min_n,
+    global_weights, global_excluded = _compute_pool_weights(
+        sources, mode=mode, beta=beta, lam=lam, min_n=min_events_for(None),
     )
 
-    # Per-sport pools.
     per_sport_rows: dict[str, dict] = {}
+    excluded_by_sport: dict[str, list] = {"global": global_excluded}
+    min_events_by_sport: dict[str, int] = {"global": min_events_for(None)}
     for sport, p in (scoreboard.get("per_sport") or {}).items():
         srcs = (p or {}).get("sources") or {}
-        weights = _compute_pool_weights(
-            srcs, mode=mode, temperature=temperature, min_n=min_n,
+        min_n = min_events_for(sport)
+        weights, excluded = _compute_pool_weights(
+            srcs, mode=mode, beta=beta, lam=lam, min_n=min_n,
         )
         if weights:
             per_sport_rows[sport] = weights
+        excluded_by_sport[sport] = excluded
+        min_events_by_sport[sport] = min_n
 
     payload = {
         "schema": "v2",
         "mode": mode,
-        "min_events": min_n,
-        "temperature": temperature,
+        "beta": beta,
+        "lambda": lam,
+        "min_events": min_events_by_sport,
         "global": global_weights,
         "by_sport": per_sport_rows,
+        "excluded": excluded_by_sport,
     }
     save_weights(payload)
     insert_weight_snapshot(global_weights, datetime.now(timezone.utc).isoformat())

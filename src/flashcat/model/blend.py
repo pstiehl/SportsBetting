@@ -8,6 +8,7 @@ from typing import Iterable
 
 from ..config import SOURCE_WEIGHTS_PATH
 from ..types import Event
+from .calibration import calibrate_sport, load_coefficients
 from .pick import pick_side
 
 
@@ -75,8 +76,16 @@ def _resolve_weights(sources: Iterable[str], weights: dict[str, float]) -> dict[
     return {k: v / total for k, v in out.items()}
 
 
-def blend_event(event: Event, weights: dict | None = None) -> Event:
-    """Compute blended home win prob, write pick + pick_prob, return event."""
+def blend_event(
+    event: Event,
+    weights: dict | None = None,
+    calibration: dict | None = None,
+) -> Event:
+    """Compute blended home win prob, write pick + pick_prob, return event.
+
+    If ``calibration`` is provided (per-sport Platt coefficients), the
+    blended prob is passed through ``σ(α + β · logit(p))`` as a final step.
+    """
     weights = weights if weights is not None else load_weights()
     if not event.source_probs:
         event.blended_home_prob = None
@@ -88,6 +97,8 @@ def blend_event(event: Event, weights: dict | None = None) -> Event:
     w_norm = _resolve_weights(src_names, sport_weights)
     blended = sum(p.home_win_prob * w_norm.get(p.source, 0.0) for p in event.source_probs)
     blended = max(0.0, min(1.0, blended))
+    if calibration:
+        blended = calibrate_sport(blended, event.sport, calibration)
     event.blended_home_prob = blended
     side, side_prob = pick_side(event, blended)
     event.pick = side
@@ -95,6 +106,12 @@ def blend_event(event: Event, weights: dict | None = None) -> Event:
     return event
 
 
-def blend_events(events: list[Event], weights: dict | None = None) -> list[Event]:
+def blend_events(
+    events: list[Event],
+    weights: dict | None = None,
+    calibration: dict | None = None,
+) -> list[Event]:
     weights = weights if weights is not None else load_weights()
-    return [blend_event(e, weights) for e in events]
+    if calibration is None:
+        calibration = load_coefficients()
+    return [blend_event(e, weights, calibration) for e in events]

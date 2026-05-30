@@ -17,9 +17,16 @@ import typer
 
 from .backtest.runner import run_backtest, run_multi_sport_backtest
 from .build_site import build as build_site
-from .config import NoLiveDataError, ensure_dirs, use_samples_fallback
+from .config import (
+    NoLiveDataError,
+    backtest_end,
+    backtest_start,
+    ensure_dirs,
+    use_samples_fallback,
+)
 from .db import init_db
 from .model.blend import blend_events, load_weights
+from .model.calibration import fit_platt, save_coefficients
 from .model.reweight import update_weights as update_weights_fn
 from .signals.favlong import detect as detect_favlong
 from .signals.sharp import detect as detect_sharp
@@ -196,8 +203,12 @@ def build(
 
 @app.command()
 def backtest(
-    start: str = typer.Option("2023-09-01", help="Start date YYYY-MM-DD"),
-    end: str = typer.Option("2024-02-15", help="End date YYYY-MM-DD"),
+    start: str = typer.Option(
+        "", help="Start date YYYY-MM-DD (default FLASHCAT_BACKTEST_START or 2022-01-01)"
+    ),
+    end: str = typer.Option(
+        "", help="End date YYYY-MM-DD (default FLASHCAT_BACKTEST_END or today)"
+    ),
     sport: str = typer.Option(
         "all", help="Sport (nfl, nba, mlb, atp, wta, or 'all' for multi-sport)"
     ),
@@ -206,12 +217,45 @@ def backtest(
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     ensure_dirs()
     init_db()
-    s = date.fromisoformat(start)
-    e = date.fromisoformat(end)
+    s = date.fromisoformat(start or backtest_start())
+    e = date.fromisoformat(end or backtest_end())
     if sport == "all":
         run_multi_sport_backtest(s, e)
     else:
         run_backtest(s, e, sport=sport)
+
+
+@app.command()
+def calibrate() -> None:
+    """Fit per-sport Platt scaling on the latest backtest predictions.
+
+    Reads ``data/source_scoreboard.json`` (per_sport → blended.calibration_data
+    style) and the blended events' (prob, outcome) pairs to fit
+    σ(α + β · logit(p)). Persists to ``data/calibration.json``.
+    """
+    import json
+    from .config import SOURCE_SCOREBOARD_PATH
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    if not SOURCE_SCOREBOARD_PATH.exists():
+        log.info("No scoreboard yet — skipping calibration.")
+        return
+    with open(SOURCE_SCOREBOARD_PATH) as f:
+        sb = json.load(f)
+    per_sport: dict[str, dict] = {}
+    for sport, p in (sb.get("per_sport") or {}).items():
+        bm = (p or {}).get("blended") or {}
+        cal = bm.get("calibration_rows") or []
+        if not cal:
+            # Fall back to calibration_bins midpoints × actual hit rate
+            continue
+        fit = fit_platt([(float(prob), bool(y)) for prob, y in cal])
+        if not fit:
+            log.info("%s: calibration not fit (n=%d) — will pass-through", sport, len(cal))
+            continue
+        alpha, beta = fit
+        per_sport[sport] = {"alpha": alpha, "beta": beta, "n": len(cal)}
+        log.info("%s: Platt fit α=%.3f β=%.3f (n=%d)", sport, alpha, beta, len(cal))
+    save_coefficients(per_sport)
 
 
 @app.command()
@@ -236,15 +280,16 @@ def reweight() -> None:
 
 @app.command()
 def all(
-    start: str = typer.Option("2023-09-01"),
-    end: str = typer.Option("2024-02-15"),
+    start: str = typer.Option(""),
+    end: str = typer.Option(""),
     sport: str = typer.Option("all"),
     days_ahead: int = typer.Option(2),
 ) -> None:
-    """Backtest → reweight → build today's slate → render site."""
+    """Backtest → reweight → calibrate → build today's slate → render site."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     backtest(start=start, end=end, sport=sport)
     reweight()
+    calibrate()
     build(days_ahead=days_ahead)
 
 

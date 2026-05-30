@@ -18,8 +18,10 @@ ASSETS_DIR = DOCS_DIR / "assets"
 EVENT_PAGES_DIR = DOCS_DIR / "event"
 
 DB_PATH = DATA_DIR / "flashcat.db"
+SOURCE_HISTORY_DB_PATH = DATA_DIR / "source_history.db"
 SOURCE_WEIGHTS_PATH = DATA_DIR / "source_weights.json"
 SOURCE_SCOREBOARD_PATH = DATA_DIR / "source_scoreboard.json"
+CALIBRATION_PATH = DATA_DIR / "calibration.json"
 
 # Flat bet size — $100 on every event.
 FLAT_STAKE: float = 100.0
@@ -66,6 +68,48 @@ def bankroll() -> float:
         return float(os.getenv("FLASHCAT_BANKROLL", "10000"))
     except Exception:
         return 10_000.0
+
+
+def kelly_fraction() -> float:
+    """Fractional Kelly multiplier. Default 0.25 (quarter Kelly)."""
+    try:
+        return float(os.getenv("KELLY_FRACTION", "0.25"))
+    except Exception:
+        return 0.25
+
+
+def backtest_start() -> str:
+    """Default backtest window start. Configurable via FLASHCAT_BACKTEST_START.
+
+    Default 2022-01-01 so MLB / NBA / NFL / tennis all get full seasons of
+    material for the per-sport accuracy ranker.
+    """
+    return os.getenv("FLASHCAT_BACKTEST_START", "2022-01-01").strip()
+
+
+def backtest_end() -> str:
+    """Default backtest window end. Configurable via FLASHCAT_BACKTEST_END.
+
+    Default = today, so each refresh widens the window as new games complete.
+    """
+    from datetime import date as _date
+    return os.getenv("FLASHCAT_BACKTEST_END", _date.today().isoformat()).strip()
+
+
+def hybrid_beta() -> float:
+    """Softmax sharpness for the brier_roi_hybrid blend. Default 8."""
+    try:
+        return float(os.getenv("FLASHCAT_HYBRID_BETA", "8"))
+    except Exception:
+        return 8.0
+
+
+def hybrid_lambda() -> float:
+    """ROI weight (relative to Brier improvement) in hybrid score. Default 0.5."""
+    try:
+        return float(os.getenv("FLASHCAT_HYBRID_LAMBDA", "0.5"))
+    except Exception:
+        return 0.5
 
 
 class NoLiveDataError(RuntimeError):

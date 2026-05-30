@@ -22,6 +22,7 @@ from ..config import (
 )
 from ..model.blend import blend_events, load_weights
 from ..model.staking import decide_stake
+from .. import source_history as _sh
 from ..signals.favlong import detect as detect_favlong
 from ..signals.sharp import detect as detect_sharp
 from ..sources.nflverse import NFLverseHistorical
@@ -32,6 +33,8 @@ from ..sources.fivethirtyeight_archives import (
     FiveThirtyEightNBAModern,
     FiveThirtyEightNFLElo,
 )
+from ..sources.sackmann_elo import SackmannATPElo, SackmannWTAElo
+from ..sources.mlb_pythagorean import MLBPythagorean
 from ..types import (
     Event,
     HistoricalResult,
@@ -48,10 +51,16 @@ log = logging.getLogger(__name__)
 # multiple connectors; we merge their events on (date, home, away).
 SPORT_LOADERS: dict[str, list] = {
     "nfl": [NFLverseHistorical, FiveThirtyEightNFLElo],
-    "atp": [lambda: TennisDataHistorical(tour="atp")],
-    "wta": [lambda: TennisDataHistorical(tour="wta")],
+    "atp": [
+        lambda: TennisDataHistorical(tour="atp"),
+        SackmannATPElo,
+    ],
+    "wta": [
+        lambda: TennisDataHistorical(tour="wta"),
+        SackmannWTAElo,
+    ],
     "nba": [FiveThirtyEightNBAHistorical, FiveThirtyEightNBAModern],
-    "mlb": [FiveThirtyEightMLBElo],
+    "mlb": [FiveThirtyEightMLBElo, MLBPythagorean],
 }
 
 
@@ -283,6 +292,13 @@ def run_multi_sport_backtest(
 
     blended_overall = _aggregate_blended(per_sport)
 
+    # Persist per-source predictions + outcomes into source_history.db so the
+    # reweighter and CLV math can query the rolling window directly.
+    try:
+        _persist_source_history(per_sport, start, end)
+    except Exception as e:  # noqa: BLE001
+        log.warning("source_history persist failed: %s", e)
+
     out_payload = {
         "window": {"start": str(start), "end": str(end), "sport": "multi"},
         "weights": weights,
@@ -300,6 +316,41 @@ def run_multi_sport_backtest(
         json.dump(out_payload, f, indent=2)
     log.info("Wrote multi-sport scoreboard → %s", out_path)
     return out_payload
+
+
+def _persist_source_history(per_sport: dict[str, dict], start, end) -> None:
+    """Walk per_sport blended events and persist (event, source) prediction rows.
+
+    We can't re-derive the raw events from the scoreboard payload alone, so
+    this helper accepts the in-memory ``per_sport`` map and writes a
+    flattened ledger row per (event_id, source, prob, outcome) into
+    ``data/source_history.db``.
+    """
+    # We only have aggregate data here; in this PR we wire the schema and the
+    # query API but the row-by-row persistence is enabled in the live `build`
+    # path. The backtest writes summary `meta` rows instead.
+    from datetime import date as _date
+    end_iso = (_date.today().isoformat() if not end else str(end))
+    start_iso = str(start)
+    rows: list[dict] = []
+    for sport, p in per_sport.items():
+        for source, sb_row in (p.get("sources") or {}).items():
+            rows.append({
+                "sport": sport,
+                "source": source,
+                "window_start": start_iso,
+                "window_end": end_iso,
+                "n_events": sb_row.get("n_events"),
+                "n_bets": (sb_row.get("wins") or 0) + (sb_row.get("losses") or 0),
+                "brier": sb_row.get("brier"),
+                "roi": sb_row.get("roi"),
+                "accuracy": None,
+                "log_loss": None,
+                "calibration_slope": None,
+                "avg_clv_pp": None,
+            })
+    if rows:
+        _sh.upsert_meta(rows)
 
 
 def _aggregate_blended(per_sport: dict[str, dict]) -> dict:
@@ -402,6 +453,11 @@ def _score_blended(events: list[Event], results: list[HistoricalResult], sport: 
         "stake_mode": mode,
         "edge_threshold": thresh,
         "calibration": calibration_bins(calibration_data),
+        # Raw (prob, outcome) rows for Platt fit downstream. Cap at 5000 to
+        # keep the scoreboard file from ballooning on long backtests.
+        "calibration_rows": [
+            (round(p, 4), bool(y)) for p, y in calibration_data[-5000:]
+        ],
         "slices": {
             k: {**v, "roi": (v["profit"] / v["wagered"]) if v["wagered"] else None}
             for k, v in sliced.items()
