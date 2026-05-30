@@ -41,7 +41,7 @@ from collections import defaultdict
 from datetime import date, datetime, time, timezone, timedelta
 from pathlib import Path
 
-from ..config import CACHE_DIR, CALIBRATION_PATH
+from ..config import CACHE_DIR, CALIBRATION_PATH, SOURCE_HISTORY_DB_PATH
 from ..types import Event, SourceProb, Sport
 from .base import SourceConnector
 from .mlb_live import _cached_get
@@ -66,6 +66,155 @@ LEAGUE_AVG_XWOBA = 0.315  # 2022-2024 MLB average
 
 STATSAPI_BASE = "https://statsapi.mlb.com/api/v1"
 SAVANT_BASE = "https://baseballsavant.mlb.com/statcast_search"
+
+# Per-batter contribution threshold for inclusion in the rationale.
+# Batters whose xwOBA deviates from league mean by less than this absolute
+# amount fall back to the generic "Statcast lineup edge" string — we don't
+# fabricate specificity. Phil's spec: 0.030 xwOBA.
+BATTER_RATIONALE_DEVIATION_THRESHOLD = 0.030
+
+
+# ---------------------------------------------------------------------------
+# Per-batter contribution persistence
+# ---------------------------------------------------------------------------
+
+_LINEUP_CONTRIB_SCHEMA = """
+CREATE TABLE IF NOT EXISTS mlb_lineup_contributions (
+    event_id TEXT NOT NULL,
+    batter_id INTEGER NOT NULL,
+    batter_name TEXT,
+    team TEXT,
+    team_side TEXT,
+    batting_order_position INTEGER NOT NULL,
+    batter_stand TEXT,
+    vs_pitcher_hand TEXT,
+    xwoba_vs_handedness REAL,
+    league_avg_xwoba REAL,
+    pa_weight REAL,
+    opp_xwoba_allowed REAL,
+    contribution_to_team_score REAL,
+    xwoba_observed INTEGER,
+    commence_time TEXT,
+    captured_at TEXT,
+    PRIMARY KEY (event_id, batter_id, batting_order_position)
+);
+CREATE INDEX IF NOT EXISTS mlb_lineup_contributions_event
+    ON mlb_lineup_contributions(event_id);
+CREATE INDEX IF NOT EXISTS mlb_lineup_contributions_commence
+    ON mlb_lineup_contributions(commence_time);
+"""
+
+
+def _init_lineup_contributions_table(db_path: Path | None = None) -> None:
+    import sqlite3
+
+    path = db_path or SOURCE_HISTORY_DB_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
+    try:
+        conn.executescript(_LINEUP_CONTRIB_SCHEMA)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def persist_lineup_contributions(
+    event_id: str,
+    commence_time: datetime,
+    contributions: list[dict],
+    *,
+    db_path: Path | None = None,
+) -> int:
+    """Upsert per-batter contribution rows for an event. Returns row count.
+
+    Safe to call repeatedly — PRIMARY KEY is
+    ``(event_id, batter_id, batting_order_position)`` and we REPLACE.
+    """
+    import sqlite3
+
+    if not contributions:
+        return 0
+    _init_lineup_contributions_table(db_path)
+    path = db_path or SOURCE_HISTORY_DB_PATH
+    captured_at = datetime.now(timezone.utc).isoformat()
+    commence_iso = commence_time.isoformat() if commence_time else None
+    conn = sqlite3.connect(path)
+    n = 0
+    try:
+        for row in contributions:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO mlb_lineup_contributions
+                  (event_id, batter_id, batter_name, team, team_side,
+                   batting_order_position, batter_stand, vs_pitcher_hand,
+                   xwoba_vs_handedness, league_avg_xwoba, pa_weight,
+                   opp_xwoba_allowed, contribution_to_team_score,
+                   xwoba_observed, commence_time, captured_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event_id,
+                    int(row.get("batter_id")) if row.get("batter_id") is not None else None,
+                    row.get("batter_name"),
+                    row.get("team"),
+                    row.get("team_side"),
+                    int(row.get("batting_order_position", 0)),
+                    row.get("batter_stand"),
+                    row.get("vs_pitcher_hand"),
+                    row.get("xwoba_vs_handedness"),
+                    row.get("league_avg_xwoba"),
+                    row.get("pa_weight"),
+                    row.get("opp_xwoba_allowed"),
+                    row.get("contribution_to_team_score"),
+                    1 if row.get("xwoba_observed") else 0,
+                    commence_iso,
+                    captured_at,
+                ),
+            )
+            n += 1
+        conn.commit()
+    finally:
+        conn.close()
+    return n
+
+
+def load_lineup_contributions(
+    event_id: str,
+    *,
+    db_path: Path | None = None,
+) -> list[dict]:
+    """Load per-batter contribution rows for an event from the local DB.
+
+    Returns an empty list if the table doesn't exist or the event has no
+    persisted rows. Used by the explainer when ``SourceProb.metadata`` is
+    missing (e.g. cached events loaded from disk without metadata).
+    """
+    import sqlite3
+
+    path = db_path or SOURCE_HISTORY_DB_PATH
+    if not path.exists():
+        return []
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    try:
+        # Soft check that the table exists before querying — keeps the
+        # explainer resilient on databases that pre-date this PR.
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='mlb_lineup_contributions'"
+        )
+        if cur.fetchone() is None:
+            return []
+        cur = conn.execute(
+            """
+            SELECT * FROM mlb_lineup_contributions
+            WHERE event_id = ?
+            ORDER BY team_side, batting_order_position
+            """,
+            (event_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -359,18 +508,50 @@ class MLBStatcastLineup(SourceConnector):
                 # source will still produce a row for the same game.
                 return None
 
-            home_off = self._team_offense(
+            home_result = self._team_offense(
                 home_batters, away_pitcher_id, away_pitcher_hand, season
             )
-            away_off = self._team_offense(
+            away_result = self._team_offense(
                 away_batters, home_pitcher_id, home_pitcher_hand, season
             )
-            if home_off is None or away_off is None:
+            if home_result is None or away_result is None:
                 return None
+            home_off, home_contribs = home_result
+            away_off, away_contribs = away_result
 
             p = score_diff_to_home_prob(home_off, away_off, season=season)
+            event_id = f"mlb-statcast-lineup:{game_pk}"
+
+            # Tag contributions with team-side + names of teams so the
+            # explainer can render "Aaron Judge (NYY, 1st in order)".
+            for row in home_contribs:
+                row["team"] = home
+                row["team_side"] = "home"
+            for row in away_contribs:
+                row["team"] = away
+                row["team_side"] = "away"
+
+            metadata = {
+                "home_off": home_off,
+                "away_off": away_off,
+                "diff": home_off - away_off,
+                "lineup_contributions": home_contribs + away_contribs,
+            }
+
+            # Persist to data/source_history.db so the explainer can query
+            # later without re-running the Statcast fetch path. Best-effort:
+            # never break the build pipeline on a DB write failure.
+            try:
+                persist_lineup_contributions(
+                    event_id=event_id,
+                    commence_time=commence,
+                    contributions=home_contribs + away_contribs,
+                )
+            except Exception as e:  # noqa: BLE001
+                log.warning("mlb_lineup_contributions persist failed: %s", e)
+
             return Event(
-                event_id=f"mlb-statcast-lineup:{game_pk}",
+                event_id=event_id,
                 sport="mlb",
                 league="MLB",
                 home=home,
@@ -385,6 +566,7 @@ class MLBStatcastLineup(SourceConnector):
                             f"home_off={home_off:.4f} away_off={away_off:.4f} "
                             f"diff={home_off-away_off:+.4f}"
                         ),
+                        metadata=metadata,
                     )
                 ],
             )
@@ -396,50 +578,95 @@ class MLBStatcastLineup(SourceConnector):
         ph = p.get("pitchHand") or {}
         return (ph.get("code") or ph.get("description") or "R")[:1].upper()
 
-    def _batters_from_lineup(self, players: list[dict]) -> list[tuple[int, str]]:
-        out: list[tuple[int, str]] = []
+    def _batters_from_lineup(self, players: list[dict]) -> list[tuple[int, str, str]]:
+        """Return ``(player_id, batting_stand, full_name)`` per lineup slot.
+
+        Names are looked up from ``fullName``/``person.fullName`` when the
+        statsapi response includes them. Empty string when missing so the
+        connector still functions on legacy fixtures.
+        """
+        out: list[tuple[int, str, str]] = []
         for p in players:
             pid = p.get("id") or p.get("personId")
             if not pid:
                 continue
             bh = p.get("batSide") or {}
             stand = (bh.get("code") or bh.get("description") or "R")[:1].upper()
+            name = (
+                p.get("fullName")
+                or (p.get("person") or {}).get("fullName")
+                or p.get("name")
+                or ""
+            )
             # Switch hitters mark "S" — treat them as taking opposite
             # handedness of the pitcher (max-leverage assumption).
-            out.append((int(pid), stand))
+            out.append((int(pid), stand, str(name)))
         return out
 
     def _team_offense(
         self,
-        batters: list[tuple[int, str]],
+        batters: list[tuple[int, str, str]],
         opp_pitcher_id: int,
         opp_pitcher_hand: str,
         season: int,
-    ) -> float | None:
+    ) -> tuple[float, list[dict]] | None:
+        """Compute the team offense score AND per-batter contribution rows.
+
+        Returns ``(team_score, contributions)`` where ``contributions`` is a
+        list of dicts — one per lineup slot — with the structured fields
+        the explainer needs to name specific matchup-driving batters.
+        """
         batter_xwobas: list[float] = []
+        per_batter: list[dict] = []
         # For switch hitters we resolve to the platoon-advantage side.
-        for bid, stand in batters:
+        for order_pos, (bid, stand, name) in enumerate(batters, start=1):
             effective_stand = stand if stand != "S" else (
                 "L" if opp_pitcher_hand == "R" else "R"
             )
             x = fetch_batter_xwoba_vs_handedness(bid, season, opp_pitcher_hand)
+            x_observed = x is not None
             if x is None:
                 x = LEAGUE_AVG_XWOBA
             batter_xwobas.append(x)
+            per_batter.append({
+                "batter_id": bid,
+                "batter_name": name,
+                "batting_order_position": order_pos,
+                "batter_stand": effective_stand,
+                "vs_pitcher_hand": opp_pitcher_hand,
+                "xwoba_vs_handedness": float(x),
+                "league_avg_xwoba": LEAGUE_AVG_XWOBA,
+                "xwoba_observed": x_observed,
+            })
 
         # Pitcher xwOBA-allowed vs the lineup's average handedness — we use
         # the majority handedness across the lineup as the dominant matchup
         # signal. (Granular per-PA pitcher splits would be ideal but the
         # difference is < 0.5pp in practice.)
-        n_r = sum(1 for _, s in batters if s == "R" or s == "S")
-        n_l = sum(1 for _, s in batters if s == "L")
+        n_r = sum(1 for _, s, _n in batters if s == "R" or s == "S")
+        n_l = sum(1 for _, s, _n in batters if s == "L")
         majority_hand = "R" if n_r >= n_l else "L"
         opp_xwoba_allowed = fetch_pitcher_xwoba_allowed_vs_handedness(
             opp_pitcher_id, season, majority_hand
         )
         if opp_xwoba_allowed is None:
             opp_xwoba_allowed = LEAGUE_AVG_XWOBA
-        return compute_team_offense_score(batter_xwobas, opp_xwoba_allowed)
+        team_score = compute_team_offense_score(batter_xwobas, opp_xwoba_allowed)
+
+        # Fill in per-batter weighted contribution to the team score so the
+        # explainer can rank by impact (not just raw xwOBA deviation).
+        n = min(len(batter_xwobas), 10)
+        if n > 0:
+            weights = PA_WEIGHTS_10[:n] if n == 10 else PA_WEIGHTS_9[:n]
+            total_w = sum(weights) or 1.0
+            norm = [w / total_w for w in weights]
+            for i, row in enumerate(per_batter[:n]):
+                row["pa_weight"] = norm[i]
+                row["contribution_to_team_score"] = (
+                    norm[i] * batter_xwobas[i] * opp_xwoba_allowed
+                )
+                row["opp_xwoba_allowed"] = opp_xwoba_allowed
+        return team_score, per_batter
 
 
 # ---------------------------------------------------------------------------

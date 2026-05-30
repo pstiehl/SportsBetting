@@ -81,7 +81,11 @@
 </div>
 
 {% macro event_card(ev) -%}
-<a href="event/{{ ev.slug }}.html" class="event-card mode-{{ ev.sport_mode_cls }}" style="text-decoration:none;color:inherit">
+<a href="event/{{ ev.slug }}.html" class="event-card mode-{{ ev.sport_mode_cls }}"
+   data-sort-edge="{{ (ev.edge_value if ev.edge_value is not none else -999) }}"
+   data-sort-stake="{{ ev.recommended_stake or 0 }}"
+   data-sort-time="{{ ev.commence_iso or '' }}"
+   style="text-decoration:none;color:inherit">
   <div class="top">
     <span>{{ ev.sport_upper }} &middot; <time datetime="{{ ev.commence_iso }}" data-local="show">{{ ev.commence_str }}</time> <span class="mode-pill {{ ev.sport_mode_cls }}" title="{{ ev.sport_upper }} blended backtest ROI {{ ev.sport_mode_roi_str }}">{{ ev.sport_mode_label }}</span></span>
     <span>{{ ev.n_sources }} sources</span>
@@ -124,11 +128,23 @@
 </a>
 {%- endmacro %}
 
+{% macro sort_toolbar(section_id) -%}
+<div class="event-grid-sort" data-target="{{ section_id }}">
+  <label for="{{ section_id }}-sort">Sort by</label>
+  <select id="{{ section_id }}-sort" data-sort-target="{{ section_id }}">
+    <option value="edge" selected>Edge (desc)</option>
+    <option value="stake">Kelly stake (desc)</option>
+    <option value="time">Game start time</option>
+  </select>
+</div>
+{%- endmacro %}
+
 <section class="scoreboard-section recommended">
   <h3>⭐ Recommended Plays <span class="section-count">({{ n_grouped_recommended }})</span></h3>
   <p class="lede" style="margin-top:-4px">Edge clears the {{ edge_threshold_pp }}&thinsp;pp threshold AND the event's sport is in LIVE mode.</p>
   {% if grouped_recommended %}
-  <div class="event-grid">{% for ev in grouped_recommended %}{{ event_card(ev) }}{% endfor %}</div>
+  {{ sort_toolbar("grid-recommended") }}
+  <div class="event-grid" id="grid-recommended">{% for ev in grouped_recommended %}{{ event_card(ev) }}{% endfor %}</div>
   {% else %}
   <div class="callout"><strong>No recommended plays right now.</strong> Either no event cleared the edge threshold on a LIVE-mode sport, or no LIVE-mode sport has games on today's slate.</div>
   {% endif %}
@@ -138,7 +154,8 @@
   <h3>🔍 Research-Mode Picks <span class="section-count">({{ n_grouped_research }})</span></h3>
   <p class="lede" style="margin-top:-4px">Edge cleared the threshold but the event's sport is in RESEARCH mode — no stake recommendation.</p>
   {% if grouped_research %}
-  <div class="event-grid">{% for ev in grouped_research %}{{ event_card(ev) }}{% endfor %}</div>
+  {{ sort_toolbar("grid-research") }}
+  <div class="event-grid" id="grid-research">{% for ev in grouped_research %}{{ event_card(ev) }}{% endfor %}</div>
   {% else %}
   <div class="callout">No research-mode picks today.</div>
   {% endif %}
@@ -147,8 +164,63 @@
 <section class="scoreboard-section no-edge">
   <details>
     <summary><h3 style="display:inline">⏸️ No Edge <span class="section-count">({{ n_grouped_no_edge }})</span></h3> — show {{ n_grouped_no_edge }} coin-flip events</summary>
-    <div class="event-grid">{% for ev in grouped_no_edge %}{{ event_card(ev) }}{% endfor %}</div>
+    {% if grouped_no_edge %}
+    {{ sort_toolbar("grid-no-edge") }}
+    <div class="event-grid" id="grid-no-edge">{% for ev in grouped_no_edge %}{{ event_card(ev) }}{% endfor %}</div>
+    {% endif %}
   </details>
 </section>
+
+<script>
+(function () {
+  // Client-side scoreboard sort. No backend re-render: we only re-order
+  // DOM children of <div class="event-grid" id="..."> based on the
+  // data-sort-* attributes the server already wrote on each card.
+  function reorder(gridId, key) {
+    var grid = document.getElementById(gridId);
+    if (!grid) return;
+    var cards = Array.prototype.slice.call(
+      grid.querySelectorAll(".event-card")
+    );
+    if (cards.length < 2) return;
+    var attr, descending;
+    if (key === "stake") {
+      attr = "data-sort-stake"; descending = true;
+    } else if (key === "time") {
+      attr = "data-sort-time"; descending = false;
+    } else {
+      attr = "data-sort-edge"; descending = true;
+    }
+    cards.sort(function (a, b) {
+      var av = a.getAttribute(attr) || "";
+      var bv = b.getAttribute(attr) || "";
+      if (key === "time") {
+        // ISO 8601 sorts lexicographically. Empty strings sink to the bottom.
+        if (av === "" && bv === "") return 0;
+        if (av === "") return 1;
+        if (bv === "") return -1;
+        return av < bv ? -1 : (av > bv ? 1 : 0);
+      }
+      var an = parseFloat(av);
+      var bn = parseFloat(bv);
+      if (isNaN(an)) an = -Infinity;
+      if (isNaN(bn)) bn = -Infinity;
+      return descending ? (bn - an) : (an - bn);
+    });
+    cards.forEach(function (c) { grid.appendChild(c); });
+  }
+  var selects = document.querySelectorAll("select[data-sort-target]");
+  for (var i = 0; i < selects.length; i++) {
+    (function (sel) {
+      sel.addEventListener("change", function () {
+        reorder(sel.getAttribute("data-sort-target"), sel.value);
+      });
+      // Apply the default sort once on page load so the order is
+      // deterministic even if the server-rendered order differs.
+      reorder(sel.getAttribute("data-sort-target"), sel.value);
+    })(selects[i]);
+  }
+})();
+</script>
 
 </div>

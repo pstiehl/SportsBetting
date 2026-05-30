@@ -69,6 +69,19 @@ h3 { color: var(--text); font-size: 17px; margin-top: 22px; font-weight: 600; }
 
 /* Event cards on home page */
 .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
+.event-grid-sort {
+  display: flex; align-items: center; gap: 10px;
+  margin: 6px 0 10px;
+  font-size: 13px; color: var(--muted);
+}
+.event-grid-sort label { font-weight: 600; letter-spacing: 0.02em; }
+.event-grid-sort select {
+  background: var(--card-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 8px; font-size: 13px;
+  font-family: inherit;
+}
+.event-grid-sort select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .event-card {
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
   padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;

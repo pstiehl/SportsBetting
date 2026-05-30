@@ -6,7 +6,9 @@ site so Phil can audit the decision without parsing source-by-source
 probabilities.
 
 Priority order (highest leverage first):
-  1. Statcast lineup edge (MLB only) — biggest single-game signal.
+  1. Statcast per-batter matchup mismatches (MLB only) — surfaces specific
+     batters when their xwOBA deviates meaningfully from league mean, otherwise
+     falls back to a generic lineup-edge string.
   2. Weather / park run-environment delta (MLB only).
   3. Per-sport flagship signal (NFL: EPA differential, NBA: SRS diff).
   4. Market consensus vs blended probability — the "edge" statement.
@@ -22,6 +24,40 @@ import re
 from typing import Iterable
 
 from .types import Event, SourceProb, american_to_prob, devig_two_way
+
+# Per-batter inclusion threshold mirrors the source connector — batters
+# whose xwOBA deviates from league mean by less than this absolute value
+# fall back to the generic "Statcast lineup edge" rationale string.
+BATTER_RATIONALE_DEVIATION_THRESHOLD = 0.030
+# Rough conversion from a single batter's PA-weighted xwOBA delta to runs
+# per game. (38 PA/team/game x 1.45 runs-per-wOBA-pt scaling.)
+_RUNS_PER_WOBA_PT_PER_GAME = 38.0 * 1.45
+
+
+ORDINAL_SUFFIXES = {1: "st", 2: "nd", 3: "rd"}
+
+
+def _ordinal(n: int) -> str:
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = ORDINAL_SUFFIXES.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _short_team(name: str) -> str:
+    """Return a short tag for a team name (best-effort).
+
+    Uses the last whitespace-separated token when the name has multiple
+    words (e.g. "New York Yankees" → "Yankees"); otherwise uppercases.
+    Falls back to the raw name when both heuristics return empty.
+    """
+    if not name:
+        return ""
+    parts = name.split()
+    if len(parts) >= 2:
+        return parts[-1]
+    return name
 
 
 def _find_source(event: Event, name: str) -> SourceProb | None:
@@ -56,10 +92,8 @@ def _parse_kv(notes: str) -> dict[str, str]:
     return out
 
 
-def _statcast_explanation(event: Event) -> str | None:
-    sp = _find_source(event, "mlb-statcast-lineup")
-    if sp is None:
-        return None
+def _generic_statcast_summary(event: Event, sp: SourceProb) -> str | None:
+    """Original team-level lineup-edge string (fallback when per-batter data missing)."""
     kv = _parse_kv(sp.notes)
     try:
         diff = float(kv.get("diff", "0"))
@@ -75,6 +109,126 @@ def _statcast_explanation(event: Event) -> str | None:
         f"Statcast lineup edge: {side} offense projected {runs_per_game:+.2f} runs/game "
         f"on lineup × starter handedness matchup (xwOBA diff {diff:+.4f})."
     )
+
+
+def _load_contributions(event: Event, sp: SourceProb) -> list[dict]:
+    """Return per-batter contribution rows from metadata, falling back to the DB.
+
+    Three layers:
+      1. ``sp.metadata['lineup_contributions']`` — the live path; the
+         connector emits this directly on the SourceProb.
+      2. ``data/source_history.db`` — the persisted table populated by the
+         same connector; used when the event was loaded from disk (cached
+         pipeline) without metadata.
+      3. empty list — the explainer falls back to the generic string.
+    """
+    rows: list[dict] = []
+    md = getattr(sp, "metadata", None)
+    if isinstance(md, dict):
+        lc = md.get("lineup_contributions")
+        if isinstance(lc, list):
+            rows = [r for r in lc if isinstance(r, dict)]
+    if rows:
+        return rows
+    # Best-effort DB load — keep the explainer pure on any I/O failure.
+    try:
+        from .sources.mlb_statcast_lineup import load_lineup_contributions
+
+        rows = load_lineup_contributions(event.event_id)
+    except Exception:
+        rows = []
+    return rows
+
+
+def _batter_lines(
+    event: Event,
+    contributions: list[dict],
+    *,
+    threshold: float = BATTER_RATIONALE_DEVIATION_THRESHOLD,
+    top_n: int = 3,
+) -> list[str]:
+    """Return up to ``top_n`` per-batter rationale strings.
+
+    Only batters whose xwOBA deviates from league mean by more than
+    ``threshold`` (in absolute value) are eligible — we don't fabricate
+    specificity from noise.
+    """
+    eligible: list[tuple[float, dict]] = []
+    for row in contributions:
+        if not row.get("batter_name"):
+            continue
+        if not row.get("xwoba_observed", True):
+            # Missing batter xwOBA — connector filled with league avg; do
+            # not surface that as a "matchup-driving" batter.
+            continue
+        try:
+            x = float(row.get("xwoba_vs_handedness"))
+            avg = float(row.get("league_avg_xwoba"))
+        except (TypeError, ValueError):
+            continue
+        dev = x - avg
+        if abs(dev) < threshold:
+            continue
+        eligible.append((abs(dev), row))
+    eligible.sort(key=lambda t: t[0], reverse=True)
+    out: list[str] = []
+    for _, row in eligible[:top_n]:
+        out.append(_format_batter_line(event, row))
+    return out
+
+
+def _format_batter_line(event: Event, row: dict) -> str:
+    name = str(row.get("batter_name") or "").strip()
+    team_name = row.get("team") or ""
+    team_tag = _short_team(team_name)
+    pos = int(row.get("batting_order_position") or 0)
+    order_str = _ordinal(pos) if pos else "?"
+    hand = (row.get("vs_pitcher_hand") or "").upper()
+    hand_str = "LHP" if hand == "L" else ("RHP" if hand == "R" else "")
+    starter_str = f"vs {hand_str} starter" if hand_str else "vs starter"
+    try:
+        x = float(row.get("xwoba_vs_handedness"))
+        avg = float(row.get("league_avg_xwoba"))
+    except (TypeError, ValueError):
+        x, avg = 0.0, 0.0
+    dev = x - avg
+    pa_w = float(row.get("pa_weight") or 0.0)
+    # Runs/game above neutral attributable to this batter, assuming a
+    # league-average opposing pitcher. PA-weighted so a leadoff +0.080
+    # xwOBA outlier scores higher than a 9-hole +0.080 outlier.
+    runs_per_game = pa_w * dev * _RUNS_PER_WOBA_PT_PER_GAME
+    pieces = [f"Statcast: {name}"]
+    if team_tag and order_str:
+        pieces[-1] += f" ({team_tag}, {order_str} in order)"
+    elif team_tag:
+        pieces[-1] += f" ({team_tag})"
+    line = f"{pieces[0]} {starter_str} — {x:.3f} xwOBA vs handedness, league avg {avg:.3f}"
+    if abs(runs_per_game) >= 0.005:
+        line += f" → {runs_per_game:+.2f} runs/game above neutral"
+    return line
+
+
+def _statcast_explanation(event: Event) -> str | None:
+    """Legacy single-string entry point. Returns the first generated line.
+
+    Kept for backwards compatibility with callers / tests that expect a
+    single string. ``_statcast_lines`` is the preferred multi-row entry
+    point used by ``explain_event``.
+    """
+    lines = _statcast_lines(event)
+    return lines[0] if lines else None
+
+
+def _statcast_lines(event: Event) -> list[str]:
+    sp = _find_source(event, "mlb-statcast-lineup")
+    if sp is None:
+        return []
+    contributions = _load_contributions(event, sp)
+    batter_lines = _batter_lines(event, contributions) if contributions else []
+    if batter_lines:
+        return batter_lines
+    fallback = _generic_statcast_summary(event, sp)
+    return [fallback] if fallback else []
 
 
 def _weather_explanation(event: Event) -> str | None:
@@ -212,9 +366,27 @@ PRIORITY_FNS = (
 
 
 def explain_event(event: Event, *, top_n: int = 3) -> list[str]:
-    """Return ordered list of plain-text rationale strings (up to ``top_n``)."""
+    """Return ordered list of plain-text rationale strings (up to ``top_n``).
+
+    For MLB events the Statcast block can expand into multiple per-batter
+    lines when per-batter contribution data is available and at least one
+    batter clears the deviation threshold. Other priority slots remain
+    single-string — the order below puts batter lines first, then weather,
+    market consensus, etc.
+    """
     out: list[str] = []
+
+    # Statcast block first: 0..N lines depending on per-batter data.
+    if event.sport == "mlb":
+        for s in _statcast_lines(event):
+            if len(out) >= top_n:
+                break
+            out.append(s)
+
     for fn in PRIORITY_FNS:
+        if fn is _statcast_explanation:
+            # Already handled above with the multi-line path.
+            continue
         if len(out) >= top_n:
             break
         s = fn(event)

@@ -35,6 +35,12 @@ class SourceProb(BaseModel):
     home_win_prob: float = Field(ge=0.0, le=1.0)
     captured_at: datetime
     notes: str = ""
+    # Optional side-channel dict for source-specific structured data.
+    # Example: mlb-statcast-lineup uses it to carry per-batter contribution
+    # rows so the explainer can surface specific matchup-driving batters
+    # without re-running Statcast. Default None to keep wire-compat with
+    # connectors that don't need it.
+    metadata: Optional[dict] = None
 
 
 class Event(BaseModel):

@@ -493,8 +493,16 @@ items, configurable via `top_n`). Items are produced by callables in
 `PRIORITY_FNS` and surface only when the underlying source contributed
 to the event. Priority order, highest leverage first:
 
-1. **Statcast lineup edge** (MLB only) — single highest-signal
-   sport-specific factor.
+1. **Statcast per-batter matchup mismatches** (MLB only) — highest-signal
+   sport-specific factor. When per-batter contribution data is available
+   from the Statcast lineup connector, the rationale surfaces up to three
+   specific matchup-driving batters by name, batting-order position,
+   opposing-starter handedness, observed xwOBA vs that handedness, and the
+   league-average baseline. A batter is only surfaced if their xwOBA
+   deviates from the league mean by **more than 0.030** in absolute value;
+   when no batter clears the threshold (or the side-channel data is
+   missing) the rationale falls back to a single team-level lineup-edge
+   string — we do not fabricate specificity from noise.
 2. **Park-adjusted weather** (MLB only) — second highest sport-specific
    factor; suppressed for domes.
 3. **NFL EPA differential** or **NBA SRS differential** when applicable.
@@ -517,7 +525,10 @@ single chronological grid:
 
 - **⭐ Recommended Plays** — events where the model's edge clears the
   configured threshold AND the per-sport blended ROI is positive.
-  Sorted by edge desc, then by Kelly stake desc.
+  Sorted by edge desc, then by Kelly stake desc. Each scoreboard section
+  now also carries a client-side sort dropdown (edge / Kelly stake /
+  game start time) so the same group can be re-ranked in the browser
+  without a backend rebuild.
 - **🔍 Research-Mode Picks** — events where the edge cleared the
   threshold but the per-sport ROI gate is negative. These are picks
   the model believes in, but without a stake recommendation because

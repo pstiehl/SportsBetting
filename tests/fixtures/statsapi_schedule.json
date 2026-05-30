@@ -27,26 +27,26 @@
           },
           "lineups": {
             "homePlayers": [
-              {"id": 605141, "batSide": {"code": "R"}},
-              {"id": 605151, "batSide": {"code": "L"}},
-              {"id": 605152, "batSide": {"code": "R"}},
-              {"id": 605153, "batSide": {"code": "S"}},
-              {"id": 605154, "batSide": {"code": "R"}},
-              {"id": 605155, "batSide": {"code": "L"}},
-              {"id": 605156, "batSide": {"code": "R"}},
-              {"id": 605157, "batSide": {"code": "R"}},
-              {"id": 605158, "batSide": {"code": "L"}}
+              {"id": 605141, "fullName": "Charlie Blackmon", "batSide": {"code": "R"}},
+              {"id": 605151, "fullName": "Kris Bryant", "batSide": {"code": "L"}},
+              {"id": 605152, "fullName": "Ryan McMahon", "batSide": {"code": "R"}},
+              {"id": 605153, "fullName": "Brendan Rodgers", "batSide": {"code": "S"}},
+              {"id": 605154, "fullName": "Ezequiel Tovar", "batSide": {"code": "R"}},
+              {"id": 605155, "fullName": "Elias Diaz", "batSide": {"code": "L"}},
+              {"id": 605156, "fullName": "Sean Bouchard", "batSide": {"code": "R"}},
+              {"id": 605157, "fullName": "Brenton Doyle", "batSide": {"code": "R"}},
+              {"id": 605158, "fullName": "Jacob Stallings", "batSide": {"code": "L"}}
             ],
             "awayPlayers": [
-              {"id": 660271, "batSide": {"code": "R"}},
-              {"id": 660272, "batSide": {"code": "L"}},
-              {"id": 660273, "batSide": {"code": "L"}},
-              {"id": 660274, "batSide": {"code": "R"}},
-              {"id": 660275, "batSide": {"code": "R"}},
-              {"id": 660276, "batSide": {"code": "L"}},
-              {"id": 660277, "batSide": {"code": "R"}},
-              {"id": 660278, "batSide": {"code": "L"}},
-              {"id": 660279, "batSide": {"code": "R"}}
+              {"id": 660271, "fullName": "Mookie Betts", "batSide": {"code": "R"}},
+              {"id": 660272, "fullName": "Freddie Freeman", "batSide": {"code": "L"}},
+              {"id": 660273, "fullName": "Shohei Ohtani", "batSide": {"code": "L"}},
+              {"id": 660274, "fullName": "Will Smith", "batSide": {"code": "R"}},
+              {"id": 660275, "fullName": "Max Muncy", "batSide": {"code": "R"}},
+              {"id": 660276, "fullName": "Teoscar Hernandez", "batSide": {"code": "L"}},
+              {"id": 660277, "fullName": "James Outman", "batSide": {"code": "R"}},
+              {"id": 660278, "fullName": "Gavin Lux", "batSide": {"code": "L"}},
+              {"id": 660279, "fullName": "Andy Pages", "batSide": {"code": "R"}}
             ]
           }
         }
