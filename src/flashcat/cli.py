@@ -442,6 +442,43 @@ def patch_scoreboard_cmd() -> None:
     log.info("Patched source_scoreboard.json.")
 
 
+@app.command("source-accountability")
+def source_accountability_cmd(
+    out_dir: str = typer.Option(
+        "paw-reports/sportsbetting",
+        help="Where to write the report (latest + dated archive).",
+    ),
+    skip_tennis_per_event: bool = typer.Option(
+        False,
+        help="Skip the tennis-data.co.uk re-pull (offline mode).",
+    ),
+    tennis_start: int = typer.Option(2022, help="First year for tennis per-event ledger."),
+    tennis_end: int = typer.Option(2024, help="Last year (inclusive) for tennis per-event ledger."),
+) -> None:
+    """Per-source accountability report — Phil's no-spin source audit.
+
+    Walks source_history.db + tennis-data.co.uk archives + predict.tennis
+    self-report, scores every (sport, source) on Brier / log loss / hit rate
+    / $100-flat ROI / CLV / drawdown / longest losing streak, and writes a
+    markdown + JSON report under ``paw-reports/sportsbetting/``.
+
+    This is the FIRST RUN of a recurring weekly process. See
+    ``docs/AGENT_LOOP.md`` for the standing cadence.
+    """
+    from pathlib import Path
+    from .source_accountability import assemble_report, write_report
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    report = assemble_report(
+        tennis_years=range(int(tennis_start), int(tennis_end) + 1),
+        include_tennis_per_event=not skip_tennis_per_event,
+    )
+    dated, latest = write_report(report, out_dir=Path(out_dir))
+    typer.echo(f"wrote {dated}")
+    typer.echo(f"wrote {latest}")
+    typer.echo(f"n_sources={report['n_sources']}")
+
+
 @app.command()
 def all(
     start: str = typer.Option(""),
