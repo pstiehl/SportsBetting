@@ -22,6 +22,12 @@ Schema
     home_won              INT   (0/1 outcome; NULL if not yet graded)
     market_close_home     REAL  (devigged market close prob, if available)
     market_close_decimal  REAL  (decimal odds taken on picked side)
+    closing_implied_prob  REAL  (implied prob on picked side at market close;
+                                 nullable. Per-bet CLV input — paired with
+                                 home_prob, lets us measure CLV directly
+                                 instead of going through meta.avg_clv_pp.)
+    clv_pp                REAL  (home_prob - closing_implied_prob in pp;
+                                 nullable; positive = beat the close)
     PRIMARY KEY (event_id, source)
 
 ``meta``
@@ -53,6 +59,8 @@ CREATE TABLE IF NOT EXISTS predictions (
     home_won INTEGER,
     market_close_home REAL,
     market_close_decimal REAL,
+    closing_implied_prob REAL,
+    clv_pp REAL,
     PRIMARY KEY (event_id, source)
 );
 CREATE INDEX IF NOT EXISTS predictions_sport_source_time
@@ -94,6 +102,14 @@ def connect(path: Path | None = None):
 def init_db(path: Path | None = None) -> None:
     with connect(path) as c:
         c.executescript(SCHEMA)
+        # Idempotent column additions for legacy DBs that pre-date the
+        # per-bet CLV columns. ``ALTER TABLE ADD COLUMN IF NOT EXISTS``
+        # isn't supported on SQLite < 3.35; check pragma instead.
+        cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)").fetchall()}
+        if "closing_implied_prob" not in cols:
+            c.execute("ALTER TABLE predictions ADD COLUMN closing_implied_prob REAL")
+        if "clv_pp" not in cols:
+            c.execute("ALTER TABLE predictions ADD COLUMN clv_pp REAL")
 
 
 def upsert_predictions(rows: Iterable[dict], path: Path | None = None) -> int:
@@ -110,8 +126,9 @@ def upsert_predictions(rows: Iterable[dict], path: Path | None = None) -> int:
                 """
                 INSERT OR REPLACE INTO predictions
                   (event_id, sport, source, commence_time, home, away,
-                   home_prob, home_won, market_close_home, market_close_decimal)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   home_prob, home_won, market_close_home, market_close_decimal,
+                   closing_implied_prob, clv_pp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     r["event_id"],
@@ -124,6 +141,8 @@ def upsert_predictions(rows: Iterable[dict], path: Path | None = None) -> int:
                     None if r.get("home_won") is None else int(bool(r["home_won"])),
                     None if r.get("market_close_home") is None else float(r["market_close_home"]),
                     None if r.get("market_close_decimal") is None else float(r["market_close_decimal"]),
+                    None if r.get("closing_implied_prob") is None else float(r["closing_implied_prob"]),
+                    None if r.get("clv_pp") is None else float(r["clv_pp"]),
                 ),
             )
             n += 1
