@@ -1,0 +1,115 @@
+{
+  "overall": {
+    "n_bets": 1842,
+    "n_wins": 1070,
+    "win_rate": 0.5808903365906624,
+    "wagered": 184200.0,
+    "profit": -6825.58,
+    "roi": -0.0370552430035635,
+    "max_drawdown": -8572.05,
+    "sharpe": -0.5690646689613739,
+    "clv_proxy_pp": 0.015231034060741777,
+    "avg_market_implied_prob": 0.5763670701693157
+  },
+  "per_year": {
+    "2022": {
+      "n_bets": 886,
+      "n_wins": 527,
+      "win_rate": 0.5948081264108352,
+      "wagered": 88600.0,
+      "profit": -2258.6,
+      "roi": -0.025492148491022923,
+      "max_drawdown": -3708.21,
+      "sharpe": -0.3971455435913893
+    },
+    "2023": {
+      "n_bets": 956,
+      "n_wins": 543,
+      "win_rate": 0.5679916317991632,
+      "wagered": 95600.0,
+      "profit": -4566.97,
+      "roi": -0.04777166741581357,
+      "max_drawdown": -7233.99,
+      "sharpe": -0.7239612356749353
+    }
+  },
+  "loss_buckets": {
+    "pitcher_signal_wrong": 255,
+    "pure_variance": 270,
+    "rolling_signal_wrong": 21,
+    "generic": 45,
+    "line_moved_against": 181
+  },
+  "n_bets": 1842,
+  "window": {
+    "start": "2022-01-01",
+    "end": "2023-12-31"
+  },
+  "n_folds": 15,
+  "n_games_loaded": 4899,
+  "train_window_days": 365,
+  "eval_window_days": 30,
+  "hold": 0.045,
+  "features": [
+    "elo_prob_home",
+    "rating_prob_home",
+    "pitcher_rgs_diff",
+    "pitcher_adj_diff",
+    "rs_l3_diff",
+    "rs_l5_diff",
+    "rs_l10_diff",
+    "rs_l20_diff",
+    "ra_l3_diff",
+    "ra_l5_diff",
+    "ra_l10_diff",
+    "ra_l20_diff",
+    "win_pct_l10_diff",
+    "run_diff_l10_diff",
+    "pitcher_rest_diff",
+    "park_run_env",
+    "is_day_game"
+  ],
+  "with_production_edge_gate": {
+    "overall": {
+      "n_bets": 594,
+      "n_wins": 326,
+      "win_rate": 0.5488215488215489,
+      "wagered": 59400.0,
+      "profit": -4202.68,
+      "roi": -0.0707522519756204,
+      "max_drawdown": -5189.76,
+      "sharpe": -1.0521469721833085,
+      "clv_proxy_pp": 0.05391042711166381,
+      "avg_market_implied_prob": 0.5593106194430294
+    },
+    "per_year": {
+      "2022": {
+        "n_bets": 289,
+        "n_wins": 156,
+        "win_rate": 0.5397923875432526,
+        "wagered": 28900.0,
+        "profit": -2362.85,
+        "roi": -0.08175951178226111,
+        "max_drawdown": -2892.1,
+        "sharpe": -1.2055511236382064
+      },
+      "2023": {
+        "n_bets": 305,
+        "n_wins": 170,
+        "win_rate": 0.5573770491803278,
+        "wagered": 30500.0,
+        "profit": -1839.83,
+        "roi": -0.0603224221916231,
+        "max_drawdown": -3589.46,
+        "sharpe": -0.903048002063922
+      }
+    },
+    "loss_buckets": {
+      "pitcher_signal_wrong": 150,
+      "generic": 30,
+      "pure_variance": 72,
+      "rolling_signal_wrong": 16
+    },
+    "n_bets": 594
+  }
+}
