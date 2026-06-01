@@ -1,0 +1,442 @@
+{
+  "generated_at": "2026-06-01T12:55:11.831408+00:00",
+  "n_sources": 17,
+  "sources": [
+    {
+      "sport": "atp",
+      "source": "coin-flip",
+      "verdict": "DROP",
+      "metrics": {
+        "n_predictions": 7759,
+        "n_bets": 7759,
+        "hit_rate": 0.5001933238819436,
+        "wins": 3881,
+        "losses": 3878,
+        "brier": 0.25,
+        "log_loss": 0.6931471805600364,
+        "wagered_usd": 775900.0,
+        "profit_usd": -35697.5,
+        "roi_flat_100": -0.046007861837865704,
+        "clv_pp": -0.009464367015271724,
+        "max_drawdown_usd": 36520.5,
+        "longest_losing_streak": 13,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-17"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    },
+    {
+      "sport": "atp",
+      "source": "market-close",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 7759,
+        "n_bets": 7759,
+        "hit_rate": 0.6821755380848047,
+        "wins": 5293,
+        "losses": 2466,
+        "brier": 0.19980077642577498,
+        "log_loss": 0.5817589820928596,
+        "wagered_usd": 775900.0,
+        "profit_usd": -19352.0,
+        "roi_flat_100": -0.024941358422477123,
+        "clv_pp": -0.01757833039300314,
+        "max_drawdown_usd": 21267.0,
+        "longest_losing_streak": 7,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-17"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    },
+    {
+      "sport": "atp",
+      "source": "predict.tennis",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 3430,
+        "n_bets": 3430,
+        "hit_rate": 0.671137026239067,
+        "wins": 2302,
+        "losses": 1128,
+        "brier": null,
+        "log_loss": null,
+        "wagered_usd": 343000.0,
+        "profit_usd": -8100.780000000001,
+        "roi_flat_100": -0.02361743440233236,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null
+      },
+      "notes": [
+        "OBSERVED-EXTERNAL: predict.tennis does not expose a per-event historical API; numbers are SELF-REPORTED.",
+        "Self-reported on predict.tennis/prediction-check/ and predict.tennis/promo/2024-tennis-predictions-analysis-... (retrieved 2026-05-31 via web.archive.org).",
+        "Site fields three predictor types: odds-based (their words: 'rely on the probabilities implied by betting odds'), performance-points/form-based, and a final ensemble. Reported yields use a fixed $1 stake per match. Hit rates use 'pick the side with higher implied prob' on whichever odds source the site reads at scrape time.",
+        "Site's own overall odds-based yield (full 2024 season, both tours): -1.69%."
+      ]
+    },
+    {
+      "sport": "atp",
+      "source": "tennis-rank-bt",
+      "verdict": "NOISE",
+      "metrics": {
+        "n_predictions": 7747,
+        "n_bets": 7747,
+        "hit_rate": 0.635471795533755,
+        "wins": 4923,
+        "losses": 2824,
+        "brier": 0.22553632776069465,
+        "log_loss": 0.6430476033860012,
+        "wagered_usd": 774700.0,
+        "profit_usd": -30241.0,
+        "roi_flat_100": -0.039035755776429586,
+        "clv_pp": -0.058833381914299335,
+        "max_drawdown_usd": 31871.0,
+        "longest_losing_streak": 12,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-17"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    },
+    {
+      "sport": "mlb",
+      "source": "mlb-statcast-lineup",
+      "verdict": "KEEP",
+      "metrics": {
+        "n_predictions": 7135,
+        "wins": 3841,
+        "losses": 3294,
+        "hit_rate": 0.5383321653819201,
+        "brier": 0.2482699968227727,
+        "log_loss": 0.6898087290859539,
+        "roi_flat_100": 0.02772504300184843,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 713500.0,
+        "profit_usd": 19781.818181818853,
+        "n_bets": 7135,
+        "window": {
+          "start": "2022-04-08",
+          "end": "2024-09-30"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nba",
+      "source": "fivethirtyeight-nba-elo-modern",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 2116,
+        "wins": 1354,
+        "losses": 762,
+        "hit_rate": 0.6398865784499055,
+        "brier": 0.22714569015586122,
+        "log_loss": 0.648452131773826,
+        "roi_flat_100": null,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": null,
+        "profit_usd": null,
+        "window": {
+          "start": "2022-01-01",
+          "end": "2023-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nba",
+      "source": "fivethirtyeight-nba-raptor",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 2116,
+        "wins": 1387,
+        "losses": 729,
+        "hit_rate": 0.6554820415879017,
+        "brier": 0.21825942942585558,
+        "log_loss": 0.6286300772233941,
+        "roi_flat_100": null,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": null,
+        "profit_usd": null,
+        "window": {
+          "start": "2022-01-01",
+          "end": "2023-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nba",
+      "source": "nba-bref-srs-pace",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 3643,
+        "wins": 2308,
+        "losses": 1335,
+        "hit_rate": 0.6335437825967609,
+        "brier": 0.23158450661435404,
+        "log_loss": 0.6655345036098371,
+        "roi_flat_100": null,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": null,
+        "profit_usd": null,
+        "window": {
+          "start": "2021-10-22",
+          "end": "2024-04-14"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nfl",
+      "source": "fivethirtyeight-nfl-elo",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 268,
+        "wins": 170,
+        "losses": 98,
+        "hit_rate": 0.6343283582089553,
+        "brier": 0.22197328543691666,
+        "log_loss": 0.6323960269038486,
+        "roi_flat_100": -0.025770607608663773,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 26800.0,
+        "profit_usd": -690.6522839121891,
+        "n_bets": 268,
+        "window": {
+          "start": "2022-09-01",
+          "end": "2023-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nfl",
+      "source": "fivethirtyeight-nfl-qbelo",
+      "verdict": "NOISE",
+      "metrics": {
+        "n_predictions": 268,
+        "wins": 171,
+        "losses": 97,
+        "hit_rate": 0.6380597014925373,
+        "brier": 0.21543981680873048,
+        "log_loss": 0.6153447351612937,
+        "roi_flat_100": -0.042878607792237775,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 26800.0,
+        "profit_usd": -1149.1466888319724,
+        "n_bets": 268,
+        "window": {
+          "start": "2022-09-01",
+          "end": "2023-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nfl",
+      "source": "market-close",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 809,
+        "wins": 550,
+        "losses": 259,
+        "hit_rate": 0.6798516687268232,
+        "brier": 0.2089937425413564,
+        "log_loss": 0.6056998564056578,
+        "roi_flat_100": 0.004468274527569588,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 80900.0,
+        "profit_usd": 361.4834092803797,
+        "n_bets": 809,
+        "window": {
+          "start": "2022-09-01",
+          "end": "2024-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nfl",
+      "source": "market-consensus",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 809,
+        "wins": 550,
+        "losses": 259,
+        "hit_rate": 0.6798516687268232,
+        "brier": 0.2089937425413564,
+        "log_loss": 0.6056998564056578,
+        "roi_flat_100": 0.004468274527569588,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 80900.0,
+        "profit_usd": 361.4834092803797,
+        "n_bets": 809,
+        "window": {
+          "start": "2022-09-01",
+          "end": "2024-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "nfl",
+      "source": "nfl-nflfastr-epa",
+      "verdict": "NOISE",
+      "metrics": {
+        "n_predictions": 809,
+        "wins": 498,
+        "losses": 311,
+        "hit_rate": 0.61557478368356,
+        "brier": 0.23117571547052235,
+        "log_loss": 0.6560180371192811,
+        "roi_flat_100": -0.04745112052241204,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null,
+        "wagered_usd": 80900.0,
+        "profit_usd": -3838.7956502631337,
+        "n_bets": 809,
+        "window": {
+          "start": "2022-09-01",
+          "end": "2024-12-31"
+        }
+      },
+      "notes": []
+    },
+    {
+      "sport": "wta",
+      "source": "coin-flip",
+      "verdict": "DROP",
+      "metrics": {
+        "n_predictions": 7025,
+        "n_bets": 7025,
+        "hit_rate": 0.504626334519573,
+        "wins": 3545,
+        "losses": 3480,
+        "brier": 0.25,
+        "log_loss": 0.693147180560028,
+        "wagered_usd": 702500.0,
+        "profit_usd": -20575.0,
+        "roi_flat_100": -0.029288256227758006,
+        "clv_pp": -0.010873842911810098,
+        "max_drawdown_usd": 28159.0,
+        "longest_losing_streak": 13,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-09"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    },
+    {
+      "sport": "wta",
+      "source": "market-close",
+      "verdict": "KEEP-WITH-CAVEATS",
+      "metrics": {
+        "n_predictions": 7025,
+        "n_bets": 7025,
+        "hit_rate": 0.6801423487544483,
+        "wins": 4778,
+        "losses": 2247,
+        "brier": 0.2010685827193438,
+        "log_loss": 0.5847245346053305,
+        "wagered_usd": 702500.0,
+        "profit_usd": -20118.0,
+        "roi_flat_100": -0.028637722419928825,
+        "clv_pp": -0.01923759705995602,
+        "max_drawdown_usd": 21599.0,
+        "longest_losing_streak": 10,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-09"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    },
+    {
+      "sport": "wta",
+      "source": "predict.tennis",
+      "verdict": "NOISE",
+      "metrics": {
+        "n_predictions": 3329,
+        "n_bets": 3329,
+        "hit_rate": 0.6794833283268249,
+        "wins": 2262,
+        "losses": 1067,
+        "brier": null,
+        "log_loss": null,
+        "wagered_usd": 332900.0,
+        "profit_usd": -16400.689336750078,
+        "roi_flat_100": -0.04926611395839615,
+        "clv_pp": null,
+        "max_drawdown_usd": null,
+        "longest_losing_streak": null
+      },
+      "notes": [
+        "OBSERVED-EXTERNAL: predict.tennis does not expose a per-event historical API; numbers are SELF-REPORTED.",
+        "Self-reported on predict.tennis/prediction-check/ and predict.tennis/promo/2024-tennis-predictions-analysis-... (retrieved 2026-05-31 via web.archive.org).",
+        "Site fields three predictor types: odds-based (their words: 'rely on the probabilities implied by betting odds'), performance-points/form-based, and a final ensemble. Reported yields use a fixed $1 stake per match. Hit rates use 'pick the side with higher implied prob' on whichever odds source the site reads at scrape time.",
+        "Site's own overall odds-based yield (full 2024 season, both tours): -1.69%."
+      ]
+    },
+    {
+      "sport": "wta",
+      "source": "tennis-rank-bt",
+      "verdict": "NOISE",
+      "metrics": {
+        "n_predictions": 7005,
+        "n_bets": 7005,
+        "hit_rate": 0.6314061384725196,
+        "wins": 4423,
+        "losses": 2582,
+        "brier": 0.22680107003064695,
+        "log_loss": 0.6452651255833408,
+        "wagered_usd": 700500.0,
+        "profit_usd": -31649.0,
+        "roi_flat_100": -0.04518058529621699,
+        "clv_pp": -0.06434071488857564,
+        "max_drawdown_usd": 32956.0,
+        "longest_losing_streak": 12,
+        "window": {
+          "start": "2022-01-03",
+          "end": "2024-11-09"
+        }
+      },
+      "notes": [
+        "per-event from tennis-data.co.uk re-pull"
+      ]
+    }
+  ]
+}
