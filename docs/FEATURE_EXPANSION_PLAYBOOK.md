@@ -19,13 +19,19 @@ iterate. We don't widen the edge gate to hide the result.
 
 ```
 Week 1: MLB   (done — see commit feat/mlb-feature-expansion)
-Week 2: NBA
-Week 3: NFL
-Week 4: CFB
+Week 2: NBA   (done — see commit feat/nba-feature-expansion)
+Week 3: CFB
+Week 4: NFL
 Week 5: ATP
 Week 6: WTA
 Week 7: PGA
 ```
+
+Note on rotation order (2026-06-08): the original document had
+`NFL → CFB`. The state file `~/.openclaw/workspace/data/sportsbetting_weekly_state.json`
+codifies the operational order as `MLB → NBA → CFB → NFL → ATP → WTA → PGA`
+(per Phil's Stiehl-thread direction 2026-06-01). CFB has the bigger
+backfilled corpus, so it goes next; NFL feature work waits one cycle.
 
 The full cycle takes ~7 weeks, then restarts. Each sport gets at minimum
 one expansion pass per quarter. Sports with surprising deltas (positive

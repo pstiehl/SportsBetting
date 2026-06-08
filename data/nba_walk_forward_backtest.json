@@ -1,0 +1,138 @@
+{
+  "overall": {
+    "n_bets": 2579,
+    "n_wins": 1664,
+    "win_rate": 0.6452113222179139,
+    "wagered": 257900.0,
+    "profit": -17410.09,
+    "roi": -0.06750715320192983,
+    "max_drawdown": -17689.39,
+    "sharpe": -0.8286434193852451,
+    "clv_proxy_pp": -0.006146469211573744,
+    "avg_market_implied_prob": 0.6718504715606822
+  },
+  "per_year": {
+    "2022": {
+      "n_bets": 590,
+      "n_wins": 372,
+      "win_rate": 0.6305084745762712,
+      "wagered": 59000.0,
+      "profit": -2585.91,
+      "roi": -0.043829065348591614,
+      "max_drawdown": -2887.95,
+      "sharpe": -0.5105575486564283
+    },
+    "2023": {
+      "n_bets": 1239,
+      "n_wins": 803,
+      "win_rate": 0.6481033091202583,
+      "wagered": 123900.0,
+      "profit": -7919.95,
+      "roi": -0.06392210562061867,
+      "max_drawdown": -8403.04,
+      "sharpe": -0.7897775950115365
+    },
+    "2024": {
+      "n_bets": 750,
+      "n_wins": 489,
+      "win_rate": 0.652,
+      "wagered": 75000.0,
+      "profit": -6904.23,
+      "roi": -0.092056414250882,
+      "max_drawdown": -7193.61,
+      "sharpe": -1.168377631036827
+    }
+  },
+  "loss_buckets": {
+    "line_moved_against": 393,
+    "pure_variance": 206,
+    "rolling_signal_wrong": 69,
+    "pace_signal_wrong": 121,
+    "generic": 92,
+    "rest_disadvantage": 34
+  },
+  "n_bets": 2579,
+  "window": {
+    "start": "2022-01-01",
+    "end": "2024-04-14"
+  },
+  "n_folds": 24,
+  "n_games_loaded": 3331,
+  "train_window_days": 365,
+  "eval_window_days": 30,
+  "hold": 0.045,
+  "features": [
+    "raptor_prob_home",
+    "elo_modern_prob_home",
+    "bref_srs_prob_home",
+    "prior_consensus",
+    "prior_dispersion",
+    "raptor_vs_elo_disagree",
+    "win_pct_l5_home",
+    "win_pct_l5_away",
+    "win_pct_l10_home",
+    "win_pct_l10_away",
+    "win_pct_diff_l10",
+    "avg_margin_l10_home",
+    "avg_margin_l10_away",
+    "days_rest_home",
+    "days_rest_away",
+    "days_rest_diff",
+    "b2b_home",
+    "b2b_away"
+  ],
+  "with_production_edge_gate": {
+    "overall": {
+      "n_bets": 823,
+      "n_wins": 490,
+      "win_rate": 0.5953827460510328,
+      "wagered": 82300.0,
+      "profit": 1519.95,
+      "roi": 0.018468350029528527,
+      "max_drawdown": -2245.52,
+      "sharpe": 0.18954383860130186,
+      "clv_proxy_pp": 0.0937784517658185,
+      "avg_market_implied_prob": 0.5649365511107721
+    },
+    "per_year": {
+      "2022": {
+        "n_bets": 252,
+        "n_wins": 145,
+        "win_rate": 0.5753968253968254,
+        "wagered": 25200.0,
+        "profit": -68.32,
+        "roi": -0.002711252091585464,
+        "max_drawdown": -1179.54,
+        "sharpe": -0.027184729668674242
+      },
+      "2023": {
+        "n_bets": 361,
+        "n_wins": 231,
+        "win_rate": 0.6398891966759003,
+        "wagered": 36100.0,
+        "profit": 2880.57,
+        "roi": 0.07979414409589879,
+        "max_drawdown": -833.92,
+        "sharpe": 0.8485483575638116
+      },
+      "2024": {
+        "n_bets": 210,
+        "n_wins": 114,
+        "win_rate": 0.5428571428571428,
+        "wagered": 21000.0,
+        "profit": -1292.3,
+        "roi": -0.061538087701133094,
+        "max_drawdown": -2245.52,
+        "sharpe": -0.6154643985949204
+      }
+    },
+    "loss_buckets": {
+      "pure_variance": 82,
+      "rolling_signal_wrong": 52,
+      "pace_signal_wrong": 97,
+      "generic": 76,
+      "rest_disadvantage": 26
+    },
+    "n_bets": 823
+  }
+}
