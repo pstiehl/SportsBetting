@@ -1,0 +1,131 @@
+{
+  "window": {
+    "start": "2022-09-01",
+    "end": "2024-12-31"
+  },
+  "n_games_loaded": 799,
+  "n_games_graded": 416,
+  "n_folds": 25,
+  "feature_names": [
+    "elo_prob_home",
+    "epa_prob_home",
+    "market_prob_home",
+    "elo_minus_market_pp",
+    "epa_minus_market_pp",
+    "priors_avg",
+    "off_epa_l4_diff",
+    "def_epa_l4_diff",
+    "success_rate_l4_diff",
+    "off_epa_l8_diff",
+    "pass_epa_l4_diff",
+    "rush_epa_l4_diff",
+    "rest_diff",
+    "home_off_bye",
+    "away_off_bye",
+    "divisional",
+    "week_number"
+  ],
+  "priors_coverage": {
+    "elo": 255,
+    "epa": 783,
+    "market": 799
+  },
+  "ungated": {
+    "n_bets": 416,
+    "win_rate": 0.6802884615384616,
+    "roi": 0.014453757389353278,
+    "clv_proxy_pp": 0.075079074002865,
+    "max_drawdown": -1215.4316247515055,
+    "sharpe": 0.32242934406045465,
+    "profit": 601.2763073970964,
+    "loss_buckets": {
+      "divisional_misjudged": 42,
+      "rolling_signal_wrong": 16,
+      "line_moved_against": 5,
+      "pure_variance": 24,
+      "rest_disadvantage": 6,
+      "generic": 25,
+      "bye_off_overrated": 9,
+      "prior_disagreement_wrong": 6
+    },
+    "stake": 100.0,
+    "edge_gate_pp": null
+  },
+  "gated_3pp": {
+    "n_bets": 345,
+    "win_rate": 0.672463768115942,
+    "roi": 0.01112245127578232,
+    "clv_proxy_pp": 0.09119683828547315,
+    "max_drawdown": -894.3283629765438,
+    "sharpe": 0.24388767861697208,
+    "profit": 383.72456901449004,
+    "loss_buckets": {
+      "divisional_misjudged": 37,
+      "rolling_signal_wrong": 15,
+      "pure_variance": 21,
+      "generic": 22,
+      "bye_off_overrated": 8,
+      "rest_disadvantage": 4,
+      "prior_disagreement_wrong": 6
+    },
+    "stake": 100.0,
+    "edge_gate_pp": 0.03
+  },
+  "per_season_ungated": {
+    "2022": {
+      "n_bets": 16,
+      "wins": 12,
+      "pnl": -16.146935249868505,
+      "win_rate": 0.75,
+      "roi": -0.010091834531167816
+    },
+    "2023": {
+      "n_bets": 208,
+      "wins": 138,
+      "pnl": 98.76179210481166,
+      "win_rate": 0.6634615384615384,
+      "roi": 0.004748163081962099
+    },
+    "2024": {
+      "n_bets": 192,
+      "wins": 133,
+      "pnl": 518.6614505421529,
+      "win_rate": 0.6927083333333334,
+      "roi": 0.02701361721573713
+    }
+  },
+  "top_loss_buckets": [
+    [
+      "divisional_misjudged",
+      42
+    ],
+    [
+      "generic",
+      25
+    ],
+    [
+      "pure_variance",
+      24
+    ],
+    [
+      "rolling_signal_wrong",
+      16
+    ],
+    [
+      "bye_off_overrated",
+      9
+    ],
+    [
+      "rest_disadvantage",
+      6
+    ],
+    [
+      "prior_disagreement_wrong",
+      6
+    ],
+    [
+      "line_moved_against",
+      5
+    ]
+  ]
+}
