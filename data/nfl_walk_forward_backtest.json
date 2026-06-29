@@ -127,5 +127,30 @@
       "line_moved_against",
       5
     ]
-  ]
+  ],
+  "n_bets": 416,
+  "roi": 0.014453757389353278,
+  "clv_proxy_pp": 0.075079074002865,
+  "loss_buckets": {
+    "divisional_misjudged": 42,
+    "rolling_signal_wrong": 16,
+    "line_moved_against": 5,
+    "pure_variance": 24,
+    "rest_disadvantage": 6,
+    "generic": 25,
+    "bye_off_overrated": 9,
+    "prior_disagreement_wrong": 6
+  },
+  "win_rate": 0.6802884615384616,
+  "max_drawdown": -1215.4316247515055,
+  "sharpe": 0.32242934406045465,
+  "profit": 601.2763073970964,
+  "with_production_edge_gate": {
+    "gate_pp": 0.03,
+    "n_bets": 345,
+    "roi": 0.01112245127578232,
+    "clv_proxy_pp": 0.09119683828547315,
+    "profit": 383.72456901449004,
+    "win_rate": 0.672463768115942
+  }
 }

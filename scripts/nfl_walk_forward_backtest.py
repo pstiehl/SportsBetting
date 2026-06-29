@@ -236,6 +236,24 @@ def main() -> int:
         "gated_3pp": gated_summary,
         "per_season_ungated": per_season,
         "top_loss_buckets": top_buckets,
+        # Top-level mirror for cross-sport weekly_loss_postmortem.sh compatibility
+        # (the aggregate script keys on top-level n_bets / roi / clv_proxy_pp / loss_buckets).
+        "n_bets": ungated_summary["n_bets"],
+        "roi": ungated_summary["roi"],
+        "clv_proxy_pp": ungated_summary["clv_proxy_pp"],
+        "loss_buckets": ungated_summary.get("loss_buckets", {}),
+        "win_rate": ungated_summary["win_rate"],
+        "max_drawdown": ungated_summary.get("max_drawdown"),
+        "sharpe": ungated_summary.get("sharpe"),
+        "profit": ungated_summary.get("profit"),
+        "with_production_edge_gate": {
+            "gate_pp": 0.03,
+            "n_bets": gated_summary["n_bets"],
+            "roi": gated_summary["roi"],
+            "clv_proxy_pp": gated_summary["clv_proxy_pp"],
+            "profit": gated_summary.get("profit"),
+            "win_rate": gated_summary["win_rate"],
+        },
     }
     # JSON output
     out_path = Path(args.out)
