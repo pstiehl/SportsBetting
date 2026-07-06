@@ -1,0 +1,194 @@
+{
+  "sport": "atp",
+  "window": {
+    "start": "2022-01-01",
+    "end": "2024-12-31"
+  },
+  "n_matches_loaded": 7769,
+  "n_matches_graded": 5356,
+  "n_folds": 31,
+  "feature_names": [
+    "market_prob_home",
+    "rank_bt_prob_home",
+    "rank_bt_minus_market_pp",
+    "rank_log_ratio",
+    "rank_points_log_ratio",
+    "win_pct_l10_diff",
+    "win_pct_l25_diff",
+    "surface_win_pct_l20_diff",
+    "games_won_pct_l10_diff",
+    "sets_won_pct_l10_diff",
+    "rest_days_diff",
+    "matches_l14_diff",
+    "h2h_home_share",
+    "best_of_5"
+  ],
+  "feature_count": 14,
+  "priors_coverage": {
+    "market": 7759,
+    "rank_bt": 7756
+  },
+  "data_sources": [
+    "tennis-data.co.uk (results+closing odds+surface+rank)",
+    "market-close",
+    "tennis-rank-bt"
+  ],
+  "skipped_sources": [
+    "sackmann-atp-elo (GitHub 404/429)",
+    "serve/return point stats (not published)",
+    "line movement (no opener archived)"
+  ],
+  "ungated": {
+    "n_bets": 5356,
+    "win_rate": 0.6635548917102315,
+    "roi": -0.03938666915608663,
+    "clv_proxy_pp": 0.017732013434338376,
+    "max_drawdown": -22688.5,
+    "sharpe": -2.804146962914137,
+    "profit": -21095.5,
+    "loss_buckets": {
+      "fatigue_disadvantage": 101,
+      "favorite_upset": 464,
+      "ranking_signal_wrong": 219,
+      "line_moved_against": 274,
+      "pure_variance": 315,
+      "generic": 245,
+      "best_of_5_variance": 33,
+      "h2h_signal_wrong": 50,
+      "surface_form_wrong": 101
+    },
+    "stake": 100.0,
+    "edge_gate_pp": null
+  },
+  "gated_3pp": {
+    "n_bets": 2572,
+    "win_rate": 0.661741835147745,
+    "roi": -0.03850894245723173,
+    "clv_proxy_pp": 0.03236970346990344,
+    "max_drawdown": -12432.5,
+    "sharpe": -2.7129850134349924,
+    "profit": -9904.5,
+    "loss_buckets": {
+      "favorite_upset": 321,
+      "pure_variance": 145,
+      "generic": 123,
+      "fatigue_disadvantage": 63,
+      "ranking_signal_wrong": 114,
+      "best_of_5_variance": 21,
+      "h2h_signal_wrong": 28,
+      "surface_form_wrong": 55
+    },
+    "stake": 100.0,
+    "edge_gate_pp": 0.03
+  },
+  "per_year_ungated": {
+    "2022": {
+      "n_bets": 1091,
+      "wins": 720,
+      "pnl": -5016.5,
+      "win_rate": 0.6599450045829515,
+      "roi": -0.045980751604033
+    },
+    "2023": {
+      "n_bets": 2050,
+      "wins": 1332,
+      "pnl": -12420.0,
+      "win_rate": 0.6497560975609756,
+      "roi": -0.060585365853658535
+    },
+    "2024": {
+      "n_bets": 2215,
+      "wins": 1502,
+      "pnl": -3659.0,
+      "win_rate": 0.6781038374717833,
+      "roi": -0.016519187358916478
+    }
+  },
+  "per_surface_ungated": {
+    "Clay": {
+      "n_bets": 1569,
+      "wins": 1029,
+      "pnl": -6809.0,
+      "win_rate": 0.655831739961759,
+      "roi": -0.04339706819630338
+    },
+    "Grass": {
+      "n_bets": 727,
+      "wins": 491,
+      "pnl": -2459.0,
+      "win_rate": 0.6753782668500687,
+      "roi": -0.033823933975240715
+    },
+    "Hard": {
+      "n_bets": 3060,
+      "wins": 2034,
+      "pnl": -11827.5,
+      "win_rate": 0.6647058823529411,
+      "roi": -0.038651960784313724
+    }
+  },
+  "top_loss_buckets": [
+    [
+      "favorite_upset",
+      464
+    ],
+    [
+      "pure_variance",
+      315
+    ],
+    [
+      "line_moved_against",
+      274
+    ],
+    [
+      "generic",
+      245
+    ],
+    [
+      "ranking_signal_wrong",
+      219
+    ],
+    [
+      "fatigue_disadvantage",
+      101
+    ],
+    [
+      "surface_form_wrong",
+      101
+    ],
+    [
+      "h2h_signal_wrong",
+      50
+    ],
+    [
+      "best_of_5_variance",
+      33
+    ]
+  ],
+  "n_bets": 5356,
+  "roi": -0.03938666915608663,
+  "clv_proxy_pp": 0.017732013434338376,
+  "loss_buckets": {
+    "fatigue_disadvantage": 101,
+    "favorite_upset": 464,
+    "ranking_signal_wrong": 219,
+    "line_moved_against": 274,
+    "pure_variance": 315,
+    "generic": 245,
+    "best_of_5_variance": 33,
+    "h2h_signal_wrong": 50,
+    "surface_form_wrong": 101
+  },
+  "win_rate": 0.6635548917102315,
+  "max_drawdown": -22688.5,
+  "sharpe": -2.804146962914137,
+  "profit": -21095.5,
+  "with_production_edge_gate": {
+    "gate_pp": 0.03,
+    "n_bets": 2572,
+    "roi": -0.03850894245723173,
+    "clv_proxy_pp": 0.03236970346990344,
+    "profit": -9904.5,
+    "win_rate": 0.661741835147745
+  }
+}
