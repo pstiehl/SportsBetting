@@ -2,10 +2,10 @@
   "beta": 8.0,
   "by_sport": {
     "atp": {
-      "market-close": 0.2627692295455175,
-      "market-consensus": 0.2627692295455175,
-      "sackmann-atp-elo": 0.24987493317985304,
-      "tennis-rank-bt": 0.224586607729112
+      "market-close": 0.2709197435766811,
+      "market-consensus": 0.2709197435766811,
+      "sackmann-atp-elo": 0.2266077306507758,
+      "tennis-rank-bt": 0.23155278219586203
     },
     "cfb": {
       "cfb-cfbfastr-epa": 1.0
@@ -29,10 +29,10 @@
       "nfl-nflfastr-epa": 0.31065524584749105
     },
     "wta": {
-      "market-close": 0.25780635351641107,
-      "market-consensus": 0.25780635351641107,
-      "sackmann-wta-elo": 0.26404394641460316,
-      "tennis-rank-bt": 0.22034334655257462
+      "market-close": 0.2699280508009824,
+      "market-consensus": 0.2699280508009824,
+      "sackmann-wta-elo": 0.22944031320452385,
+      "tennis-rank-bt": 0.23070358519351128
     }
   },
   "excluded": {
