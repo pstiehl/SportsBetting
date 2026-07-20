@@ -1,0 +1,42 @@
+{
+  "sport": "pga",
+  "data_status": "HARNESS_ONLY_DATA_BLOCKED",
+  "data_blocker": "No PGA rows in source_history.db, and the only known source of genuine historical closing MATCHUP odds (DataGolf's matchup-odds archive, https://datagolf.com/matchup-odds-archive) is a PAID-tier endpoint that is OFF LIMITS per Phil's standing constraint and requires an unset DATAGOLF_API_KEY. Free golf-results datasets (ESPN leaderboards, opendatabay/Kaggle PGA CSVs) supply finishing positions but NOT closing matchup probabilities, so there is no honest CLV proxy to grade against. UNBLOCK: set DATAGOLF_API_KEY with paid-tier matchup archive access (needs Phil sign-off), OR wire a free source that pairs player finishes with closing H2H matchup odds, then run this driver \u2014 the harness will produce real metrics with no code changes.",
+  "window": {
+    "start": "2022-01-01",
+    "end": "2024-12-31"
+  },
+  "n_matches_loaded": 0,
+  "n_matches_graded": 0,
+  "n_folds": 0,
+  "feature_names": [
+    "market_prob_home",
+    "skill_bt_prob_home",
+    "skill_bt_minus_market_pp",
+    "win_pct_log_ratio",
+    "skill_diff",
+    "h2h_form_l10_diff",
+    "finish_quality_l10_diff",
+    "made_cut_pct_l10_diff",
+    "course_tier_quality_l10_diff",
+    "rest_days_diff",
+    "starts_l28_diff",
+    "h2h_home_share"
+  ],
+  "feature_count": 12,
+  "data_sources_attempted": [
+    "DataGolf matchup-odds-archive (PAID, off-limits)",
+    "DataGolf pre-tournament-archive (needs DATAGOLF_API_KEY, unset)",
+    "ESPN historical leaderboards (finishes only, no matchup odds)",
+    "opendatabay/Kaggle PGA CSVs (finishes only, no matchup odds)",
+    "sportsbookreviewsonline golf (404)"
+  ],
+  "n_bets": 0,
+  "roi": null,
+  "clv_proxy_pp": null,
+  "win_rate": null,
+  "max_drawdown": null,
+  "sharpe": null,
+  "profit": null,
+  "loss_buckets": {}
+}
