@@ -54,6 +54,8 @@ from flashcat.mlb_features import (  # noqa: E402
 )
 from flashcat.mlb_features.feature_builder import (  # noqa: E402
     compute_pitcher_rest,
+    fit_empirical_park_factor,
+    fit_pitcher_form,
     load_park_run_env,
 )
 from flashcat.mlb_features.model import walk_forward_evaluate  # noqa: E402
@@ -112,19 +114,31 @@ def _merge_games(
 def _load_all_games(
     start: date, end: date, *, include_retrosheet: bool
 ) -> list[GameRow]:
-    """Load games from 538 + (optionally) Retrosheet for the year range."""
-    primary = load_538_mlb_games(start=start, end=end)
-    log.info("Loaded %d games from 538 archive (%s..%s)", len(primary), start, end)
-    if not include_retrosheet:
-        return primary
-    secondary: list[GameRow] = []
-    for yr in range(start.year, end.year + 1):
-        rs = load_retrosheet_games(yr)
-        # Clip to window.
-        rs = [g for g in rs if start <= g.game_date <= end]
-        log.info("Loaded %d games from Retrosheet %d", len(rs), yr)
-        secondary.extend(rs)
-    return _merge_games(primary, secondary)
+    """Load games for the year range.
+
+    Week-8 change: Retrosheet game logs are now the PRIMARY source. The 538
+    archive 404s (shuttered 2023-10-01) and its committed cache is gone, so
+    the pitcher/bullpen/park features and the rolling strength prior are all
+    derived from Retrosheet box scores. 538 is merged in only if a cache
+    happens to be present (fills legacy pitcher-rating columns, otherwise a
+    no-op).
+    """
+    primary: list[GameRow] = []
+    if include_retrosheet:
+        for yr in range(start.year, end.year + 1):
+            rs = load_retrosheet_games(yr)
+            rs = [g for g in rs if start <= g.game_date <= end]
+            log.info("Loaded %d games from Retrosheet %d", len(rs), yr)
+            primary.extend(rs)
+    secondary = load_538_mlb_games(start=start, end=end)
+    if secondary:
+        log.info("Loaded %d games from 538 archive (legacy merge)", len(secondary))
+        # 538 fills legacy pitcher-rating columns onto matching Retrosheet rows.
+        return _merge_games(primary, secondary)
+    if not primary:
+        # Last resort: 538-only (no Retrosheet available).
+        return secondary
+    return primary
 
 
 # ---------------------------------------------------------------------------
@@ -155,10 +169,14 @@ def run(
     snapshots = fit_rolling_rates(games)
     pitcher_rest = compute_pitcher_rest(games)
     parks = load_park_run_env()
+    pitcher_form = fit_pitcher_form(games)
+    park_factor_emp = fit_empirical_park_factor(games)
 
     # Walk-forward eval.
     folds = walk_forward_evaluate(
         games, snapshots, pitcher_rest, parks,
+        pitcher_form=pitcher_form,
+        park_factor_emp=park_factor_emp,
         train_window_days=train_window_days,
         eval_window_days=eval_window_days,
         warmup_days=warmup_days,
@@ -184,13 +202,56 @@ def run(
     _, with_gate = simulate(folds, hold=hold, edge_gate=0.03)
     summary["with_production_edge_gate"] = with_gate
 
+    # Honest ablation: re-simulate with the Week-8 pitcher/bullpen/park
+    # features force-zeroed (retrain), to isolate their marginal effect.
+    # This is the true "baseline vs new" comparison for the PR — both legs
+    # use the SAME Retrosheet data + rolling strength prior, so the delta is
+    # attributable to the new features alone.
+    week8 = {
+        "sp_er_l3_diff", "sp_kbb_l5_diff", "sp_hr_l5_diff",
+        "bullpen_load_l3_diff", "park_run_env_emp",
+    }
+    import flashcat.mlb_features.model as _M
+    _orig_bf = _M.build_features
+
+    def _zeroed_bf(g, s, r, p, **kw):
+        x = _orig_bf(g, s, r, p, **kw)
+        if not x:
+            return x
+        return {k: (None if k in week8 else v) for k, v in x.items()}
+
+    _M.build_features = _zeroed_bf
+    try:
+        base_folds = _M.walk_forward_evaluate(
+            games, snapshots, pitcher_rest, parks,
+            pitcher_form=pitcher_form, park_factor_emp=park_factor_emp,
+            train_window_days=train_window_days,
+            eval_window_days=eval_window_days, warmup_days=warmup_days,
+        )
+    finally:
+        _M.build_features = _orig_bf
+    _, base_summary = simulate(base_folds, hold=hold, edge_gate=None)
+    _, base_gate = simulate(base_folds, hold=hold, edge_gate=0.03)
+    summary["week8_ablation_baseline"] = {
+        "overall": base_summary["overall"],
+        "per_year": base_summary["per_year"],
+        "loss_buckets": base_summary["loss_buckets"],
+        "with_production_edge_gate": base_gate.get("overall", {}),
+        "note": (
+            "Week-8 features (sp_er_l3_diff, sp_kbb_l5_diff, sp_hr_l5_diff, "
+            "bullpen_load_l3_diff, park_run_env_emp) force-zeroed + retrained. "
+            "Same data, same prior, same bet eligibility — isolates the marginal "
+            "effect of the new features."
+        ),
+    }
+
     # Persist to source_history.db.
     if persist:
         records = []
         for f in folds:
             for pred in f.predictions:
                 d = pred["game_date"]
-                rating_p = pred.get("rating_prob_home")
+                rating_p = pred.get("prior_prob_home") or pred.get("rating_prob_home")
                 # CLV proxy on the home side (model prob - market prob, in pp).
                 clv_pp = (
                     (pred["home_prob"] - rating_p) * 100

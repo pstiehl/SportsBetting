@@ -132,6 +132,8 @@ def walk_forward_evaluate(
     pitcher_rest: dict,
     park_run_env: dict,
     *,
+    pitcher_form: dict | None = None,
+    park_factor_emp: dict | None = None,
     train_window_days: int = 365,
     eval_window_days: int = 30,
     warmup_days: int = 120,
@@ -161,7 +163,10 @@ def walk_forward_evaluate(
     # gate. ``feats_by_game`` keys on id(game).
     feats_by_game: dict[int, dict] = {}
     for g in games:
-        f = build_features(g, snapshots, pitcher_rest, park_run_env)
+        f = build_features(
+            g, snapshots, pitcher_rest, park_run_env,
+            pitcher_form=pitcher_form, park_factor_emp=park_factor_emp,
+        )
         if f is None:
             continue
         feats_by_game[id(g)] = f
@@ -208,8 +213,12 @@ def walk_forward_evaluate(
                 "home": g.home,
                 "away": g.away,
                 "home_prob": p,
-                "elo_prob_home": g.elo_prob_home,
-                "rating_prob_home": g.rating_prob_home,
+                # Market proxy source: the rolling strength prior (538 is
+                # gone). Kept under both keys so the simulator's fallback
+                # chain still works.
+                "prior_prob_home": f.get("prior_prob_home"),
+                "rating_prob_home": f.get("prior_prob_home"),
+                "elo_prob_home": f.get("prior_prob_home"),
                 "home_won": int(g.home_won),
                 "features": f,
             })

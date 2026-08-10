@@ -35,18 +35,26 @@ availability and degrade to ``None`` features rather than crashing.
 
 from .feature_builder import (
     GameRow,
+    PitcherForm,
     RollingTeamFeatures,
     build_features,
+    fit_empirical_park_factor,
+    fit_pitcher_form,
     fit_rolling_rates,
     load_538_mlb_games,
     load_retrosheet_games,
+    strength_prior_home,
 )
 
 __all__ = [
     "GameRow",
+    "PitcherForm",
     "RollingTeamFeatures",
     "build_features",
+    "fit_empirical_park_factor",
+    "fit_pitcher_form",
     "fit_rolling_rates",
     "load_538_mlb_games",
     "load_retrosheet_games",
+    "strength_prior_home",
 ]
