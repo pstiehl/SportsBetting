@@ -7,9 +7,9 @@ Week 5 of the weekly sport-rotation feature-expansion loop. Seasons backtested: 
 * **Start:** 2022-01-01
 * **End:** 2024-12-31
 * **Train window:** rolling 365 days
-* **Eval window:** 30 days, slide forward by 30 days
+* **Eval window:** 98 days, slide forward by 98 days
 * **Warmup:** 120 days
-* **Folds completed:** 31
+* **Folds completed:** 10
 
 ### Data
 
@@ -23,42 +23,42 @@ Week 5 of the weekly sport-rotation feature-expansion loop. Seasons backtested: 
 
 | Variant | n_bets | win_rate | ROI | CLV proxy | Max DD | Sharpe | Profit |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Ungated ($100/match) | 5356 | 66.4% | -3.94% | +1.77pp | $-22,688 | -2.80 | $-21,096 |
-| +3pp edge gate | 2572 | 66.2% | -3.85% | +3.24pp | $-12,432 | -2.71 | $-9,904 |
+| Ungated ($100/match) | 5356 | 66.4% | -3.79% | +1.98pp | $-21,522 | -2.70 | $-20,290 |
+| +3pp edge gate | 2689 | 67.0% | -2.32% | +3.59pp | $-8,936 | -1.64 | $-6,232 |
 
 ### Per-year breakdown (ungated)
 
 | Year | n_bets | win_rate | ROI |
 |---|---:|---:|---:|
-| 2022 | 1091 | 66.0% | -4.60% |
-| 2023 | 2050 | 65.0% | -6.06% |
-| 2024 | 2215 | 67.8% | -1.65% |
+| 2022 | 1091 | 66.2% | -4.32% |
+| 2023 | 2050 | 65.3% | -5.51% |
+| 2024 | 2215 | 67.6% | -1.93% |
 
 ### Per-surface breakdown (ungated)
 
 | Surface | n_bets | win_rate | ROI |
 |---|---:|---:|---:|
-| Clay | 1569 | 65.6% | -4.34% |
-| Grass | 727 | 67.5% | -3.38% |
-| Hard | 3060 | 66.5% | -3.87% |
+| Clay | 1569 | 65.8% | -4.04% |
+| Grass | 727 | 67.3% | -3.90% |
+| Hard | 3060 | 66.6% | -3.63% |
 
 ### Loss post-mortem (ungated)
 
 | Bucket | Losing bets | % of total losses |
 |---|---:|---:|
-| `favorite_upset` | 464 | 25.7% |
-| `pure_variance` | 315 | 17.5% |
-| `line_moved_against` | 274 | 15.2% |
-| `generic` | 245 | 13.6% |
-| `ranking_signal_wrong` | 219 | 12.2% |
-| `fatigue_disadvantage` | 101 | 5.6% |
-| `surface_form_wrong` | 101 | 5.6% |
-| `h2h_signal_wrong` | 50 | 2.8% |
-| `best_of_5_variance` | 33 | 1.8% |
+| `favorite_upset` | 474 | 26.4% |
+| `pure_variance` | 305 | 17.0% |
+| `line_moved_against` | 255 | 14.2% |
+| `generic` | 241 | 13.4% |
+| `ranking_signal_wrong` | 223 | 12.4% |
+| `surface_form_wrong` | 112 | 6.2% |
+| `fatigue_disadvantage` | 96 | 5.3% |
+| `h2h_signal_wrong` | 56 | 3.1% |
+| `best_of_5_variance` | 36 | 2.0% |
 
 ### Verdict (one sentence)
 
-**Loses to the closing line — -3.94% ungated ROI (CLV proxy +1.77pp); the 14-feature Phase-1 catalog does not beat Pinnacle's close.**
+**Loses to the closing line — -3.79% ungated ROI (CLV proxy +1.98pp); the 14-feature Phase-1 catalog does not beat Pinnacle's close.**
 
 ### Feature catalog (14 features)
 

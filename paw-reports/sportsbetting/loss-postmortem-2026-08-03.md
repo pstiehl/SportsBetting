@@ -1,18 +1,18 @@
 # Weekly loss post-mortem — cross-sport aggregate
 
-Generated: 2026-08-10T12:01:36.922808Z
+Generated: 2026-08-03T12:02:38.464444Z
 
 ## Headline
 
 - **5 sport(s) backtested** atp, mlb, nfl, pga, wta
-- **13,499 bets**, **4,949 losing bets** classified
-- **Cross-sport top driver**: `pure_variance` (1,341 losing bets — 27.1% of all classified losses)
+- **13,499 bets**, **4,953 losing bets** classified
+- **Cross-sport top driver**: `pure_variance` (1,351 losing bets — 27.3% of all classified losses)
 
 ## Per-sport headline
 
 | Sport | n_bets | ROI | CLV proxy | Losses | Dominant bucket | Window |
 |---|---:|---:|---:|---:|---|---|
-| atp | 5,356 | -3.79% | +1.98pp | 1,798 | `favorite_upset` | 2022-01-01 → 2024-12-31 |
+| atp | 5,356 | -3.94% | +1.77pp | 1,802 | `favorite_upset` | 2022-01-01 → 2024-12-31 |
 | mlb | 3,075 | -3.91% | +3.24pp | 1,424 | `pure_variance` | 2022-01-01 → 2023-12-31 |
 | nfl | 416 | +1.45% | +7.51pp | 133 | `divisional_misjudged` | 2022-09-01 → 2024-12-31 |
 | pga | 0 | — | — | 0 | `—` | 2022-01-01 → 2024-12-31 |
@@ -24,15 +24,15 @@ Generated: 2026-08-10T12:01:36.922808Z
 
 | Bucket | Count | % of losses |
 |---|---:|---:|
-| `favorite_upset` | 474 | 26.4% |
-| `pure_variance` | 305 | 17.0% |
-| `line_moved_against` | 255 | 14.2% |
-| `generic` | 241 | 13.4% |
-| `ranking_signal_wrong` | 223 | 12.4% |
-| `surface_form_wrong` | 112 | 6.2% |
-| `fatigue_disadvantage` | 96 | 5.3% |
-| `h2h_signal_wrong` | 56 | 3.1% |
-| `best_of_5_variance` | 36 | 2.0% |
+| `favorite_upset` | 464 | 25.7% |
+| `pure_variance` | 315 | 17.5% |
+| `line_moved_against` | 274 | 15.2% |
+| `generic` | 245 | 13.6% |
+| `ranking_signal_wrong` | 219 | 12.2% |
+| `fatigue_disadvantage` | 101 | 5.6% |
+| `surface_form_wrong` | 101 | 5.6% |
+| `h2h_signal_wrong` | 50 | 2.8% |
+| `best_of_5_variance` | 33 | 1.8% |
 
 ### mlb
 
@@ -76,18 +76,18 @@ Bucket names with the same string across sports get summed. NBA-specific buckets
 
 | Bucket | Cross-sport count | % of all classified losses |
 |---|---:|---:|
-| `pure_variance` | 1,341 | 27.1% |
-| `favorite_upset` | 806 | 16.3% |
-| `generic` | 693 | 14.0% |
-| `line_moved_against` | 646 | 13.1% |
-| `ranking_signal_wrong` | 420 | 8.5% |
+| `pure_variance` | 1,351 | 27.3% |
+| `favorite_upset` | 796 | 16.1% |
+| `generic` | 697 | 14.1% |
+| `line_moved_against` | 665 | 13.4% |
+| `ranking_signal_wrong` | 416 | 8.4% |
 | `pitcher_signal_wrong` | 352 | 7.1% |
-| `surface_form_wrong` | 198 | 4.0% |
-| `fatigue_disadvantage` | 169 | 3.4% |
+| `surface_form_wrong` | 187 | 3.8% |
+| `fatigue_disadvantage` | 174 | 3.5% |
 | `rolling_signal_wrong` | 118 | 2.4% |
-| `h2h_signal_wrong` | 107 | 2.2% |
+| `h2h_signal_wrong` | 101 | 2.0% |
 | `divisional_misjudged` | 42 | 0.8% |
-| `best_of_5_variance` | 36 | 0.7% |
+| `best_of_5_variance` | 33 | 0.7% |
 | `bye_off_overrated` | 9 | 0.2% |
 | `rest_disadvantage` | 6 | 0.1% |
 | `prior_disagreement_wrong` | 6 | 0.1% |
