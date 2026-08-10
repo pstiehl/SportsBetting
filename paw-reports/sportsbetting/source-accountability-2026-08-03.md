@@ -1,6 +1,6 @@
 # Source Accountability Report
 
-_Generated: 2026-08-10T12:05:21.381375+00:00_
+_Generated: 2026-08-03T12:02:32.891456+00:00_
 
 ## TL;DR
 
@@ -14,11 +14,11 @@ _Generated: 2026-08-10T12:05:21.381375+00:00_
 
 | Sport | Source | n | Hit | Brier ↓ | LogLoss ↓ | ROI/$100 | CLV (pp) | Max DD | Longest L-Streak | Verdict |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| atp | `coin-flip` | 5215 | +50.09% | 0.2500 | 0.6931 | -3.89% | -0.80 | $21,586 | 13 | **DROP** |
-| atp | `market-close` | 8025 | +67.89% | 0.2013 | 0.5853 | -2.93% | -1.75 | $11,684 | 6 | **KEEP-WITH-CAVEATS** |
+| atp | `coin-flip` | 7759 | +50.02% | 0.2500 | 0.6931 | -4.60% | -0.95 | $36,520 | 13 | **DROP** |
+| atp | `market-close` | 8025 | +67.89% | 0.2013 | 0.5853 | -2.93% | -1.76 | $21,267 | 7 | **KEEP-WITH-CAVEATS** |
 | atp | `market-consensus` | 8025 | +67.89% | 0.2013 | 0.5853 | -2.93% | — | — | — | **KEEP-WITH-CAVEATS** |
 | atp | `predict.tennis` | 3430 | +67.11% | — | — | -2.36% | — | — | — | **KEEP-WITH-CAVEATS** |
-| atp | `tennis-rank-bt` | 8025 | +63.29% | 0.2264 | 0.6450 | -4.18% | -5.69 | $24,724 | 12 | **NOISE** |
+| atp | `tennis-rank-bt` | 8025 | +63.29% | 0.2264 | 0.6450 | -4.18% | -5.88 | $31,871 | 12 | **NOISE** |
 | mlb | `mlb-flashcat-v2` | 3075 | +53.69% | 0.2475 | 0.6881 | -3.91% | 0.03 | — | — | **NOISE** |
 | nba | `nba-bref-srs-pace` | 3643 | +63.35% | 0.2316 | 0.6655 | — | — | — | — | **KEEP-WITH-CAVEATS** |
 | nfl | `fivethirtyeight-nfl-elo` | 268 | +63.43% | 0.2220 | 0.6324 | -2.58% | — | — | — | **KEEP-WITH-CAVEATS** |
@@ -26,11 +26,11 @@ _Generated: 2026-08-10T12:05:21.381375+00:00_
 | nfl | `market-close` | 809 | +67.99% | 0.2090 | 0.6057 | +0.45% | — | — | — | **KEEP-WITH-CAVEATS** |
 | nfl | `market-consensus` | 809 | +67.99% | 0.2090 | 0.6057 | +0.45% | — | — | — | **KEEP-WITH-CAVEATS** |
 | nfl | `nfl-nflfastr-epa` | 809 | +61.56% | 0.2312 | 0.6560 | -4.75% | — | — | — | **NOISE** |
-| wta | `coin-flip` | 2388 | +49.25% | 0.2500 | 0.6931 | -6.24% | -1.00 | $18,284 | 12 | **DROP** |
-| wta | `market-close` | 7339 | +67.41% | 0.2041 | 0.5918 | -3.60% | -1.92 | $4,055 | 7 | **NOISE** |
+| wta | `coin-flip` | 7025 | +50.46% | 0.2500 | 0.6931 | -2.93% | -1.09 | $28,159 | 13 | **DROP** |
+| wta | `market-close` | 7339 | +67.41% | 0.2041 | 0.5918 | -3.60% | -1.92 | $21,599 | 10 | **NOISE** |
 | wta | `market-consensus` | 7339 | +67.41% | 0.2041 | 0.5918 | -3.60% | — | — | — | **NOISE** |
 | wta | `predict.tennis` | 3329 | +67.95% | — | — | -4.93% | — | — | — | **NOISE** |
-| wta | `tennis-rank-bt` | 7330 | +62.67% | 0.2281 | 0.6481 | -4.87% | -5.79 | $13,236 | 12 | **NOISE** |
+| wta | `tennis-rank-bt` | 7330 | +62.67% | 0.2281 | 0.6481 | -4.87% | -6.43 | $32,956 | 12 | **NOISE** |
 
 ## Verdict roll-up
 
@@ -44,7 +44,7 @@ _Generated: 2026-08-10T12:05:21.381375+00:00_
 
 ### atp · `coin-flip` — DROP
 - per-event from tennis-data.co.uk re-pull
-- window: 2023-01-01 → 2024-11-17
+- window: 2022-01-03 → 2024-11-17
 
 ### atp · `market-close` — KEEP-WITH-CAVEATS
 - per-event ledger merged from tennis-data.co.uk archive
@@ -62,7 +62,7 @@ _Generated: 2026-08-10T12:05:21.381375+00:00_
 
 ### wta · `coin-flip` — DROP
 - per-event from tennis-data.co.uk re-pull
-- window: 2023-01-01 → 2023-11-06
+- window: 2022-01-03 → 2024-11-09
 
 ### wta · `market-close` — NOISE
 - per-event ledger merged from tennis-data.co.uk archive
