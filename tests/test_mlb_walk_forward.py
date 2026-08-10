@@ -13,11 +13,15 @@ import pytest
 from flashcat.mlb_features.feature_builder import (
     FEATURE_NAMES,
     GameRow,
+    PitcherForm,
     build_features,
     compute_pitcher_rest,
     feature_vector,
+    fit_empirical_park_factor,
+    fit_pitcher_form,
     fit_rolling_rates,
     load_538_mlb_games,
+    strength_prior_home,
 )
 from flashcat.mlb_features.model import (
     WalkForwardSplit,
@@ -43,7 +47,10 @@ def _mk(
     rgs_h: float = 1.0, rgs_a: float = 0.5,
     home_pid: str = "homep001", away_pid: str = "awayp001",
     park: str = "BOS07", season: int | None = None,
+    h_pen: int = 3, a_pen: int = 4,
 ) -> GameRow:
+    # Box-score pitching lines: home staff allowed ``as_`` runs, away staff
+    # allowed ``hs`` runs (a coarse but self-consistent synthetic line).
     return GameRow(
         game_date=d,
         season=season or d.year,
@@ -59,6 +66,16 @@ def _mk(
         day_night="N",
         home_pitcher_id=home_pid,
         away_pitcher_id=away_pid,
+        home_pitchers_used=h_pen,
+        away_pitchers_used=a_pen,
+        home_team_er=as_,
+        away_team_er=hs,
+        home_so_pitching=6,
+        away_so_pitching=5,
+        home_bb_pitching=2,
+        away_bb_pitching=3,
+        home_hr_allowed=1,
+        away_hr_allowed=1,
     )
 
 
@@ -157,19 +174,26 @@ def test_pitcher_rest_first_appearance():
 
 
 def test_build_features_required_gate():
-    """build_features must return None when required features missing."""
+    """build_features must return None when required features missing.
+
+    Week-8: the required feature is the rolling strength prior
+    (``prior_prob_home``), which needs L10 rolling rates on BOTH teams. 538's
+    elo_prob_home is no longer required (the archive is dead).
+    """
     games = _build_series(15)
     snaps = fit_rolling_rates(games)
     rest = compute_pitcher_rest(games)
-    # Should produce features for game 11+ (l10 available)
+    # Should produce features for game 11+ (l10 available).
     g = games[11]
     f = build_features(g, snaps, rest, {})
     assert f is not None
     for name in FEATURE_NAMES:
         assert name in f
-    # Take a game with no elo_prob_home — should be rejected.
-    g_bad = _mk(g.game_date, "BOS", "NYA", 5, 3, elo_p_home=None)
-    f2 = build_features(g_bad, snaps, rest, {})
+    assert f["prior_prob_home"] is not None
+    # An early game (index 3) has < 10 prior games -> no L10 -> no prior ->
+    # rejected.
+    g_early = games[3]
+    f2 = build_features(g_early, snaps, rest, {})
     assert f2 is None
 
 
@@ -300,7 +324,144 @@ def test_summary_table_formats_without_crashing():
 
 
 # ---------------------------------------------------------------------------
-# End-to-end smoke (uses 538 cache, no network)
+# Week-8 expansion: pitcher form / bullpen / park / strength prior
+# ---------------------------------------------------------------------------
+
+
+def test_strength_prior_home_field_and_monotonic():
+    """Prior gives home >50% at parity and rises with home run-diff edge."""
+    # Equal rolling run diff -> only home-field advantage applies (>50%).
+    p_even = strength_prior_home(0.0, 0.0)
+    assert p_even is not None and 0.50 < p_even < 0.56
+    # Home team much better -> higher prob; worse -> lower. Monotonic.
+    p_up = strength_prior_home(2.0, -1.0)
+    p_down = strength_prior_home(-2.0, 1.0)
+    assert p_down < p_even < p_up
+    # Missing sample -> None.
+    assert strength_prior_home(None, 0.0) is None
+    assert strength_prior_home(0.0, None) is None
+
+
+def test_pitcher_form_strictly_prior():
+    """Pitcher-form snapshot at a start reflects only earlier starts."""
+    games = _build_series(12)  # same starter ids each game (homep001/awayp001)
+    forms = fit_pitcher_form(games)
+    # The first start has no prior data -> all windows None.
+    g0 = games[0]
+    f0 = forms[(g0.game_date, g0.home_pitcher_id)]
+    assert f0.er_l(3) is None
+    # A later start should have accumulated >=3 prior starts -> er_l(3) real.
+    g_late = games[6]
+    f_late = forms[(g_late.game_date, g_late.home_pitcher_id)]
+    assert f_late.er_l(3) is not None
+    # Home starter allowed away_score each game; _build_series alternates the
+    # home team's runs-allowed between 3 (even i) and 6 (odd i).
+    assert f_late.er_l(3) >= 0
+
+
+def test_pitcher_form_season_reset():
+    """Pitcher form resets across seasons."""
+    g1 = _mk(date(2022, 9, 1), "BOS", "NYA", 5, 3, season=2022)
+    g2 = _mk(date(2022, 9, 6), "BOS", "NYA", 5, 3, season=2022)
+    g3 = _mk(date(2023, 4, 1), "BOS", "NYA", 5, 3, season=2023)
+    forms = fit_pitcher_form([g1, g2, g3])
+    # At the 2023 start, the prior-2022 lines must not carry over.
+    f = forms[(g3.game_date, g3.home_pitcher_id)]
+    assert len(f.er) == 0
+
+
+def test_empirical_park_factor_prior_and_growth():
+    """Empirical park factor is strictly-prior and moves toward observed runs."""
+    # A high-scoring park: every game totals 15 runs.
+    games = [
+        _mk(date(2024, 4, 1) + timedelta(days=i), "BOS", "NYA", 8, 7, park="COORS")
+        for i in range(40)
+    ]
+    pf = fit_empirical_park_factor(games, prior_runs=4.5, prior_weight=40)
+    first = pf[(games[0].game_date, "COORS")]
+    last = pf[(games[-1].game_date, "COORS")]
+    # First game: no prior data -> equals the league prior total (9.0).
+    assert first == pytest.approx(9.0, abs=1e-6)
+    # By the last game the estimate has moved up toward 15 (observed).
+    assert last > first
+    assert 9.0 < last < 15.0
+
+
+def test_week8_features_present_and_built():
+    """build_features populates the Week-8 features when inputs are supplied."""
+    games = _build_series(15)
+    snaps = fit_rolling_rates(games)
+    rest = compute_pitcher_rest(games)
+    forms = fit_pitcher_form(games)
+    parkf = fit_empirical_park_factor(games)
+    g = games[12]
+    f = build_features(g, snaps, rest, {}, pitcher_form=forms, park_factor_emp=parkf)
+    assert f is not None
+    for name in (
+        "sp_er_l3_diff", "sp_kbb_l5_diff", "sp_hr_l5_diff",
+        "bullpen_load_l3_diff", "park_run_env_emp", "prior_prob_home",
+    ):
+        assert name in f
+    # Bullpen load diff should be a real number once >=3 prior games exist.
+    assert f["bullpen_load_l3_diff"] is not None
+    # Empirical park env should be populated (single park in fixture).
+    assert f["park_run_env_emp"] is not None
+
+
+def test_retrosheet_boxscore_parse_smoke():
+    """If a Retrosheet cache is present, box-score fields must parse sanely."""
+    from flashcat.mlb_features.feature_builder import RETROSHEET_CACHE
+    from flashcat.mlb_features import load_retrosheet_games
+    cache = RETROSHEET_CACHE / "gl2022.zip"
+    if not cache.exists():
+        pytest.skip("retrosheet gl2022.zip cache not present")
+    games = load_retrosheet_games(2022)
+    assert len(games) > 2000
+    with_box = [g for g in games if g.home_pitchers_used is not None]
+    assert len(with_box) > 2000
+    g = with_box[0]
+    # Sanity ranges on the extracted box-score fields.
+    assert 1 <= g.home_pitchers_used <= 12
+    assert 1 <= g.away_pitchers_used <= 12
+    assert g.home_team_er is not None and g.home_team_er >= 0
+    # Home staff's earned runs should be <= away team's runs scored
+    # (unearned runs possible), and both are non-negative.
+    assert g.away_score is None or g.home_team_er <= g.away_score + 5
+
+
+# ---------------------------------------------------------------------------
+# End-to-end smoke (Retrosheet cache preferred; 538 legacy skipped)
+# ---------------------------------------------------------------------------
+
+
+def test_end_to_end_smoke_retrosheet_2022():
+    """Full pipeline on a 2022 Retrosheet window. Produces bets, no leakage."""
+    from flashcat.mlb_features.feature_builder import RETROSHEET_CACHE
+    from flashcat.mlb_features import load_retrosheet_games
+    if not (RETROSHEET_CACHE / "gl2022.zip").exists():
+        pytest.skip("retrosheet gl2022.zip cache not present")
+    games = load_retrosheet_games(2022)
+    games = [g for g in games if g.game_date <= date(2022, 7, 1)]
+    assert len(games) > 1000
+    snaps = fit_rolling_rates(games)
+    rest = compute_pitcher_rest(games)
+    forms = fit_pitcher_form(games)
+    parkf = fit_empirical_park_factor(games)
+    folds = walk_forward_evaluate(
+        games, snaps, rest, {},
+        pitcher_form=forms, park_factor_emp=parkf,
+        train_window_days=60, eval_window_days=15, warmup_days=45,
+    )
+    assert len(folds) > 0
+    assert any(f.n_picks > 0 for f in folds)
+    bets, summary = simulate(folds)
+    assert summary["overall"]["n_bets"] > 0
+    clv = summary["overall"]["clv_proxy_pp"]
+    assert -1.0 < clv < 1.0
+
+
+# ---------------------------------------------------------------------------
+# End-to-end smoke (uses 538 cache, no network) — legacy, skipped when gone
 # ---------------------------------------------------------------------------
 
 

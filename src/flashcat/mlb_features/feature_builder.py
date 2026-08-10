@@ -91,6 +91,19 @@ class GameRow:
     plate_umpire_id: Optional[str] = None
     # Free-text weather (Retrosheet "weather" column when present).
     weather_text: Optional[str] = None
+    # Retrosheet box-score extras (Week-8 expansion). All optional; None
+    # when the source row lacks them (e.g. 538-only rows). These power the
+    # pitcher-form / bullpen-fatigue / empirical-park features.
+    home_pitchers_used: Optional[int] = None   # total pitchers the HOME team used
+    away_pitchers_used: Optional[int] = None   # total pitchers the AWAY team used
+    home_team_er: Optional[int] = None          # earned runs charged to HOME staff
+    away_team_er: Optional[int] = None          # earned runs charged to AWAY staff
+    home_so_pitching: Optional[int] = None      # strikeouts recorded by HOME staff
+    away_so_pitching: Optional[int] = None      # strikeouts recorded by AWAY staff
+    home_bb_pitching: Optional[int] = None       # walks issued by HOME staff
+    away_bb_pitching: Optional[int] = None       # walks issued by AWAY staff
+    home_hr_allowed: Optional[int] = None        # HR allowed by HOME staff
+    away_hr_allowed: Optional[int] = None        # HR allowed by AWAY staff
 
     @property
     def home_won(self) -> Optional[bool]:
@@ -118,6 +131,16 @@ class GameRow:
             "away_pitcher_id": self.away_pitcher_id,
             "plate_umpire_id": self.plate_umpire_id,
             "weather_text": self.weather_text,
+            "home_pitchers_used": self.home_pitchers_used,
+            "away_pitchers_used": self.away_pitchers_used,
+            "home_team_er": self.home_team_er,
+            "away_team_er": self.away_team_er,
+            "home_so_pitching": self.home_so_pitching,
+            "away_so_pitching": self.away_so_pitching,
+            "home_bb_pitching": self.home_bb_pitching,
+            "away_bb_pitching": self.away_bb_pitching,
+            "home_hr_allowed": self.home_hr_allowed,
+            "away_hr_allowed": self.away_hr_allowed,
             "home_won": None if self.home_won is None else int(self.home_won),
         }
 
@@ -294,6 +317,21 @@ RS_PLATE_UMP = 77  # umpire id, plate
 RS_VISITING_STARTING_PITCHER_ID = 101
 RS_HOME_STARTING_PITCHER_ID = 103
 
+# Box-score offense/pitching fields (0-indexed). Verified empirically against
+# gl2022.txt (see docs/mlb_feature_audit.md "Retrosheet field map"). The two
+# line-score strings occupy 0idx 19 (visitor) and 0idx 20 (home); visitor
+# batting/pitching runs 0idx 21..48, home 0idx 49..76.
+RS_V_HR = 25             # HR hit by visiting batters (== HR allowed by HOME staff)
+RS_V_BB = 30             # BB drawn by visiting batters (== BB issued by HOME staff)
+RS_V_SO = 32             # SO by visiting batters (== SO recorded by HOME staff)
+RS_V_PITCHERS_USED = 38  # number of pitchers the VISITING team used
+RS_V_TEAM_ER = 40        # team earned runs charged to VISITING staff
+RS_H_HR = 53             # HR hit by home batters (== HR allowed by AWAY staff)
+RS_H_BB = 58             # BB drawn by home batters (== BB issued by AWAY staff)
+RS_H_SO = 60             # SO by home batters (== SO recorded by AWAY staff)
+RS_H_PITCHERS_USED = 66  # number of pitchers the HOME team used
+RS_H_TEAM_ER = 68        # team earned runs charged to HOME staff
+
 
 def load_retrosheet_games(
     year: int,
@@ -357,6 +395,38 @@ def load_retrosheet_games(
                 plate_umpire_id=(
                     fields[RS_PLATE_UMP].strip("\"") if len(fields) > RS_PLATE_UMP else None
                 ),
+                # A team's PITCHING allowed = the OPPONENT's batting produced.
+                # Home staff faced visiting batters: home_* allowed == V_* fields.
+                home_pitchers_used=(
+                    _safe_int(fields[RS_H_PITCHERS_USED]) if len(fields) > RS_H_PITCHERS_USED else None
+                ),
+                away_pitchers_used=(
+                    _safe_int(fields[RS_V_PITCHERS_USED]) if len(fields) > RS_V_PITCHERS_USED else None
+                ),
+                home_team_er=(
+                    _safe_int(fields[RS_H_TEAM_ER]) if len(fields) > RS_H_TEAM_ER else None
+                ),
+                away_team_er=(
+                    _safe_int(fields[RS_V_TEAM_ER]) if len(fields) > RS_V_TEAM_ER else None
+                ),
+                home_so_pitching=(
+                    _safe_int(fields[RS_V_SO]) if len(fields) > RS_V_SO else None
+                ),
+                away_so_pitching=(
+                    _safe_int(fields[RS_H_SO]) if len(fields) > RS_H_SO else None
+                ),
+                home_bb_pitching=(
+                    _safe_int(fields[RS_V_BB]) if len(fields) > RS_V_BB else None
+                ),
+                away_bb_pitching=(
+                    _safe_int(fields[RS_H_BB]) if len(fields) > RS_H_BB else None
+                ),
+                home_hr_allowed=(
+                    _safe_int(fields[RS_V_HR]) if len(fields) > RS_V_HR else None
+                ),
+                away_hr_allowed=(
+                    _safe_int(fields[RS_H_HR]) if len(fields) > RS_H_HR else None
+                ),
             )
         )
     return out
@@ -378,12 +448,26 @@ class RollingTeamFeatures:
     runs_scored: deque = field(default_factory=lambda: deque(maxlen=30))
     runs_allowed: deque = field(default_factory=lambda: deque(maxlen=30))
     won: deque = field(default_factory=lambda: deque(maxlen=30))
+    # Week-8 expansion: rolling bullpen usage (pitchers used per game) as a
+    # fatigue proxy. A team that has burned its pen over the last few games
+    # goes into the next game short-handed.
+    pitchers_used: deque = field(default_factory=lambda: deque(maxlen=30))
     last_game_date: Optional[date] = None
 
-    def update(self, *, rs: int, ra: int, won: bool, on_date: date) -> None:
+    def update(
+        self,
+        *,
+        rs: int,
+        ra: int,
+        won: bool,
+        on_date: date,
+        pitchers_used: Optional[int] = None,
+    ) -> None:
         self.runs_scored.append(rs)
         self.runs_allowed.append(ra)
         self.won.append(1 if won else 0)
+        if pitchers_used is not None:
+            self.pitchers_used.append(int(pitchers_used))
         self.last_game_date = on_date
 
     def _avg(self, dq: deque, n: int) -> Optional[float]:
@@ -401,6 +485,10 @@ class RollingTeamFeatures:
 
     def win_pct(self, n: int) -> Optional[float]:
         return self._avg(self.won, n)
+
+    def bullpen_load(self, n: int) -> Optional[float]:
+        """Avg pitchers used over the last ``n`` games (bullpen-fatigue proxy)."""
+        return self._avg(self.pitchers_used, n)
 
 
 def fit_rolling_rates(
@@ -443,10 +531,12 @@ def fit_rolling_rates(
             continue
 
         state[g.home].update(
-            rs=g.home_score, ra=g.away_score, won=g.home_score > g.away_score, on_date=g.game_date,
+            rs=g.home_score, ra=g.away_score, won=g.home_score > g.away_score,
+            on_date=g.game_date, pitchers_used=g.home_pitchers_used,
         )
         state[g.away].update(
-            rs=g.away_score, ra=g.home_score, won=g.away_score > g.home_score, on_date=g.game_date,
+            rs=g.away_score, ra=g.home_score, won=g.away_score > g.home_score,
+            on_date=g.game_date, pitchers_used=g.away_pitchers_used,
         )
 
     return snapshots
@@ -461,6 +551,7 @@ def _freeze_snapshot(state: dict[str, RollingTeamFeatures]) -> dict[str, Rolling
         c.runs_scored = deque(list(f.runs_scored), maxlen=30)
         c.runs_allowed = deque(list(f.runs_allowed), maxlen=30)
         c.won = deque(list(f.won), maxlen=30)
+        c.pitchers_used = deque(list(f.pitchers_used), maxlen=30)
         c.last_game_date = f.last_game_date
         out[team] = c
     return out
@@ -489,6 +580,180 @@ def compute_pitcher_rest(games: list[GameRow]) -> dict[tuple[date, str], int]:
             rest[(g.game_date, pid)] = (g.game_date - prior).days if prior else 6
             last_start[pid] = g.game_date
     return rest
+
+
+# ---------------------------------------------------------------------------
+# Starting-pitcher rolling form  (Week-8 expansion)
+# ---------------------------------------------------------------------------
+
+# We don't have per-pitcher line-level splits from the free game logs, so we
+# attribute the team's staff box-score line to the STARTER as a proxy for
+# recent form. This is deliberately coarse — it captures "was the team's run
+# prevention good in the games this guy started", which is a strictly-prior,
+# no-leakage signal that correlates with starter quality. Documented as a
+# proxy in the audit; a Statcast per-pitcher pull is the Phase-2 upgrade.
+
+
+@dataclass
+class PitcherForm:
+    """Rolling box-score-attributed form for one starting pitcher."""
+
+    er: deque = field(default_factory=lambda: deque(maxlen=10))
+    so: deque = field(default_factory=lambda: deque(maxlen=10))
+    bb: deque = field(default_factory=lambda: deque(maxlen=10))
+    hr: deque = field(default_factory=lambda: deque(maxlen=10))
+    last_start: Optional[date] = None
+
+    def _avg(self, dq: deque, n: int) -> Optional[float]:
+        if len(dq) < n:
+            return None
+        recent = list(dq)[-n:]
+        return sum(recent) / n
+
+    def er_l(self, n: int) -> Optional[float]:
+        return self._avg(self.er, n)
+
+    def k_minus_bb_l(self, n: int) -> Optional[float]:
+        """Avg (SO - BB) over last n starts — a coarse command/stuff proxy."""
+        if len(self.so) < n or len(self.bb) < n:
+            return None
+        so = list(self.so)[-n:]
+        bb = list(self.bb)[-n:]
+        return sum(so[i] - bb[i] for i in range(n)) / n
+
+    def hr_l(self, n: int) -> Optional[float]:
+        return self._avg(self.hr, n)
+
+
+def fit_pitcher_form(
+    games: list[GameRow],
+    *,
+    window: int = 5,
+) -> dict[tuple[date, str], PitcherForm]:
+    """Build strictly-prior rolling form snapshots keyed by (game_date, pitcher_id).
+
+    The snapshot at ``(d, pid)`` reflects only starts strictly before ``d``.
+    We attribute the team's staff pitching line (ER/SO/BB/HR) to the game's
+    starter as a coarse form proxy. Games missing box-score fields or a
+    pitcher id are skipped for that side.
+    """
+    state: dict[str, PitcherForm] = defaultdict(PitcherForm)
+    last_season: dict[str, int] = {}
+    out: dict[tuple[date, str], PitcherForm] = {}
+
+    for g in sorted(games, key=lambda r: r.game_date):
+        sides = (
+            (g.home_pitcher_id, g.home_team_er, g.home_so_pitching,
+             g.home_bb_pitching, g.home_hr_allowed),
+            (g.away_pitcher_id, g.away_team_er, g.away_so_pitching,
+             g.away_bb_pitching, g.away_hr_allowed),
+        )
+        for pid, er, so, bb, hr in sides:
+            if not pid:
+                continue
+            # Season reset so we don't carry last year's form.
+            if last_season.get(pid) is not None and last_season[pid] < g.season:
+                state[pid] = PitcherForm()
+            last_season[pid] = g.season
+            # Snapshot BEFORE updating (strictly prior).
+            f = state[pid]
+            out[(g.game_date, pid)] = _freeze_pitcher_form(f)
+            if er is not None:
+                f.er.append(int(er))
+            if so is not None:
+                f.so.append(int(so))
+            if bb is not None:
+                f.bb.append(int(bb))
+            if hr is not None:
+                f.hr.append(int(hr))
+            f.last_start = g.game_date
+    return out
+
+
+def _freeze_pitcher_form(f: PitcherForm) -> PitcherForm:
+    c = PitcherForm()
+    c.er = deque(list(f.er), maxlen=10)
+    c.so = deque(list(f.so), maxlen=10)
+    c.bb = deque(list(f.bb), maxlen=10)
+    c.hr = deque(list(f.hr), maxlen=10)
+    c.last_start = f.last_start
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Empirical park run environment  (Week-8 expansion)
+# ---------------------------------------------------------------------------
+
+
+def fit_empirical_park_factor(
+    games: list[GameRow],
+    *,
+    prior_runs: float = 4.5,
+    prior_weight: int = 40,
+) -> dict[tuple[date, str], float]:
+    """Leakage-safe expanding-window park run environment.
+
+    Returns ``{(game_date, park_id) -> total_runs_per_game}`` where the value
+    at ``(d, park)`` uses ONLY games at that park strictly before ``d``.
+    Smoothed toward a league prior (``prior_runs`` per team => 2*prior_runs
+    total) with ``prior_weight`` pseudo-games so early-season parks aren't
+    noisy. This replaces / augments the static data/mlb_parks.json table with
+    an in-sample-honest measurement.
+    """
+    from collections import defaultdict as _dd
+
+    running_total: dict[str, float] = _dd(float)
+    running_n: dict[str, int] = _dd(int)
+    out: dict[tuple[date, str], float] = {}
+    prior_total = 2.0 * prior_runs
+    for g in sorted(games, key=lambda r: r.game_date):
+        if not g.park_id:
+            continue
+        n = running_n[g.park_id]
+        tot = running_total[g.park_id]
+        est = (tot + prior_total * prior_weight) / (n + prior_weight)
+        out[(g.game_date, g.park_id)] = est
+        if g.home_score is not None and g.away_score is not None:
+            running_total[g.park_id] += g.home_score + g.away_score
+            running_n[g.park_id] += 1
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Rolling strength prior  (Week-8 expansion) — replaces defunct 538 Elo
+# ---------------------------------------------------------------------------
+
+
+# Home-field advantage baseline (pp above 50%) and run-diff -> log-odds slope.
+# ~0.083 maps a +1 run/game rolling edge to roughly +2pp win prob, in line
+# with pythagorean run-to-win conversion at MLB scoring levels.
+HOME_FIELD_PP = 0.035
+RUN_DIFF_COEF = 0.083
+
+
+def strength_prior_home(
+    home_rd10: Optional[float],
+    away_rd10: Optional[float],
+    *,
+    home_field_pp: float = HOME_FIELD_PP,
+    run_diff_coef: float = RUN_DIFF_COEF,
+) -> Optional[float]:
+    """Cheap, leakage-safe pre-game win-prob prior from rolling run diff.
+
+    538's Elo/rating columns are gone (the archive 404s since 2023-10-01), so
+    the Week-8 pipeline synthesizes an honest, strictly-prior baseline prob
+    from each team's rolling L10 run differential + a fixed home-field bump.
+    This is NOT a market line and NOT a real closing price — it is a
+    model-internal prior. The simulator labels the resulting market proxy
+    loudly as a Retrosheet-derived prior, not a book close.
+
+    Returns ``None`` when either team's rolling sample is too small.
+    """
+    if home_rd10 is None or away_rd10 is None:
+        return None
+    base = math.log((0.5 + home_field_pp) / (0.5 - home_field_pp))
+    z = base + run_diff_coef * (home_rd10 - away_rd10)
+    return 1.0 / (1.0 + math.exp(-z))
 
 
 # ---------------------------------------------------------------------------
@@ -527,10 +792,13 @@ def load_park_run_env(path: Path | None = None) -> dict[str, float]:
 # All numeric features the model consumes, in canonical order. Order is
 # stable so persisted coefficient arrays can be matched up positionally.
 FEATURE_NAMES: list[str] = [
-    "elo_prob_home",
-    "rating_prob_home",
+    # Baseline prior (replaces defunct 538 elo_prob_home / rating_prob_home).
+    "prior_prob_home",
+    # Legacy 538 pitcher-rating diffs (None on Retrosheet-only rows; kept in
+    # the vector for backward compat, fill to 0 when absent).
     "pitcher_rgs_diff",
     "pitcher_adj_diff",
+    # Rolling team offense / defense.
     "rs_l3_diff",
     "rs_l5_diff",
     "rs_l10_diff",
@@ -542,8 +810,13 @@ FEATURE_NAMES: list[str] = [
     "win_pct_l10_diff",
     "run_diff_l10_diff",
     "pitcher_rest_diff",
-    "park_run_env",
     "is_day_game",
+    # ---- Week-8 expansion: pitcher / bullpen / park levers ----
+    "sp_er_l3_diff",        # starter rolling earned-runs form (lower = better)
+    "sp_kbb_l5_diff",       # starter rolling (SO-BB) command/stuff
+    "sp_hr_l5_diff",        # starter rolling HR-allowed tendency
+    "bullpen_load_l3_diff", # recent pitchers-used (fatigue) home - away
+    "park_run_env_emp",     # empirical (expanding-window) park run env
 ]
 
 
@@ -552,13 +825,18 @@ def build_features(
     snapshots: dict[date, dict[str, RollingTeamFeatures]],
     pitcher_rest: dict[tuple[date, str], int],
     park_run_env: dict[str, float],
+    *,
+    pitcher_form: dict[tuple[date, str], "PitcherForm"] | None = None,
+    park_factor_emp: dict[tuple[date, str], float] | None = None,
 ) -> Optional[dict]:
     """Build the per-game feature dict, strictly walk-forward.
 
-    Returns ``None`` if any **required** feature is missing (no Elo, no
-    sufficient rolling sample). Optional features (park, day/night, ump)
-    default to neutral values.
+    Returns ``None`` if any **required** feature is missing (no rolling
+    strength prior, no sufficient rolling sample). Optional features (park,
+    day/night, pitcher form, bullpen) default to neutral values.
     """
+    pitcher_form = pitcher_form or {}
+    park_factor_emp = park_factor_emp or {}
     # Leakage gate — snapshot keyed at the game's date should reflect
     # only PRIOR games. ``fit_rolling_rates`` enforces this.
     snap = snapshots.get(game.game_date) or {}
@@ -581,9 +859,18 @@ def build_features(
             return None
         return a - b
 
+    # Rolling L10 run differential per team (used both as a feature and to
+    # synthesize the strength prior that replaces the defunct 538 Elo).
+    h_rs10 = home_f.rs(10)
+    h_ra10 = home_f.ra(10)
+    a_rs10 = away_f.rs(10)
+    a_ra10 = away_f.ra(10)
+    home_rd10 = (h_rs10 - h_ra10) if (h_rs10 is not None and h_ra10 is not None) else None
+    away_rd10 = (a_rs10 - a_ra10) if (a_rs10 is not None and a_ra10 is not None) else None
+    prior = strength_prior_home(home_rd10, away_rd10)
+
     feats: dict = {
-        "elo_prob_home": game.elo_prob_home,
-        "rating_prob_home": game.rating_prob_home,
+        "prior_prob_home": prior,
         "pitcher_rgs_diff": (
             (game.pitcher_rgs_home or 0) - (game.pitcher_rgs_away or 0)
             if game.pitcher_rgs_home is not None and game.pitcher_rgs_away is not None
@@ -603,18 +890,19 @@ def build_features(
         "ra_l10_diff": _diff(home_f.ra, away_f.ra, 10),
         "ra_l20_diff": _diff(home_f.ra, away_f.ra, 20),
         "win_pct_l10_diff": _diff(home_f.win_pct, away_f.win_pct, 10),
-        "run_diff_l10_diff": None,
+        "run_diff_l10_diff": (
+            (home_rd10 - away_rd10)
+            if (home_rd10 is not None and away_rd10 is not None) else None
+        ),
         "pitcher_rest_diff": None,
-        "park_run_env": (park_run_env.get(game.park_id) if game.park_id else None),
         "is_day_game": 1.0 if (game.day_night or "").upper().startswith("D") else 0.0,
+        # Week-8 expansion features (default None -> filled to 0 in vector).
+        "sp_er_l3_diff": None,
+        "sp_kbb_l5_diff": None,
+        "sp_hr_l5_diff": None,
+        "bullpen_load_l3_diff": None,
+        "park_run_env_emp": None,
     }
-    # Run differential L10 diff: home (rs_l10 - ra_l10) - away (rs_l10 - ra_l10)
-    h_rs10 = home_f.rs(10)
-    h_ra10 = home_f.ra(10)
-    a_rs10 = away_f.rs(10)
-    a_ra10 = away_f.ra(10)
-    if all(v is not None for v in (h_rs10, h_ra10, a_rs10, a_ra10)):
-        feats["run_diff_l10_diff"] = (h_rs10 - h_ra10) - (a_rs10 - a_ra10)
 
     # Pitcher rest diff (home_rest - away_rest)
     h_rest = pitcher_rest.get((game.game_date, game.home_pitcher_id or ""))
@@ -622,9 +910,42 @@ def build_features(
     if h_rest is not None and a_rest is not None:
         feats["pitcher_rest_diff"] = float(h_rest - a_rest)
 
-    # Required features: elo_prob_home (538 covers 2022-2023). Without it
-    # we can't backfill 2024-2025 from 538 — those rows fall out.
-    if feats["elo_prob_home"] is None:
+    # ---- Week-8: starting-pitcher rolling form diffs (home - away) ----
+    hp = pitcher_form.get((game.game_date, game.home_pitcher_id or ""))
+    ap = pitcher_form.get((game.game_date, game.away_pitcher_id or ""))
+    if hp is not None and ap is not None:
+        h_er3, a_er3 = hp.er_l(3), ap.er_l(3)
+        if h_er3 is not None and a_er3 is not None:
+            # Negate so a POSITIVE feature means the home starter has been
+            # allowing FEWER earned runs (i.e. is in better form).
+            feats["sp_er_l3_diff"] = a_er3 - h_er3
+        h_kbb5, a_kbb5 = hp.k_minus_bb_l(5), ap.k_minus_bb_l(5)
+        if h_kbb5 is not None and a_kbb5 is not None:
+            feats["sp_kbb_l5_diff"] = h_kbb5 - a_kbb5
+        h_hr5, a_hr5 = hp.hr_l(5), ap.hr_l(5)
+        if h_hr5 is not None and a_hr5 is not None:
+            # Negate: positive => home starter allows fewer HR.
+            feats["sp_hr_l5_diff"] = a_hr5 - h_hr5
+
+    # ---- Week-8: bullpen fatigue (recent pitchers used, home - away) ----
+    h_bp = home_f.bullpen_load(3)
+    a_bp = away_f.bullpen_load(3)
+    if h_bp is not None and a_bp is not None:
+        # Positive => home pen has been MORE taxed recently (a negative for
+        # home). We keep the raw home-minus-away sign; the model learns it.
+        feats["bullpen_load_l3_diff"] = h_bp - a_bp
+
+    # ---- Week-8: empirical park run environment ----
+    pf = park_factor_emp.get((game.game_date, game.park_id or ""))
+    if pf is not None:
+        feats["park_run_env_emp"] = pf
+    elif game.park_id and game.park_id in park_run_env:
+        # Fall back to the static table if no empirical value yet.
+        feats["park_run_env_emp"] = park_run_env[game.park_id]
+
+    # Required features: the rolling strength prior (needs L10 rates on both
+    # teams). Without it we have no baseline and no market proxy.
+    if feats["prior_prob_home"] is None:
         return None
     # Need at least L10 rolling rates so the rolling features carry weight.
     if feats["rs_l10_diff"] is None:

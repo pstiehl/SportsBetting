@@ -1,58 +1,57 @@
 {
   "overall": {
-    "n_bets": 1842,
-    "n_wins": 1070,
-    "win_rate": 0.5808903365906624,
-    "wagered": 184200.0,
-    "profit": -6825.58,
-    "roi": -0.0370552430035635,
-    "max_drawdown": -8572.05,
-    "sharpe": -0.5690646689613739,
-    "clv_proxy_pp": 0.015231034060741777,
-    "avg_market_implied_prob": 0.5763670701693157
+    "n_bets": 3075,
+    "n_wins": 1651,
+    "win_rate": 0.536910569105691,
+    "wagered": 307500.0,
+    "profit": -12028.96,
+    "roi": -0.039118568604277475,
+    "max_drawdown": -14668.38,
+    "sharpe": -0.5526051799352134,
+    "clv_proxy_pp": 0.03244035637331668,
+    "avg_market_implied_prob": 0.5357266361054287
   },
   "per_year": {
     "2022": {
-      "n_bets": 886,
-      "n_wins": 527,
-      "win_rate": 0.5948081264108352,
-      "wagered": 88600.0,
-      "profit": -2258.6,
-      "roi": -0.025492148491022923,
-      "max_drawdown": -3708.21,
-      "sharpe": -0.3971455435913893
+      "n_bets": 823,
+      "n_wins": 464,
+      "win_rate": 0.5637910085054678,
+      "wagered": 82300.0,
+      "profit": 679.49,
+      "roi": 0.00825627999989689,
+      "max_drawdown": -2195.26,
+      "sharpe": 0.11729248359386113
     },
     "2023": {
-      "n_bets": 956,
-      "n_wins": 543,
-      "win_rate": 0.5679916317991632,
-      "wagered": 95600.0,
-      "profit": -4566.97,
-      "roi": -0.04777166741581357,
-      "max_drawdown": -7233.99,
-      "sharpe": -0.7239612356749353
+      "n_bets": 2252,
+      "n_wins": 1187,
+      "win_rate": 0.5270870337477798,
+      "wagered": 225200.0,
+      "profit": -12708.45,
+      "roi": -0.05643184586947972,
+      "max_drawdown": -13847.82,
+      "sharpe": -0.7959202945432106
     }
   },
   "loss_buckets": {
-    "pitcher_signal_wrong": 255,
-    "pure_variance": 270,
-    "rolling_signal_wrong": 21,
-    "generic": 45,
-    "line_moved_against": 181
+    "generic": 133,
+    "pitcher_signal_wrong": 352,
+    "pure_variance": 688,
+    "rolling_signal_wrong": 102,
+    "line_moved_against": 149
   },
-  "n_bets": 1842,
+  "n_bets": 3075,
   "window": {
     "start": "2022-01-01",
     "end": "2023-12-31"
   },
   "n_folds": 15,
-  "n_games_loaded": 4899,
+  "n_games_loaded": 4756,
   "train_window_days": 365,
   "eval_window_days": 30,
   "hold": 0.045,
   "features": [
-    "elo_prob_home",
-    "rating_prob_home",
+    "prior_prob_home",
     "pitcher_rgs_diff",
     "pitcher_adj_diff",
     "rs_l3_diff",
@@ -66,50 +65,109 @@
     "win_pct_l10_diff",
     "run_diff_l10_diff",
     "pitcher_rest_diff",
-    "park_run_env",
-    "is_day_game"
+    "is_day_game",
+    "sp_er_l3_diff",
+    "sp_kbb_l5_diff",
+    "sp_hr_l5_diff",
+    "bullpen_load_l3_diff",
+    "park_run_env_emp"
   ],
   "with_production_edge_gate": {
     "overall": {
-      "n_bets": 594,
-      "n_wins": 326,
-      "win_rate": 0.5488215488215489,
-      "wagered": 59400.0,
-      "profit": -4202.68,
-      "roi": -0.0707522519756204,
-      "max_drawdown": -5189.76,
-      "sharpe": -1.0521469721833085,
-      "clv_proxy_pp": 0.05391042711166381,
-      "avg_market_implied_prob": 0.5593106194430294
+      "n_bets": 1543,
+      "n_wins": 822,
+      "win_rate": 0.5327284510693454,
+      "wagered": 154300.0,
+      "profit": -2081.24,
+      "roi": -0.013488290775019158,
+      "max_drawdown": -5305.18,
+      "sharpe": -0.18377745546297344,
+      "clv_proxy_pp": 0.07138370679349763,
+      "avg_market_implied_prob": 0.5185989589041933
     },
     "per_year": {
       "2022": {
-        "n_bets": 289,
-        "n_wins": 156,
-        "win_rate": 0.5397923875432526,
-        "wagered": 28900.0,
-        "profit": -2362.85,
-        "roi": -0.08175951178226111,
-        "max_drawdown": -2892.1,
-        "sharpe": -1.2055511236382064
+        "n_bets": 485,
+        "n_wins": 274,
+        "win_rate": 0.5649484536082474,
+        "wagered": 48500.0,
+        "profit": 1520.13,
+        "roi": 0.03134282309048772,
+        "max_drawdown": -1244.75,
+        "sharpe": 0.43534289355561173
       },
       "2023": {
-        "n_bets": 305,
-        "n_wins": 170,
-        "win_rate": 0.5573770491803278,
-        "wagered": 30500.0,
-        "profit": -1839.83,
-        "roi": -0.0603224221916231,
-        "max_drawdown": -3589.46,
-        "sharpe": -0.903048002063922
+        "n_bets": 1058,
+        "n_wins": 548,
+        "win_rate": 0.5179584120982986,
+        "wagered": 105800.0,
+        "profit": -3601.37,
+        "roi": -0.03403941575117301,
+        "max_drawdown": -4632.57,
+        "sharpe": -0.4599622059252786
       }
     },
     "loss_buckets": {
-      "pitcher_signal_wrong": 150,
-      "generic": 30,
-      "pure_variance": 72,
-      "rolling_signal_wrong": 16
+      "generic": 110,
+      "pitcher_signal_wrong": 309,
+      "pure_variance": 228,
+      "rolling_signal_wrong": 74
     },
-    "n_bets": 594
+    "n_bets": 1543
+  },
+  "week8_ablation_baseline": {
+    "overall": {
+      "n_bets": 3075,
+      "n_wins": 1648,
+      "win_rate": 0.5359349593495935,
+      "wagered": 307500.0,
+      "profit": -14885.19,
+      "roi": -0.048407136578512776,
+      "max_drawdown": -16756.82,
+      "sharpe": -0.6902448887566139,
+      "clv_proxy_pp": 0.02227087687973322,
+      "avg_market_implied_prob": 0.539445572775577
+    },
+    "per_year": {
+      "2022": {
+        "n_bets": 823,
+        "n_wins": 458,
+        "win_rate": 0.5565006075334143,
+        "wagered": 82300.0,
+        "profit": -1103.12,
+        "roi": -0.013403655143905369,
+        "max_drawdown": -2840.14,
+        "sharpe": -0.19205933196149944
+      },
+      "2023": {
+        "n_bets": 2252,
+        "n_wins": 1190,
+        "win_rate": 0.5284191829484902,
+        "wagered": 225200.0,
+        "profit": -13782.07,
+        "roi": -0.061199261454481665,
+        "max_drawdown": -14637.09,
+        "sharpe": -0.8712475029199993
+      }
+    },
+    "loss_buckets": {
+      "pure_variance": 744,
+      "generic": 221,
+      "rolling_signal_wrong": 285,
+      "line_moved_against": 177
+    },
+    "with_production_edge_gate": {
+      "n_bets": 1244,
+      "n_wins": 674,
+      "win_rate": 0.5418006430868167,
+      "wagered": 124400.0,
+      "profit": -1297.06,
+      "roi": -0.010426546923831943,
+      "max_drawdown": -4564.17,
+      "sharpe": -0.1443036177918685,
+      "clv_proxy_pp": 0.06200218037338335,
+      "avg_market_implied_prob": 0.5231631942464344
+    },
+    "note": "Week-8 features (sp_er_l3_diff, sp_kbb_l5_diff, sp_hr_l5_diff, bullpen_load_l3_diff, park_run_env_emp) force-zeroed + retrained. Same data, same prior, same bet eligibility \u2014 isolates the marginal effect of the new features."
   }
 }

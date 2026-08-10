@@ -101,12 +101,24 @@ def _classify_loss(bet: dict, features: dict) -> str:
     edge = p - market
     if edge < 0.01:
         return "line_moved_against"
+    # Legacy 538 pitcher rating diff (rarely populated on Retrosheet rows).
     pr_diff = (features or {}).get("pitcher_rgs_diff")
-    if pr_diff is not None:
-        # If we picked home and pitcher rgs diff was strongly + (favoring
-        # home), or picked away and rgs diff strongly - (favoring away),
-        # then the pitcher signal agreed with us and we lost anyway.
+    if pr_diff is not None and pr_diff != 0:
         agreed = (pick_home and pr_diff > 0.5) or (not pick_home and pr_diff < -0.5)
+        if agreed:
+            return "pitcher_signal_wrong"
+    # Week-8: starter rolling-form signal. sp_er_l3_diff > 0 means the HOME
+    # starter has been allowing fewer earned runs (favors home). If that
+    # signal agreed with our pick by a clear margin and we still lost, the
+    # pitcher-form feature was wrong — the lever we're trying to move.
+    sp_er = (features or {}).get("sp_er_l3_diff")
+    if sp_er is not None:
+        agreed = (pick_home and sp_er > 0.75) or (not pick_home and sp_er < -0.75)
+        if agreed:
+            return "pitcher_signal_wrong"
+    sp_kbb = (features or {}).get("sp_kbb_l5_diff")
+    if sp_kbb is not None:
+        agreed = (pick_home and sp_kbb > 2.0) or (not pick_home and sp_kbb < -2.0)
         if agreed:
             return "pitcher_signal_wrong"
     rd_diff = (features or {}).get("run_diff_l10_diff")
@@ -139,9 +151,12 @@ def simulate(
             p = pred["home_prob"]
             pick_home = p >= 0.5
             pick_prob = p if pick_home else 1.0 - p
-            # Market proxy: 538 rating_prob on the picked side; fall back
-            # to elo_prob if rating_prob is unavailable.
-            rating_p = pred.get("rating_prob_home")
+            # Market proxy: the Retrosheet-derived rolling strength prior on
+            # the picked side (538 is dead). Fall back through legacy keys for
+            # any older fold objects that still carry them.
+            rating_p = pred.get("prior_prob_home")
+            if rating_p is None:
+                rating_p = pred.get("rating_prob_home")
             if rating_p is None:
                 rating_p = pred.get("elo_prob_home")
             if rating_p is None:
@@ -265,7 +280,16 @@ def format_summary_table(summary: dict, *, hold: float = DEFAULT_HOLD) -> str:
     """Render the headline metrics table for the PR body / status doc."""
     lines: list[str] = []
     lines.append(
-        f"Walk-forward MLB backtest — market proxy = 538 rating_prob × (1 + {hold:.2%} hold)"
+        "Walk-forward MLB backtest — market proxy = Retrosheet rolling strength "
+        f"prior × (1 + {hold:.2%} hold)"
+    )
+    lines.append(
+        "  NOTE: 538 is dead; the market proxy is a model-internal prior derived "
+        "from the SAME rolling rates,"
+    )
+    lines.append(
+        "  so 'CLV proxy' here measures logistic-model divergence from its own "
+        "prior, not true closing-line value."
     )
     lines.append("")
     header = (
