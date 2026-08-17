@@ -59,7 +59,14 @@ case "$SPORT" in
             --output "$DATA_OUT" \
             "${@:4}"
         ;;
-    nba|nfl|cfb|atp|wta|pga)
+    nba)
+        python3 scripts/nba_walk_forward_backtest.py \
+            --start "$START" \
+            --end "$END" \
+            --output "$DATA_OUT" \
+            "${@:4}"
+        ;;
+    nfl|cfb|atp|wta|pga)
         cat <<EOF
 NOT YET IMPLEMENTED — $SPORT is in the rotation queue (see
 docs/FEATURE_EXPANSION_PLAYBOOK.md::Rotation order). The walk-forward

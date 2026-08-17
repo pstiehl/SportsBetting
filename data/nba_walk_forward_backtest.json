@@ -1,0 +1,178 @@
+{
+  "overall": {
+    "n_bets": 2823,
+    "win_rate": 0.6337229897272405,
+    "roi": -0.07856808684132995,
+    "profit": -22179.770915307443,
+    "clv_proxy_pp": -0.06687526501046784,
+    "max_drawdown": 22230.48890615894,
+    "sharpe": -3.6484563229729887
+  },
+  "per_year": {
+    "2022": {
+      "n_bets": 909,
+      "win_rate": 0.6061606160616062,
+      "roi": -0.10527956598647953,
+      "profit": -9569.912548170989
+    },
+    "2023": {
+      "n_bets": 1164,
+      "win_rate": 0.6417525773195877,
+      "roi": -0.058933454158444344,
+      "profit": -6859.854064042922
+    },
+    "2024": {
+      "n_bets": 750,
+      "win_rate": 0.6546666666666666,
+      "roi": -0.07666672404124733,
+      "profit": -5750.004303093549
+    }
+  },
+  "loss_buckets": {
+    "counts": {
+      "form_signal_wrong": 482,
+      "line_moved_against": 37,
+      "generic": 234,
+      "pure_variance": 258,
+      "b2b_fatigue": 23
+    },
+    "pct": {
+      "form_signal_wrong": 46.6,
+      "line_moved_against": 3.6,
+      "generic": 22.6,
+      "pure_variance": 25.0,
+      "b2b_fatigue": 2.2
+    }
+  },
+  "window": {
+    "start": "2022-01-01",
+    "end": "2024-06-30"
+  },
+  "n_folds": 27,
+  "n_games_loaded": 3690,
+  "train_window_days": 365,
+  "eval_window_days": 30,
+  "hold": 0.045,
+  "features": [
+    "pt_diff_l5_home",
+    "pt_diff_l5_away",
+    "pt_diff_l5_diff",
+    "win_pct_l10_home",
+    "win_pct_l10_away",
+    "win_pct_l10_diff",
+    "b2b_home",
+    "b2b_away",
+    "b2b_diff",
+    "rest_days_diff",
+    "srs_diff",
+    "home_court_flag"
+  ],
+  "with_production_edge_gate": {
+    "overall": {
+      "n_bets": 447,
+      "win_rate": 0.5257270693512305,
+      "roi": 0.066395609359981,
+      "profit": 2967.8837383911505,
+      "clv_proxy_pp": 0.09542192178100539,
+      "max_drawdown": 1491.02718368253,
+      "sharpe": 2.203763923505063
+    },
+    "per_year": {
+      "2022": {
+        "n_bets": 157,
+        "win_rate": 0.4968152866242038,
+        "roi": 0.03133415527698926,
+        "profit": 491.94623784873136
+      },
+      "2023": {
+        "n_bets": 169,
+        "win_rate": 0.5621301775147929,
+        "roi": 0.1077901694686752,
+        "profit": 1821.6538640206109
+      },
+      "2024": {
+        "n_bets": 121,
+        "win_rate": 0.512396694214876,
+        "roi": 0.054073027811719736,
+        "profit": 654.2836365218088
+      }
+    },
+    "loss_buckets": {
+      "counts": {
+        "form_signal_wrong": 90,
+        "pure_variance": 63,
+        "generic": 57,
+        "b2b_fatigue": 2
+      },
+      "pct": {
+        "form_signal_wrong": 42.5,
+        "pure_variance": 29.7,
+        "generic": 26.9,
+        "b2b_fatigue": 0.9
+      }
+    }
+  },
+  "phase1_ablation_baseline": {
+    "description": "Rolling form features (pt_diff_l5, win_pct_l10) zeroed + retrained. B2B/rest features retained. Same data + same date window \u2014 isolates marginal effect of rolling form vs schedule+SRS prior.",
+    "features_zeroed": [
+      "pt_diff_l5_away",
+      "pt_diff_l5_diff",
+      "pt_diff_l5_home",
+      "win_pct_l10_away",
+      "win_pct_l10_diff",
+      "win_pct_l10_home"
+    ],
+    "overall": {
+      "n_bets": 2823,
+      "win_rate": 0.6323060573857598,
+      "roi": -0.09144873658250205,
+      "profit": -25815.97833724033,
+      "clv_proxy_pp": -0.08077472435029845,
+      "max_drawdown": 25959.898281835398,
+      "sharpe": -4.335956733065237
+    },
+    "per_year": {
+      "2022": {
+        "n_bets": 909,
+        "win_rate": 0.6094609460946094,
+        "roi": -0.11118890614059455,
+        "profit": -10107.071568180045
+      },
+      "2023": {
+        "n_bets": 1164,
+        "win_rate": 0.6365979381443299,
+        "roi": -0.074788438832758,
+        "profit": -8705.374280133032
+      },
+      "2024": {
+        "n_bets": 750,
+        "win_rate": 0.6533333333333333,
+        "roi": -0.09338043318569696,
+        "profit": -7003.5324889272715
+      }
+    },
+    "loss_buckets": {
+      "counts": {
+        "b2b_fatigue": 69,
+        "generic": 636,
+        "pure_variance": 302,
+        "line_moved_against": 31
+      },
+      "pct": {
+        "b2b_fatigue": 6.6,
+        "generic": 61.3,
+        "pure_variance": 29.1,
+        "line_moved_against": 3.0
+      }
+    },
+    "with_production_edge_gate": {
+      "n_bets": 257,
+      "win_rate": 0.5369649805447471,
+      "roi": 0.11698700318777279,
+      "profit": 3006.5659819257608,
+      "clv_proxy_pp": 0.09118358667335966,
+      "max_drawdown": 1847.9273021938573,
+      "sharpe": 3.8014216729554433
+    }
+  }
+}
