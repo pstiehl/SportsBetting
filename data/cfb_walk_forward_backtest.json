@@ -1,0 +1,105 @@
+{
+  "overall": {
+    "n_bets": 1823,
+    "win_rate": 0.7087218869994515,
+    "roi": 0.035959137619076126,
+    "profit": 6555.350787957577,
+    "clv_proxy_pp": -0.023829383294121143,
+    "max_drawdown": 6936.410951658572,
+    "sharpe": 0.5308086204688406
+  },
+  "per_year": {
+    "2022": {
+      "n_bets": 18,
+      "win_rate": 0.6111111111111112,
+      "roi": -0.19297742194586068,
+      "profit": -347.35935950254924
+    },
+    "2023": {
+      "n_bets": 902,
+      "win_rate": 0.7017738359201774,
+      "roi": 0.10461293435520015,
+      "profit": 9436.086678839054
+    },
+    "2024": {
+      "n_bets": 903,
+      "win_rate": 0.717607973421927,
+      "roi": -0.028055111089469027,
+      "profit": -2533.376531379053
+    }
+  },
+  "per_season": {
+    "2022": {
+      "n_bets": 24,
+      "win_rate": 0.5416666666666666,
+      "roi": -0.2799050548569976,
+      "profit": -671.7721316567943
+    },
+    "2023": {
+      "n_bets": 902,
+      "win_rate": 0.7062084257206208,
+      "roi": 0.11002669658803661,
+      "profit": 9924.408032240903
+    },
+    "2024": {
+      "n_bets": 897,
+      "win_rate": 0.7157190635451505,
+      "roi": -0.030070068145224723,
+      "profit": -2697.285112626658
+    }
+  },
+  "loss_buckets": {
+    "counts": {
+      "line_moved_against": 4,
+      "pure_variance": 101,
+      "upset_heavy_favorite": 255,
+      "generic": 59,
+      "turnover_disaster": 83,
+      "rolling_signal_wrong": 29
+    },
+    "pct": {
+      "line_moved_against": 0.8,
+      "pure_variance": 19.0,
+      "upset_heavy_favorite": 48.0,
+      "generic": 11.1,
+      "turnover_disaster": 15.6,
+      "rolling_signal_wrong": 5.5
+    }
+  },
+  "data_notes": "Market proxy: EPA connector predicted-point-diff \u2192 win probability (season-level PPA from ESPN fallback, no real closing line data). CLV proxy is model_prob \u2212 epa_prior_prob, NOT true CLV. HARNESS_ONLY if n_bets < 200 \u2014 insufficient data for conclusions.",
+  "window": {
+    "start": "2022-08-01",
+    "end": "2024-12-31",
+    "train_window_days": 365,
+    "eval_window_days": 30,
+    "warmup_days": 120,
+    "hold": 0.045,
+    "n_seasons": 3,
+    "seasons": [
+      2022,
+      2023,
+      2024
+    ]
+  },
+  "n_games_loaded": 3726,
+  "n_games_in_window": 2745,
+  "n_games_with_features": 1823,
+  "feature_names": [
+    "off_eff_l5_home",
+    "off_eff_l5_away",
+    "off_eff_l5_diff",
+    "def_eff_l5_home",
+    "def_eff_l5_away",
+    "def_eff_l5_diff",
+    "net_eff_l5_diff",
+    "rest_days_diff",
+    "bye_home",
+    "bye_away",
+    "margin_volatility_home",
+    "margin_volatility_away",
+    "conf_tier_diff",
+    "home_field_flag"
+  ],
+  "with_production_edge_gate": false,
+  "verdict": "PROFITABLE \u2014 ROI +3.60% over 1823 bets (proxy CLV -2.38pp). Verify with real closing lines."
+}

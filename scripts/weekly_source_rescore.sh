@@ -29,7 +29,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
-PYTHON="${PYTHON:-python3}"
+# Prefer the sportsbetting venv (has typer, python-dotenv, etc) over system python3.
+# Override with PYTHON=/path/to/python if needed.
+_VENV_PYTHON="${HOME}/.openclaw/workspace/venvs/sportsbetting/bin/python"
+if [ -x "${_VENV_PYTHON}" ]; then
+    PYTHON="${PYTHON:-${_VENV_PYTHON}}"
+else
+    PYTHON="${PYTHON:-python3}"
+fi
 export PYTHONPATH="src${PYTHONPATH:+:${PYTHONPATH}}"
 
 log() {
